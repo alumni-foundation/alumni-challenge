@@ -23,7 +23,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U alumni -d alumni_challenge_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -57,6 +57,9 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --all-extras
+
+      - name: Apply database migrations
+        run: uv run alembic upgrade head
 
       - name: Ruff lint
         run: uv run ruff check .
