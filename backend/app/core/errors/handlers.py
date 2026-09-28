@@ -21,6 +21,19 @@ def _error_body(code: str, message: str, details: object = None) -> dict[str, An
     return body
 
 
+def _safe_errors(exc: RequestValidationError) -> list[dict[str, Any]]:
+    """
+    Pydantic's raw error dicts include `input` (the submitted value — for
+    a registration request that is the user's password) and `ctx` (which
+    can hold non-JSON-serializable exception objects). Return only the
+    fields a client actually needs: where, what, and which rule.
+    """
+    return [
+        {"loc": list(e.get("loc", ())), "msg": e.get("msg", ""), "type": e.get("type", "")}
+        for e in exc.errors()
+    ]
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
@@ -38,7 +51,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=422,
             content=_error_body(
-                "validation_error", "Request validation failed", details=exc.errors()
+                "validation_error", "Request validation failed", details=_safe_errors(exc)
             ),
         )
 

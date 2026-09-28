@@ -1,17 +1,24 @@
 import uuid
 
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 
 
 def _unique_email() -> str:
     return f"test-{uuid.uuid4().hex[:12]}@example.com"
 
 
+async def _register(
+    client: AsyncClient, email: str, password: str, *, confirm_age: bool = True
+) -> Response:
+    return await client.post(
+        "/api/v1/auth/register",
+        json={"email": email, "password": password, "confirm_18_or_older": confirm_age},
+    )
+
+
 async def test_register_creates_user(client: AsyncClient) -> None:
     email = _unique_email()
-    response = await client.post(
-        "/api/v1/auth/register", json={"email": email, "password": "correct-horse-battery"}
-    )
+    response = await _register(client, email, "correct-horse-battery")
     assert response.status_code == 201
     body = response.json()
     assert body["email"] == email
@@ -19,21 +26,26 @@ async def test_register_creates_user(client: AsyncClient) -> None:
     assert "id" in body
 
 
+async def test_register_without_age_confirmation_is_rejected(client: AsyncClient) -> None:
+    response = await _register(client, _unique_email(), "correct-horse-battery", confirm_age=False)
+    assert response.status_code == 422
+    # A validation error must never echo the submitted password back.
+    assert "correct-horse-battery" not in response.text
+
+
 async def test_register_duplicate_email_is_rejected(client: AsyncClient) -> None:
     email = _unique_email()
-    payload = {"email": email, "password": "correct-horse-battery"}
-
-    first = await client.post("/api/v1/auth/register", json=payload)
+    first = await _register(client, email, "correct-horse-battery")
     assert first.status_code == 201
 
-    second = await client.post("/api/v1/auth/register", json=payload)
+    second = await _register(client, email, "correct-horse-battery")
     assert second.status_code == 409
 
 
 async def test_login_with_correct_credentials_returns_tokens(client: AsyncClient) -> None:
     email = _unique_email()
     password = "correct-horse-battery"
-    await client.post("/api/v1/auth/register", json={"email": email, "password": password})
+    await _register(client, email, password)
 
     response = await client.post("/api/v1/auth/login", json={"email": email, "password": password})
     assert response.status_code == 200
@@ -45,9 +57,7 @@ async def test_login_with_correct_credentials_returns_tokens(client: AsyncClient
 
 async def test_login_with_wrong_password_is_rejected(client: AsyncClient) -> None:
     email = _unique_email()
-    await client.post(
-        "/api/v1/auth/register", json={"email": email, "password": "correct-horse-battery"}
-    )
+    await _register(client, email, "correct-horse-battery")
 
     response = await client.post(
         "/api/v1/auth/login", json={"email": email, "password": "wrong-password"}
@@ -79,7 +89,7 @@ async def test_me_requires_authentication(client: AsyncClient) -> None:
 async def test_me_returns_current_user_with_valid_token(client: AsyncClient) -> None:
     email = _unique_email()
     password = "correct-horse-battery"
-    await client.post("/api/v1/auth/register", json={"email": email, "password": password})
+    await _register(client, email, password)
     login = await client.post("/api/v1/auth/login", json={"email": email, "password": password})
     access_token = login.json()["access_token"]
 
@@ -93,7 +103,7 @@ async def test_me_returns_current_user_with_valid_token(client: AsyncClient) -> 
 async def test_refresh_rotates_token_and_old_one_stops_working(client: AsyncClient) -> None:
     email = _unique_email()
     password = "correct-horse-battery"
-    await client.post("/api/v1/auth/register", json={"email": email, "password": password})
+    await _register(client, email, password)
     login = await client.post("/api/v1/auth/login", json={"email": email, "password": password})
     old_refresh = login.json()["refresh_token"]
 
@@ -122,7 +132,7 @@ async def test_refresh_rotates_token_and_old_one_stops_working(client: AsyncClie
 async def test_logout_revokes_the_session(client: AsyncClient) -> None:
     email = _unique_email()
     password = "correct-horse-battery"
-    await client.post("/api/v1/auth/register", json={"email": email, "password": password})
+    await _register(client, email, password)
     login = await client.post("/api/v1/auth/login", json={"email": email, "password": password})
     access_token = login.json()["access_token"]
     refresh_token = login.json()["refresh_token"]
@@ -142,7 +152,7 @@ async def test_logout_revokes_the_session(client: AsyncClient) -> None:
 async def test_list_sessions_shows_only_own_sessions(client: AsyncClient) -> None:
     email = _unique_email()
     password = "correct-horse-battery"
-    await client.post("/api/v1/auth/register", json={"email": email, "password": password})
+    await _register(client, email, password)
     login = await client.post("/api/v1/auth/login", json={"email": email, "password": password})
     access_token = login.json()["access_token"]
 

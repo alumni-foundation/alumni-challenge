@@ -25,7 +25,11 @@ async def register_user(db: AsyncSession, *, email: str, password: str) -> User:
         # registered. Prevents account enumeration.
         raise ConflictError("Unable to register with the provided details.")
 
-    user = User(email=email, password_hash=hash_password(password))
+    user = User(
+        email=email,
+        password_hash=hash_password(password),
+        age_confirmed_at=datetime.now(UTC),
+    )
     db.add(user)
     await db.flush()
     return user

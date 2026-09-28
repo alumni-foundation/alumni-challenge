@@ -5,10 +5,11 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.infrastructure.database.enum_column import str_enum
 from app.infrastructure.database.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from app.infrastructure.database.session import Base
 
@@ -28,9 +29,17 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[UserStatus] = mapped_column(
-        Enum(UserStatus, name="user_status"), nullable=False, default=UserStatus.ACTIVE
+        str_enum(UserStatus, name="user_status"), nullable=False, default=UserStatus.ACTIVE
     )
     email_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Self-attestation timestamp for the 18+ requirement — deliberately
+    # NOT a date of birth. Storing an actual birthdate would be more
+    # sensitive data than the platform needs, and Kenya's DPA treats
+    # minors' data specially; recording only "they confirmed on this
+    # date" sidesteps that entirely rather than working around it.
+    age_confirmed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 

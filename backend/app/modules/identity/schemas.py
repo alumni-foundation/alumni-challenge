@@ -1,12 +1,23 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=10, max_length=128)
+    confirm_18_or_older: bool = Field(
+        description="Must be true — self-attestation that the user is 18 or older. "
+        "The platform does not accept registrations from minors."
+    )
+
+    @field_validator("confirm_18_or_older")
+    @classmethod
+    def must_confirm_age(cls, value: bool) -> bool:
+        if not value:
+            raise ValueError("You must confirm you are 18 or older to register.")
+        return value
 
 
 class LoginRequest(BaseModel):

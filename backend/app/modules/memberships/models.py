@@ -4,11 +4,12 @@ import enum
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Enum, ForeignKey, UniqueConstraint
+from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.permissions.roles import Role
+from app.infrastructure.database.enum_column import str_enum
 from app.infrastructure.database.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from app.infrastructure.database.session import Base
 
@@ -47,9 +48,9 @@ class Membership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         nullable=True,
         index=True,
     )
-    role: Mapped[Role] = mapped_column(Enum(Role, name="membership_role"), nullable=False)
+    role: Mapped[Role] = mapped_column(str_enum(Role, name="membership_role"), nullable=False)
     status: Mapped[MembershipStatus] = mapped_column(
-        Enum(MembershipStatus, name="membership_status"),
+        str_enum(MembershipStatus, name="membership_status"),
         nullable=False,
         default=MembershipStatus.ACTIVE,
     )

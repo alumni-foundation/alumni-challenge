@@ -4,10 +4,11 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, String, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.infrastructure.database.enum_column import str_enum
 from app.infrastructure.database.mixins import UUIDPrimaryKeyMixin
 from app.infrastructure.database.session import Base
 
@@ -35,7 +36,7 @@ class File(UUIDPrimaryKeyMixin, Base):
     mime_type: Mapped[str] = mapped_column(String(255), nullable=False)
     size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
     visibility: Mapped[FileVisibility] = mapped_column(
-        Enum(FileVisibility, name="file_visibility"),
+        str_enum(FileVisibility, name="file_visibility"),
         nullable=False,
         default=FileVisibility.PRIVATE,
     )

@@ -4,9 +4,10 @@ import enum
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Enum, ForeignKey, String, Text
+from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.infrastructure.database.enum_column import str_enum
 from app.infrastructure.database.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from app.infrastructure.database.session import Base
 
@@ -34,7 +35,7 @@ class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "organizations"
 
     type: Mapped[OrganizationType] = mapped_column(
-        Enum(OrganizationType, name="organization_type"), nullable=False
+        str_enum(OrganizationType, name="organization_type"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
@@ -43,7 +44,7 @@ class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("files.id", ondelete="SET NULL"), nullable=True
     )
     status: Mapped[OrganizationStatus] = mapped_column(
-        Enum(OrganizationStatus, name="organization_status"),
+        str_enum(OrganizationStatus, name="organization_status"),
         nullable=False,
         default=OrganizationStatus.ACTIVE,
     )

@@ -15,6 +15,8 @@ update when a new module's models are added — forgetting it here is
 the failure mode this file exists to prevent.
 """
 
+from app.modules.alumni.models import AlumniProfile, PeerVouch, SchoolEmailDomain  # noqa: F401
+from app.modules.connections.models import Connection  # noqa: F401
 from app.modules.files.models import File  # noqa: F401
 from app.modules.identity.models import Session, User  # noqa: F401
 from app.modules.memberships.models import Membership  # noqa: F401
