@@ -7,6 +7,9 @@ from app.infrastructure.database.session import get_db_session
 from app.modules.identity import schemas, service
 from app.modules.identity.dependencies import get_current_user
 from app.modules.identity.models import User
+from app.modules.memberships import service as memberships_service
+from app.modules.memberships.models import Membership
+from app.modules.organizations.schemas import MembershipResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -86,3 +89,12 @@ async def revoke_session(
 @router.get("/me", response_model=schemas.UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+@router.get("/me/roles", response_model=list[MembershipResponse])
+async def get_my_roles(
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> list[Membership]:
+    """The caller's own active roles. Used by clients to decide what to show, never to enforce."""
+    return await memberships_service.list_active_memberships(db, user_id=current_user.id)

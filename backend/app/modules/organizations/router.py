@@ -98,3 +98,15 @@ async def add_email_domain(
     row = await service.add_email_domain(db, organization_id=organization_id, domain=body.domain)
     await db.commit()
     return row
+
+
+@router.get(
+    "/{organization_id}/email-domains",
+    response_model=list[schemas.EmailDomainResponse],
+)
+async def list_email_domains(
+    organization_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db_session),
+    _admin: User = Depends(require_roles_for_org(Role.SCHOOL_ADMIN, Role.ADMIN, Role.SUPER_ADMIN)),
+) -> list[SchoolEmailDomain]:
+    return await service.list_email_domains(db, organization_id=organization_id)

@@ -148,3 +148,15 @@ async def add_email_domain(
     except IntegrityError as exc:
         raise ConflictError("That domain is already registered.") from exc
     return row
+
+
+async def list_email_domains(
+    db: AsyncSession, *, organization_id: uuid.UUID
+) -> list[SchoolEmailDomain]:
+    await get_active_organization(db, organization_id=organization_id)
+    stmt = (
+        select(SchoolEmailDomain)
+        .where(SchoolEmailDomain.organization_id == organization_id)
+        .order_by(SchoolEmailDomain.domain)
+    )
+    return list((await db.scalars(stmt)).all())

@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.modules.alumni.models import AlumniProfile
 from app.modules.connections.models import Connection, ConnectionStatus
 
 
@@ -111,3 +112,51 @@ async def list_my_connections(
         stmt = stmt.where(Connection.status == status_filter)
     result = await db.scalars(stmt)
     return list(result.all())
+
+
+async def list_my_connections_detailed(
+    db: AsyncSession, *, user_id: uuid.UUID
+) -> list[dict[str, object]]:
+    """
+    Connections for the caller with the other person's name attached (one extra query,
+    not one per row). Blocked rows are left out: the person who was blocked must not be
+    able to tell.
+    """
+    stmt = (
+        select(Connection)
+        .where(
+            ((Connection.requester_id == user_id) | (Connection.addressee_id == user_id))
+            & (Connection.status != ConnectionStatus.BLOCKED)
+        )
+        .order_by(Connection.created_at.desc(), Connection.id)
+    )
+    connections = list((await db.scalars(stmt)).all())
+    other_ids = {
+        c.addressee_id if c.requester_id == user_id else c.requester_id for c in connections
+    }
+    profiles: dict[uuid.UUID, tuple[uuid.UUID, str]] = {}
+    if other_ids:
+        rows = await db.execute(
+            select(AlumniProfile.user_id, AlumniProfile.id, AlumniProfile.full_name).where(
+                AlumniProfile.user_id.in_(other_ids)
+            )
+        )
+        profiles = {uid: (pid, name) for uid, pid, name in rows.all()}
+
+    items: list[dict[str, object]] = []
+    for c in connections:
+        other_id = c.addressee_id if c.requester_id == user_id else c.requester_id
+        profile = profiles.get(other_id)
+        items.append(
+            {
+                "id": c.id,
+                "requester_id": c.requester_id,
+                "addressee_id": c.addressee_id,
+                "status": c.status,
+                "created_at": c.created_at,
+                "other_user_id": other_id,
+                "other_profile_id": profile[0] if profile else None,
+                "other_full_name": profile[1] if profile else None,
+            }
+        )
+    return items

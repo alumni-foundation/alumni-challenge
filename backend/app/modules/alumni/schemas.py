@@ -71,6 +71,11 @@ class AlumniProfileSummary(BaseModel):
     school_id: uuid.UUID | None
     graduation_year: int | None
     verification_status: VerificationStatus
+    # Same visibility rules as the full profile: the directory is authenticated-only, so
+    # these are shown to every viewer who can see the row (only anonymous viewers lose company).
+    profession: str | None
+    country: str | None
+    company: str | None
 
 
 class VerifyProfileRequest(BaseModel):

@@ -24,13 +24,12 @@ async def create_connection_request(
     return connection
 
 
-@router.get("", response_model=list[schemas.ConnectionResponse])
+@router.get("", response_model=list[schemas.ConnectionListItem])
 async def list_connections(
     db: AsyncSession = Depends(get_db_session),
     current_user: User = Depends(get_current_user),
-) -> list[object]:
-    connections = await service.list_my_connections(db, user_id=current_user.id)
-    return list(connections)
+) -> list[dict[str, object]]:
+    return await service.list_my_connections_detailed(db, user_id=current_user.id)
 
 
 @router.patch("/{connection_id}/accept", response_model=schemas.ConnectionResponse)
