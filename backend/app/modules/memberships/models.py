@@ -4,7 +4,7 @@ import enum
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -34,6 +34,13 @@ class Membership(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "memberships"
     __table_args__ = (
         UniqueConstraint("user_id", "organization_id", "role", name="uq_membership_user_org_role"),
+        Index(
+            "uq_membership_platform_role",
+            "user_id",
+            "role",
+            unique=True,
+            postgresql_where=text("organization_id IS NULL"),
+        ),
     )
 
     user_id: Mapped[uuid.UUID] = mapped_column(

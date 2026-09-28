@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.modules.alumni.models import ProfileVisibility, VerificationStatus
 
@@ -54,6 +54,10 @@ class AlumniProfileResponse(BaseModel):
     profile_visibility: ProfileVisibility
     avatar_file_id: uuid.UUID | None
     created_at: datetime
+    skills: list[str] = []
+    interests: list[str] = []
+    # Number of verified same-school alumni who vouched. Hidden from anonymous viewers.
+    vouch_count: int | None = None
 
 
 class AlumniProfileSummary(BaseModel):
@@ -71,3 +75,21 @@ class AlumniProfileSummary(BaseModel):
 
 class VerifyProfileRequest(BaseModel):
     verified: bool
+
+
+class SetTagsRequest(BaseModel):
+    """Full replacement list of skills or interests: trimmed, lowercased, de-duplicated."""
+
+    names: list[str] = Field(max_length=30)
+
+    @field_validator("names")
+    @classmethod
+    def normalise(cls, values: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for raw in values:
+            name = " ".join(raw.split()).lower()
+            if not 1 <= len(name) <= 50:
+                raise ValueError("Each name must be between 1 and 50 characters.")
+            if name not in cleaned:
+                cleaned.append(name)
+        return cleaned

@@ -60,6 +60,8 @@ app.include_router(identity_router, prefix=settings.api_v1_prefix)
 
 from app.modules.alumni.router import router as alumni_router  # noqa: E402
 from app.modules.connections.router import router as connections_router  # noqa: E402
+from app.modules.organizations.router import router as organizations_router  # noqa: E402
 
 app.include_router(alumni_router, prefix=settings.api_v1_prefix)
 app.include_router(connections_router, prefix=settings.api_v1_prefix)
+app.include_router(organizations_router, prefix=settings.api_v1_prefix)

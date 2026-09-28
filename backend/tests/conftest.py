@@ -35,16 +35,20 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """
     test_engine = create_async_engine(str(settings.database_url), poolclass=NullPool)
     try:
-        async with test_engine.connect() as connection, connection.begin():
-            test_session_factory = async_sessionmaker(
-                bind=connection,
-                join_transaction_mode="create_savepoint",
-                expire_on_commit=False,
-            )
-            async with test_session_factory() as session:
-                yield session
-                # Exiting connection.begin()'s `async with` rolls back
-                # everything, including every nested savepoint commit.
+        async with test_engine.connect() as connection:
+            # Explicit begin/rollback. `async with connection.begin()` would COMMIT
+            # on a clean exit, silently persisting every test's data.
+            outer = await connection.begin()
+            try:
+                test_session_factory = async_sessionmaker(
+                    bind=connection,
+                    join_transaction_mode="create_savepoint",
+                    expire_on_commit=False,
+                )
+                async with test_session_factory() as session:
+                    yield session
+            finally:
+                await outer.rollback()
     finally:
         await test_engine.dispose()
 

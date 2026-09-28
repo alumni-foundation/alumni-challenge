@@ -106,3 +106,43 @@ class SchoolEmailDomain(UUIDPrimaryKeyMixin, Base):
         index=True,
     )
     domain: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+
+
+class Skill(UUIDPrimaryKeyMixin, Base):
+    """Shared vocabulary. Names are stored trimmed and lowercased ('Python' == 'python')."""
+
+    __tablename__ = "skills"
+
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+
+
+class AlumniSkill(Base):
+    __tablename__ = "alumni_skills"
+
+    alumni_profile_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("alumni_profiles.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    skill_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("skills.id", ondelete="CASCADE"), primary_key=True
+    )
+
+
+class Interest(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "interests"
+
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+
+
+class AlumniInterest(Base):
+    __tablename__ = "alumni_interests"
+
+    alumni_profile_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("alumni_profiles.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    interest_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("interests.id", ondelete="CASCADE"), primary_key=True
+    )
