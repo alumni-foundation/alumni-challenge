@@ -86,6 +86,20 @@ async def _maybe_verify_by_email_domain(
         profile.verification_method = VerificationMethod.EMAIL_DOMAIN
 
 
+async def verify_email_domain_for_user(db: AsyncSession, *, user: User) -> None:
+    """
+    Called right after a user's email is confirmed (identity/service.py),
+    so a profile that already declared a matching school gets its
+    email-domain verification the moment it becomes possible, instead of
+    waiting for the person to touch their profile again.
+    """
+    profile = await db.scalar(select(AlumniProfile).where(AlumniProfile.user_id == user.id))
+    if profile is None:
+        return
+    await _maybe_verify_by_email_domain(db, profile=profile, user=user)
+    await db.flush()
+
+
 async def create_own_profile(
     db: AsyncSession,
     *,

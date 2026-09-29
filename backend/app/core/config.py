@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     # CORS
     cors_allowed_origins: list[str] = ["http://localhost:3000"]
 
+    # Used only to build links inside emails (verification, password reset).
+    # Never used for redirects or trust decisions — those never depend on this value.
+    frontend_url: str = "http://localhost:3000"
+
     # Observability
     sentry_dsn: str | None = None
 

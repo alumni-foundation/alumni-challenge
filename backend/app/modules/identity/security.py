@@ -70,3 +70,35 @@ def hash_refresh_token(token: str) -> str:
     import hashlib
 
     return hashlib.sha256(token.encode()).hexdigest()
+
+
+def create_purpose_token(
+    user_id: uuid.UUID, *, purpose: str, expire_minutes: int, extra: dict[str, Any] | None = None
+) -> str:
+    """
+    A short-lived, single-purpose JWT — email verification and password
+    reset links both use this. `purpose` is checked on decode so an email
+    verification link can never be replayed as a password reset token
+    even though both are just JWTs signed with the same key.
+    """
+    now = datetime.now(UTC)
+    payload: dict[str, Any] = {
+        "sub": str(user_id),
+        "type": purpose,
+        "iat": now,
+        "exp": now + timedelta(minutes=expire_minutes),
+        **(extra or {}),
+    }
+    return jwt.encode(
+        payload, settings.secret_key.get_secret_value(), algorithm=settings.jwt_algorithm
+    )
+
+
+def decode_purpose_token(token: str, *, purpose: str) -> dict[str, Any]:
+    """Raises jwt exceptions on failure — callers map them to UnauthorizedError."""
+    payload = jwt.decode(
+        token, settings.secret_key.get_secret_value(), algorithms=[settings.jwt_algorithm]
+    )
+    if payload.get("type") != purpose:
+        raise jwt.InvalidTokenError("Token is not valid for this purpose.")
+    return payload

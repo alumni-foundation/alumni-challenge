@@ -53,3 +53,20 @@ class SessionResponse(BaseModel):
     ip_address: str | None
     created_at: datetime
     last_used_at: datetime
+
+
+class VerifyEmailConfirmRequest(BaseModel):
+    token: str
+
+
+class PasswordForgotRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=10, max_length=128)
+
+
+class MessageResponse(BaseModel):
+    message: str

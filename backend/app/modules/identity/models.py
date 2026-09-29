@@ -42,6 +42,14 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     age_confirmed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Regenerated every time the password changes (including via reset).
+    # A password-reset token embeds the stamp it was issued against, so
+    # using one reset link immediately invalidates every other
+    # outstanding one for that account — cheap single-use enforcement
+    # without a token-tracking table.
+    security_stamp: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=False, server_default=func.gen_random_uuid()
+    )
 
     sessions: Mapped[list[Session]] = relationship(
         back_populates="user", cascade="all, delete-orphan"

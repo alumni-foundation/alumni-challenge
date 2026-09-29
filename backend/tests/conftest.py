@@ -7,9 +7,26 @@ from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 from app.infrastructure.database.session import get_db_session
+from app.infrastructure.redis import get_redis_client, reset_redis_client_for_tests
 from app.main import app
 
 settings = get_settings()
+
+
+@pytest.fixture(autouse=True)
+async def _clean_redis() -> AsyncGenerator[None, None]:
+    """
+    Rate limiting and login-lockout state lives in Redis, outside the
+    per-test database transaction that db_session rolls back. Without
+    this, one test's login attempts count toward the next test's rate
+    limit and lockout windows — flaky failures that have nothing to do
+    with what that test is actually checking.
+    """
+    await reset_redis_client_for_tests()
+    redis = get_redis_client()
+    await redis.flushdb()
+    yield
+    await reset_redis_client_for_tests()
 
 
 @pytest.fixture
