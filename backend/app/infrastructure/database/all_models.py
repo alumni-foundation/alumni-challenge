@@ -26,6 +26,7 @@ from app.modules.alumni.models import (  # noqa: F401
 )
 from app.modules.audit.models import AuditLogEntry  # noqa: F401
 from app.modules.connections.models import Connection  # noqa: F401
+from app.modules.events.models import DomainEvent  # noqa: F401
 from app.modules.files.models import File  # noqa: F401
 from app.modules.identity.models import Session, User  # noqa: F401
 from app.modules.memberships.models import Membership  # noqa: F401

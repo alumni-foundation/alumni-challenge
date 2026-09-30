@@ -7,6 +7,7 @@ from app.core.mail.base import Mailer
 from app.core.mail.dependencies import get_mailer
 from app.core.rate_limit import rate_limit
 from app.infrastructure.database.session import get_db_session
+from app.modules.events import service as events_service
 from app.modules.identity import schemas, service
 from app.modules.identity.dependencies import get_current_user
 from app.modules.identity.models import User
@@ -32,6 +33,9 @@ async def register(
     db: AsyncSession = Depends(get_db_session),
 ) -> User:
     user = await service.register_user(db, email=body.email, password=body.password)
+    await events_service.publish(
+        db, event_type="user.registered", payload={"user_id": str(user.id), "email": user.email}
+    )
     await db.commit()
     return user
 

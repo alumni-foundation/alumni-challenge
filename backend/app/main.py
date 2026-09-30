@@ -71,8 +71,12 @@ app.include_router(identity_router, prefix=settings.api_v1_prefix)
 from app.modules.alumni.router import router as alumni_router  # noqa: E402
 from app.modules.audit.router import router as audit_router  # noqa: E402
 from app.modules.connections.router import router as connections_router  # noqa: E402
+from app.modules.events import handlers as _events_handlers  # noqa: E402, F401
 from app.modules.organizations.router import router as organizations_router  # noqa: E402
 
+# Importing this module is what runs its @on(...) decorators and
+# registers the handlers — needed here too (not just in worker.py)
+# since tests and any synchronous drain call go through this process.
 app.include_router(alumni_router, prefix=settings.api_v1_prefix)
 app.include_router(audit_router, prefix=settings.api_v1_prefix)
 app.include_router(connections_router, prefix=settings.api_v1_prefix)

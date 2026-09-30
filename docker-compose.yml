@@ -74,9 +74,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    # Placeholder until Phase 2 wires up the actual ARQ worker entry point.
     command: >
-      sh -c "echo 'worker placeholder — ARQ worker wired in Phase 2' && sleep infinity"
+      uv run arq app.worker.WorkerSettings
 
 volumes:
   postgres_data:
