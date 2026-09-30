@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Briefcase, CalendarDays, Leaf, Trophy, UserPlus, Users } from "lucide-react";
-import { Avatar, Badge, Card, EmptyState, LinkButton, PageHeader, Spinner, VerifiedMark } from "@/components/ui";
+import { CalendarDays, GraduationCap, Handshake, Trophy, UserPlus, Users } from "lucide-react";
+import { Avatar, Card, EmptyState, IconChip, LinkButton, Spinner, StatTile, VerifiedMark } from "@/components/ui";
 import { useConnections, useDirectory, useMe, useMyProfile, useOrgs } from "@/lib/api/hooks";
 
 const ACTIONS = [
-  { href: "/alumni", icon: Users, title: "Browse alumni", body: "Find and connect with fellow members." },
-  { href: "/connections", icon: UserPlus, title: "Your connections", body: "See requests and your network." },
-  { href: "/schools", icon: Briefcase, title: "Schools", body: "Explore school communities.", swap: true },
-  { href: "/partners", icon: Leaf, title: "Partners", body: "Organizations supporting alumni." },
+  { href: "/alumni", icon: Users, tone: "brand" as const, title: "Browse alumni", body: "Find and connect with fellow members." },
+  { href: "/connections", icon: UserPlus, tone: "blue" as const, title: "Your connections", body: "See requests and your network." },
+  { href: "/schools", icon: GraduationCap, tone: "gold" as const, title: "Schools", body: "Explore school communities." },
+  { href: "/partners", icon: Handshake, tone: "green" as const, title: "Partners", body: "Organizations supporting alumni." },
 ];
 
 export default function HomePage() {
@@ -19,17 +19,35 @@ export default function HomePage() {
   const connections = useConnections();
   const schools = useOrgs("school");
   const firstName = profile.data?.full_name.split(" ")[0] ?? "there";
-  const pending = (connections.data ?? []).filter((c) => c.status === "pending" && c.addressee_id === me.data?.id);
+  const all = connections.data ?? [];
+  const pending = all.filter((c) => c.status === "pending" && c.addressee_id === me.data?.id);
+  const accepted = all.filter((c) => c.status === "accepted");
+  const verified = profile.data?.verification_status === "verified";
 
   return (
     <div>
-      <PageHeader title={`Welcome back, ${firstName}`} subtitle="Here's what's happening in your network." />
+      {/* Hero: the opening moment is a real welcome, not a page title
+          sitting alone on white — this is what gives the app weight. */}
+      <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-side to-side-deep p-6 text-white shadow-lifted sm:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full bg-brand/30 blur-3xl" aria-hidden />
+        <div className="relative">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Welcome back, {firstName}</h1>
+          <p className="mt-1.5 text-white/60">Here&apos;s what&apos;s happening across your network.</p>
+        </div>
+      </div>
+
+      <div className="mb-6 flex flex-wrap gap-4">
+        <StatTile label="Alumni in directory" value={directory.data?.length ?? "—"} tone="brand" />
+        <StatTile label="Your connections" value={accepted.length} tone="blue" />
+        <StatTile label="Schools" value={schools.data?.length ?? "—"} tone="gold" />
+        <StatTile label="Verification" value={verified ? "Verified" : "Pending"} />
+      </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {ACTIONS.map(({ href, icon: Icon, title, body }) => (
-          <Link key={href} href={href} className="group">
-            <Card className="h-full transition-shadow group-hover:shadow-md">
-              <Icon className="size-6 text-brand" aria-hidden />
+        {ACTIONS.map(({ href, icon, tone, title, body }) => (
+          <Link key={href} href={href}>
+            <Card elevation="raised" interactive className="h-full">
+              <IconChip icon={icon} tone={tone} />
               <p className="mt-3 font-semibold">{title}</p>
               <p className="mt-1 text-sm text-muted">{body}</p>
             </Card>
@@ -39,7 +57,7 @@ export default function HomePage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <Card>
+          <Card elevation="raised">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-semibold">Recently active alumni</h2>
               <Link href="/alumni" className="text-sm font-medium text-brand hover:underline">View all</Link>
@@ -51,7 +69,7 @@ export default function HomePage() {
             <ul className="divide-y divide-line">
               {directory.data?.slice(0, 6).map((p) => (
                 <li key={p.id}>
-                  <Link href={`/alumni/${p.id}`} className="flex items-center gap-3 py-3 hover:bg-canvas -mx-2 px-2 rounded-lg">
+                  <Link href={`/alumni/${p.id}`} className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-canvas">
                     <Avatar name={p.full_name} id={p.id} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
@@ -69,19 +87,19 @@ export default function HomePage() {
             {[
               { title: "Sports & Golf", icon: Trophy, body: "Tournaments and team registration." },
               { title: "Events", icon: CalendarDays, body: "Homecomings, forums and meetups." },
-            ].map(({ title, icon: Icon, body }) => (
-              <Card key={title} className="opacity-70">
-                <Icon className="size-6 text-muted" aria-hidden />
+            ].map(({ title, icon, body }) => (
+              <Card key={title} elevation="resting" className="border-dashed opacity-80">
+                <IconChip icon={icon} tone="ink" />
                 <p className="mt-3 font-semibold">{title}</p>
                 <p className="mt-1 text-sm text-muted">{body}</p>
-                <Badge tone="neutral">Coming soon</Badge>
+                <p className="mt-3 text-xs font-medium text-faint">Coming soon</p>
               </Card>
             ))}
           </div>
         </div>
 
         <div className="space-y-6">
-          <Card>
+          <Card elevation="raised">
             <h2 className="mb-3 font-semibold">Pending requests</h2>
             {connections.isLoading && <Spinner label="Loading" />}
             {pending.length === 0 && !connections.isLoading && <p className="text-sm text-muted">No pending requests.</p>}
@@ -96,13 +114,16 @@ export default function HomePage() {
             {pending.length > 0 && <LinkButton href="/connections" variant="secondary" size="sm" className="mt-3 w-full">Review requests</LinkButton>}
           </Card>
 
-          <Card>
+          <Card elevation="raised">
             <h2 className="mb-3 font-semibold">Featured schools</h2>
             {schools.isLoading && <Spinner label="Loading" />}
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               {schools.data?.slice(0, 5).map((s) => (
                 <li key={s.id}>
-                  <Link href={`/schools/${s.id}`} className="block rounded-lg px-2 py-1.5 text-sm hover:bg-canvas">{s.name}</Link>
+                  <Link href={`/schools/${s.id}`} className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm hover:bg-canvas">
+                    <IconChip icon={GraduationCap} tone="gold" size={30} />
+                    <span className="truncate">{s.name}</span>
+                  </Link>
                 </li>
               ))}
               {schools.data?.length === 0 && <p className="text-sm text-muted">No schools yet.</p>}
