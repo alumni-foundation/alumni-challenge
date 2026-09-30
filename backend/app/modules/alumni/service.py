@@ -408,4 +408,15 @@ async def verify_profile(
     )
     profile.verification_method = VerificationMethod.ADMIN if verified else None
     await db.flush()
+
+    from app.modules.audit.service import record as record_audit
+
+    await record_audit(
+        db,
+        actor_user_id=verifier_user_id,
+        action="alumni_profile.verify" if verified else "alumni_profile.unverify",
+        target_type="alumni_profile",
+        target_id=profile.id,
+        context={"organization_id": str(profile.school_id)},
+    )
     return profile

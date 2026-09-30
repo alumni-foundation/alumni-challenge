@@ -22,10 +22,15 @@ _ORG_ADMINS = (Role.SCHOOL_ADMIN, Role.PARTNER_ADMIN, Role.ADMIN, Role.SUPER_ADM
 async def create_organization(
     body: schemas.OrganizationCreate,
     db: AsyncSession = Depends(get_db_session),
-    _admin: User = Depends(require_roles(Role.ADMIN, Role.SUPER_ADMIN)),
+    admin: User = Depends(require_roles(Role.ADMIN, Role.SUPER_ADMIN)),
 ) -> Organization:
     org = await service.create_organization(
-        db, type=body.type, name=body.name, slug=body.slug, description=body.description
+        db,
+        actor=admin,
+        type=body.type,
+        name=body.name,
+        slug=body.slug,
+        description=body.description,
     )
     await db.commit()
     return org
@@ -93,9 +98,11 @@ async def add_email_domain(
     organization_id: uuid.UUID,
     body: schemas.EmailDomainCreate,
     db: AsyncSession = Depends(get_db_session),
-    _admin: User = Depends(require_roles_for_org(Role.SCHOOL_ADMIN, Role.ADMIN, Role.SUPER_ADMIN)),
+    admin: User = Depends(require_roles_for_org(Role.SCHOOL_ADMIN, Role.ADMIN, Role.SUPER_ADMIN)),
 ) -> SchoolEmailDomain:
-    row = await service.add_email_domain(db, organization_id=organization_id, domain=body.domain)
+    row = await service.add_email_domain(
+        db, organization_id=organization_id, domain=body.domain, actor=admin
+    )
     await db.commit()
     return row
 

@@ -8,6 +8,7 @@ from app.core.errors.exceptions import ConflictError, ForbiddenError, NotFoundEr
 from app.core.permissions.dependencies import get_user_roles
 from app.core.permissions.roles import Role
 from app.modules.alumni.models import SchoolEmailDomain
+from app.modules.audit.service import record as record_audit
 from app.modules.identity.models import User, UserStatus
 from app.modules.memberships.models import Membership, MembershipStatus
 from app.modules.organizations.models import Organization, OrganizationStatus, OrganizationType
@@ -28,6 +29,7 @@ _PLATFORM_ADMINS = {Role.ADMIN, Role.SUPER_ADMIN}
 async def create_organization(
     db: AsyncSession,
     *,
+    actor: User,
     type: OrganizationType,
     name: str,
     slug: str,
@@ -42,6 +44,14 @@ async def create_organization(
             await db.flush()
     except IntegrityError as exc:
         raise ConflictError("That slug is already taken.") from exc
+    await record_audit(
+        db,
+        actor_user_id=actor.id,
+        action="organization.create",
+        target_type="organization",
+        target_id=org.id,
+        context={"organization_id": str(org.id), "name": name, "type": type.value},
+    )
     return org
 
 
@@ -122,16 +132,29 @@ async def assign_membership(
             raise ConflictError("This user already holds that role.")
         existing.status = MembershipStatus.ACTIVE
         await db.flush()
-        return existing
+        membership = existing
+    else:
+        membership = Membership(user_id=target_user_id, organization_id=organization_id, role=role)
+        db.add(membership)
+        await db.flush()
 
-    membership = Membership(user_id=target_user_id, organization_id=organization_id, role=role)
-    db.add(membership)
-    await db.flush()
+    await record_audit(
+        db,
+        actor_user_id=actor.id,
+        action="membership.assign",
+        target_type="membership",
+        target_id=membership.id,
+        context={
+            "organization_id": str(organization_id),
+            "role": role.value,
+            "target_user_id": str(target_user_id),
+        },
+    )
     return membership
 
 
 async def add_email_domain(
-    db: AsyncSession, *, organization_id: uuid.UUID, domain: str
+    db: AsyncSession, *, organization_id: uuid.UUID, domain: str, actor: User
 ) -> SchoolEmailDomain:
     org = await get_active_organization(db, organization_id=organization_id)
     if org.type != OrganizationType.SCHOOL:
@@ -147,6 +170,14 @@ async def add_email_domain(
             await db.flush()
     except IntegrityError as exc:
         raise ConflictError("That domain is already registered.") from exc
+    await record_audit(
+        db,
+        actor_user_id=actor.id,
+        action="organization.email_domain.add",
+        target_type="school_email_domain",
+        target_id=row.id,
+        context={"organization_id": str(organization_id), "domain": domain},
+    )
     return row
 
 

@@ -1,36 +1,29 @@
-# Update: email verification, password reset, rate limiting, login lockout
+# Update: Phase 2 leftovers — audit log, security headers, request size limit, Idempotency-Key
 
 ## Apply (WSL, from repo root)
 
-    unzip -o /mnt/c/Users/Administrator/Downloads/alumni-challenge-update-3.zip -d ~/projects/alumni-challenge/
+    unzip -o /mnt/c/Users/Administrator/Downloads/alumni-challenge-update-4.zip -d ~/projects/alumni-challenge/
     cd ~/projects/alumni-challenge
     docker compose up -d --build
     docker compose exec api uv run alembic upgrade head
-    git add . && git commit -m "Email verification, password reset, rate limiting, login lockout" && git push
+    git add . && git commit -m "Phase 2: audit log, security headers, body size limit, Idempotency-Key" && git push
 
 Paste back: the migration output and the GitHub Actions result.
 
 ## What changed
 
-**New endpoints** (`/api/v1/auth/...`), all tested — 57/57 backend tests pass, ruff + mypy clean:
+68/68 backend tests pass (11 new), ruff + mypy clean. Two deliberate mutation checks (disabled the audit org-filter, disabled the idempotency lock) both correctly failed the relevant test — confirms these aren't passing by accident.
 
-- `POST /email/verify/request` — signed in, sends a 24h verification link. Rate limited: 5/hour per user.
-- `POST /email/verify/confirm` — body `{token}`. Sets `email_verified_at`. This is also what switches on school email-domain auto-verify (HANDOFF.md flagged this as inert until email verification existed — it's live now).
-- `POST /password/forgot` — body `{email}`. Always returns 202 whether or not the email is registered, so a caller can never use it to check which emails have accounts. Rate limited: 5/hour per IP.
-- `POST /password/reset` — body `{token, new_password}`. 30-minute link, single-use (using it, or requesting a new one, invalidates any other outstanding reset link for that account), and resetting force-signs-out every other device. Rate limited: 10/hour per IP.
+**Audit log** (`GET /api/v1/audit-log`) — the table from the ERD, finally built. Platform admins (`admin`/`super_admin`) see everything; a `school_admin`/`partner_admin` sees only entries tagged with an organization they administer; everyone else gets 403. Wired into five real actions: creating an organization, granting a membership, adding a school email domain, verifying an alumni profile, and resetting a password. Each entry is written in the same database transaction as the action itself, so a rolled-back action never leaves a phantom audit row.
 
-**Login lockout:** 5 wrong passwords for one email within 15 minutes locks that email for 15 minutes — even the correct password is rejected until it clears. A successful login resets the counter. This trades a small amount of account-enumeration resistance (a locked account's error message differs from "wrong password") for stopping unlimited password guessing — the standard, deliberate OWASP trade-off.
+**Security headers** — `X-Content-Type-Options`, `X-Frame-Options`, a `Content-Security-Policy` scoped for a JSON API (with the Swagger UI's own asset host allowed), `Referrer-Policy`, `Permissions-Policy`. `Strict-Transport-Security` only sends when `ENVIRONMENT=production`.
 
-**Rate limiting:** `/register` (10/hour/IP), `/login` (20/15min/IP, on top of the lockout above). Built as a reusable Redis-backed dependency (`app/core/rate_limit`) — attaching it to any other endpoint later is a one-line `Depends(...)`.
+**Request body size limit** — 2 MiB cap (nothing accepts file uploads yet). Rejects on the declared `Content-Length` before any other middleware or the route handler runs, with a streaming byte-counter as a second layer for a client that lies about or omits the header.
 
-**Email sending:** no Resend account exists yet, so this ships against a fake mailer (`app/core/mail`) that logs the full email — link included — to `docker compose logs -f api`, so you can grab a verification or reset link by hand while testing. `get_mailer()` in `app/core/mail/dependencies.py` is the one place to point at a real Resend-backed mailer later; nothing else changes when you do.
+**Idempotency-Key** — send an `Idempotency-Key` header on any `POST`/`PUT`/`PATCH`/`DELETE` and a retry with the same key replays the original response instead of re-running the handler; a second request arriving *while the first is still in flight* gets `409 idempotency_in_progress` instead of racing it. No client is required to send the header — everything works exactly as before if they don't. This is the exact mechanism the payments gate (Phase 6) needs for "duplicate callbacks can't create duplicate payments," built once and already reusable by every route.
 
-**Migration:** adds `users.security_stamp` (a UUID, regenerated on every password reset). This is what makes reset links single-use without a separate token-tracking table — a reset link carries the stamp it was issued against, so using it (or issuing a newer one) invalidates every other outstanding link instantly.
+**Migration:** adds the `audit_log` table (`metadata` column mapped to a Python attribute named `context`, since `metadata` is reserved on every SQLAlchemy model — noted in the model's docstring so it doesn't get "fixed" back into a conflict later).
 
-## What this doesn't cover yet (from HANDOFF.md, still open)
+## Not in this batch (from PLAN.md Phase 2, deliberately left for a separate pass)
 
-Audit log, account suspend/delete endpoints, Google/Apple sign-in hooks, security headers/request-size limits. Rate limiting is applied to auth only for now — the framework is reusable, so extending it to messaging/search/uploads later (per PLAN.md Phase 2) is small follow-up work, not a redesign.
-
-## Frontend note
-
-The login/register screens built in the last update don't have "forgot password" or "verify your email" UI yet — those endpoints are ready and waiting. That's naturally the next slice of `web/` to build once you've confirmed this is working end to end.
+Prometheus/Grafana/OpenTelemetry, the real ARQ worker (retries, dead-letter, scheduled jobs — the container still runs but isn't doing anything yet), and the domain-event mechanism (`UserRegistered`, `ConnectionCreated`, etc.). These are the largest remaining Phase 2 items and are closer to infrastructure setup than the code-only work in this delivery — worth their own focused pass rather than folding into this one.

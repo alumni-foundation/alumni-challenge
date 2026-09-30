@@ -20,3 +20,18 @@ async def list_active_memberships(db: AsyncSession, *, user_id: uuid.UUID) -> li
         .order_by(Membership.created_at, Membership.id)
     )
     return list((await db.scalars(stmt)).all())
+
+
+async def list_administered_organization_ids(
+    db: AsyncSession, *, user_id: uuid.UUID
+) -> set[uuid.UUID]:
+    """Organization ids where this user holds an active school_admin or partner_admin role."""
+    from app.core.permissions.roles import Role  # local import: avoids a module-load cycle
+
+    stmt = select(Membership.organization_id).where(
+        Membership.user_id == user_id,
+        Membership.status == MembershipStatus.ACTIVE,
+        Membership.role.in_((Role.SCHOOL_ADMIN, Role.PARTNER_ADMIN)),
+        Membership.organization_id.is_not(None),
+    )
+    return {row for row in (await db.scalars(stmt)).all() if row is not None}

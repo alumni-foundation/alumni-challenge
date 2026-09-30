@@ -283,3 +283,13 @@ async def reset_password(db: AsyncSession, *, token: str, new_password: str) -> 
     # A stolen or guessed-then-reset password shouldn't leave old
     # sessions valid — force every device to sign in again.
     await _revoke_all_sessions(db, user_id=user.id)
+
+    from app.modules.audit.service import record as record_audit
+
+    await record_audit(
+        db,
+        actor_user_id=user.id,
+        action="user.password_reset",
+        target_type="user",
+        target_id=user.id,
+    )
