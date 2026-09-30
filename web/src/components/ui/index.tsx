@@ -77,9 +77,9 @@ export function Field({ label, error, hint, htmlFor, children }: {
 
 type Elevation = "resting" | "raised" | "lifted";
 const ELEVATION: Record<Elevation, string> = {
-  resting: "shadow-resting border border-line/70",
-  raised: "shadow-raised border border-line/60",
-  lifted: "shadow-lifted border border-line/50",
+  resting: "shadow-resting border border-line",
+  raised: "shadow-raised border border-line",
+  lifted: "shadow-lifted border border-line",
 };
 export function Card({
   className,
@@ -140,6 +140,37 @@ export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "ok" 
 
 export const VerifiedMark = () => <BadgeCheck className="inline size-4 text-verified" aria-label="Verified alumnus" />;
 
+/** A plain circular icon button — eCitizen-style: outline, no fill, quiet until hovered. */
+export function IconButton({
+  icon: Icon,
+  label,
+  soon = false,
+  dot = false,
+  onClick,
+}: {
+  icon: React.ElementType;
+  label: string;
+  soon?: boolean;
+  dot?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={soon ? `${label} — coming soon` : label}
+      aria-label={label}
+      onClick={soon ? undefined : onClick}
+      className={cn(
+        "relative inline-flex size-10 items-center justify-center rounded-full border border-line bg-white text-muted transition-colors",
+        soon ? "cursor-default opacity-60" : "hover:border-ink/15 hover:bg-canvas hover:text-ink",
+      )}
+    >
+      <Icon className="size-[18px]" aria-hidden />
+      {dot && <span className="absolute right-2 top-2 size-2 rounded-full bg-brand" aria-hidden />}
+    </button>
+  );
+}
+
 export function Avatar({ name, id, size = 40 }: { name: string; id: string; size?: number }) {
   return (
     <span
@@ -197,7 +228,7 @@ export const Chip = ({ children }: { children: React.ReactNode }) => (
 /** A single number + label — the data-forward building block for a stats strip. */
 export function StatTile({ label, value, tone = "ink" }: { label: string; value: string | number; tone?: keyof typeof CHIP_TONES }) {
   return (
-    <div className="flex-1 rounded-2xl border border-line/70 bg-white px-5 py-4 shadow-resting">
+    <div className="flex-1 rounded-2xl border border-line bg-white px-5 py-4 shadow-resting">
       <p className={cn("text-2xl font-bold tabular-nums", tone === "brand" && "text-brand", tone === "gold" && "text-gold")}>
         {value}
       </p>

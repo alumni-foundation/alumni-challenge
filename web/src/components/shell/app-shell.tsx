@@ -2,7 +2,7 @@
 
 import {
   Bell, Briefcase, CalendarDays, GraduationCap, Handshake, Home, Leaf, LogOut, MoreHorizontal,
-  MessageSquare, Settings, Trophy, UserPlus, Users, X,
+  MessageSquare, Search, Settings, Trophy, UserPlus, Users, X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -13,7 +13,7 @@ import { useConnections, useMe, useRoles } from "@/lib/api/hooks";
 import type { Profile } from "@/lib/api/types";
 import { topRoleLabel } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-import { Avatar, Badge } from "@/components/ui";
+import { Avatar, Badge, IconButton } from "@/components/ui";
 import { Logo } from "./logo";
 
 type Item = { label: string; href: string; icon: React.ElementType; soon?: boolean };
@@ -245,6 +245,35 @@ function BottomTabBar({ profile }: { profile: Profile }) {
   );
 }
 
+/**
+ * The clean, white, icon-button top bar — a search field on the left,
+ * Messages and Notifications on the right. Neither has a backend yet
+ * (see the sidebar's "Soon" items), so the buttons are present and
+ * correctly placed but inert rather than linking to something that
+ * doesn't exist — the same honesty the sidebar already applies.
+ */
+function TopBar() {
+  return (
+    <div className="sticky top-0 z-20 border-b border-line bg-white/90 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="relative hidden flex-1 max-w-md sm:block">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-faint" aria-hidden />
+          <input
+            type="search"
+            placeholder="Search alumni, schools, partners…"
+            disabled
+            className="h-10 w-full rounded-full border border-line bg-canvas/60 pl-10 pr-4 text-sm text-ink placeholder:text-faint disabled:cursor-not-allowed"
+          />
+        </div>
+        <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
+          <IconButton icon={MessageSquare} label="Messages" soon />
+          <IconButton icon={Bell} label="Notifications" soon />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AppShell({ profile, children }: { profile: Profile; children: React.ReactNode }) {
   return (
     <div className="app-canvas min-h-screen">
@@ -254,8 +283,15 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-white/85 px-4 py-3 backdrop-blur lg:hidden">
         <Logo size={28} />
         <span className="font-bold tracking-wide">ALUMNI CHALLENGE</span>
+        <div className="ml-auto flex items-center gap-2">
+          <IconButton icon={MessageSquare} label="Messages" soon />
+          <IconButton icon={Bell} label="Notifications" soon />
+        </div>
       </header>
       <main className="lg:pl-72">
+        <div className="hidden lg:block">
+          <TopBar />
+        </div>
         <div className="mx-auto max-w-6xl p-4 pb-24 sm:p-6 lg:p-8 lg:pb-8">{children}</div>
       </main>
       <BottomTabBar profile={profile} />
