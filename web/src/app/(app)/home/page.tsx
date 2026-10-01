@@ -58,14 +58,15 @@ export default function HomePage() {
           white card anywhere in the hero. Cards start below the fold,
           same as the reference. */}
       <section className="relative -mx-4 -mt-4 overflow-hidden bg-side sm:-mx-6 sm:-mt-6 lg:-mx-10 lg:-mt-8 xl:-mx-14">
-        <div className="absolute inset-0 bg-gradient-to-br from-side via-side to-side-deep" aria-hidden />
-        <div className="absolute -right-20 -top-10 size-[420px] rounded-full bg-brand/35 blur-[110px]" aria-hidden />
-        <div className="absolute -left-16 bottom-0 size-72 rounded-full bg-gold/20 blur-3xl" aria-hidden />
+        {/* Demo placeholder — swap the file at web/public/images/hero-demo.jpg
+            for a real campus/graduation photo whenever one's ready; nothing
+            else here needs to change. */}
         <div
-          className="absolute inset-0 opacity-[0.07]"
-          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)", backgroundSize: "22px 22px" }}
+          className="absolute inset-0 bg-cover bg-bottom"
+          style={{ backgroundImage: "url(/images/hero-demo.jpg)" }}
           aria-hidden
         />
+        <div className="absolute inset-0 bg-side/80" aria-hidden />
         <div className="relative mx-auto max-w-[1680px] px-6 pb-10 pt-10 sm:pb-12 sm:pt-14 lg:px-10 lg:pb-14 xl:px-14">
           <h1 className="max-w-2xl text-3xl font-bold leading-[1.15] text-white sm:text-4xl lg:text-5xl">
             Welcome back, {firstName}.
