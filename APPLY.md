@@ -1,20 +1,25 @@
-# Update: eCitizen-style top bar, flatter cards
+# Update: match eCitizen proportions — wider container, no card in hero, bolder icons
 
 ## Apply (WSL, from repo root)
 
-    unzip -o /mnt/c/Users/Administrator/Downloads/alumni-challenge-update-7.zip -d ~/projects/alumni-challenge/
+    unzip -o /mnt/c/Users/Administrator/Downloads/alumni-challenge-update-9.zip -d ~/projects/alumni-challenge/
     cd ~/projects/alumni-challenge
-    git add . && git commit -m "Top bar with Messages/Notifications icons, flatten card shadows" && git push
+    git add . && git commit -m "Match eCitizen proportions: wider container, hero without a card, bolder icon buttons" && git push
 
-3 files only — no backend, no migration. Restart the dev server if it's running (`cd web && npm run dev`).
+3 files, no backend touched. Restart `npm run dev` if it's running.
 
-`npx tsc --noEmit`, `npx eslint .` (0 errors), and `npx next build` all pass clean.
+`npx tsc --noEmit`, `npx eslint .` (0 errors), `npx next build` (all 17 routes) all pass clean.
 
-## What changed
+## What was actually wrong, and what changed
 
-- **Top bar** (desktop and mobile): a search field (visually present, disabled — no global search endpoint exists yet, so it's honest about not working rather than faking it) and two plain circular icon buttons — Messages and Notifications — styled like eCitizen's outline icon buttons rather than filled chips. Both are correctly placed but inert, matching the "Soon" treatment already used in the sidebar for those same two features.
-- **Cards are flatter now** — shadows across the whole app were carrying too much of the visual weight; cut them down to almost nothing and let a solid border do the defining instead. This is a one-line token change in `globals.css` (`--shadow-resting/raised/lifted`), so every card in the app picked it up at once — directory cards, school/partner cards, the home page — without needing to touch each page individually.
+1. **The hero had a white card in it — eCitizen's doesn't.** I'd wrapped the search bar and quick-action icons in a separate floating white card below the dark hero. That's not what the reference does: the search bar and icons sit directly on the dark background as one continuous block, in white/light color, with no card boundary anywhere. Cards only start once you're past the hero, in the content below. Fixed — the hero is now one unbroken dark section; the white card is gone.
 
-## Next, once you've looked at it
+2. **Container was too narrow everywhere.** `max-w-7xl` (1280px) was capping the nav bar, hero, and page content well short of the screen on any reasonably wide monitor, which is why it read as "squeezed" next to eCitizen's near-edge-to-edge layout. Widened to `1680px` consistently across the top nav, the hero, and the main content area, with more generous side padding to match.
 
-Tell me which specific pages still don't feel right against the eCitizen reference — the list-card layout (logo + title + description + corner icon, like their "Agencies" grid) is the next natural piece if you want that pattern on Schools/Partners/Alumni, and a working global search is the other obvious follow-up once you're ready for it.
+3. **Logo was too small and cramped.** Doubled it (32px → 48px) and reset the type to show full-size always instead of hiding the wordmark below the `xl` breakpoint, matching the generous logo lockup in the reference. Nav bar itself is taller (64px → 96px) and the nav links got bigger text and more padding between them.
+
+4. **Icon buttons had almost no contrast.** They were a thin border with muted gray icons — easy to miss. Now they're a filled light-gray circle with full-contrast dark icons, closer to the visibility eCitizen's icon buttons have.
+
+## Where things stand now
+
+That's the structural match done — wide layout, logo proportions, hero without a card, visible icon buttons. If there's anything left that still looks off once you run it, point me at the specific spot and I'll fix exactly that rather than another broad pass.

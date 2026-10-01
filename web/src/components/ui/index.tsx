@@ -161,8 +161,8 @@ export function IconButton({
       aria-label={label}
       onClick={soon ? undefined : onClick}
       className={cn(
-        "relative inline-flex size-10 items-center justify-center rounded-full border border-line bg-white text-muted transition-colors",
-        soon ? "cursor-default opacity-60" : "hover:border-ink/15 hover:bg-canvas hover:text-ink",
+        "relative inline-flex size-10 items-center justify-center rounded-full bg-canvas text-ink transition-colors",
+        soon ? "cursor-default opacity-50" : "hover:bg-ink/[0.08]",
       )}
     >
       <Icon className="size-[18px]" aria-hidden />

@@ -1,16 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, GraduationCap, Handshake, Trophy, UserPlus, Users } from "lucide-react";
+import {
+  Briefcase, CalendarDays, GraduationCap, Handshake, Search, Trophy, UserPlus, Users,
+} from "lucide-react";
 import { Avatar, Card, EmptyState, IconChip, LinkButton, Spinner, StatTile, VerifiedMark } from "@/components/ui";
+import { cn } from "@/lib/utils";
 import { useConnections, useDirectory, useMe, useMyProfile, useOrgs } from "@/lib/api/hooks";
 
-const ACTIONS = [
-  { href: "/alumni", icon: Users, tone: "brand" as const, title: "Browse alumni", body: "Find and connect with fellow members." },
-  { href: "/connections", icon: UserPlus, tone: "blue" as const, title: "Your connections", body: "See requests and your network." },
-  { href: "/schools", icon: GraduationCap, tone: "gold" as const, title: "Schools", body: "Explore school communities." },
-  { href: "/partners", icon: Handshake, tone: "green" as const, title: "Partners", body: "Organizations supporting alumni." },
+type Quick = { href: string; icon: React.ElementType; label: string; soon?: boolean };
+const QUICK: Quick[] = [
+  { href: "/alumni", icon: Users, label: "Browse alumni" },
+  { href: "/connections", icon: UserPlus, label: "Connections" },
+  { href: "/schools", icon: GraduationCap, label: "Schools" },
+  { href: "/partners", icon: Handshake, label: "Partners" },
+  { href: "/sports", icon: Trophy, label: "Sports & Golf", soon: true },
+  { href: "/events", icon: CalendarDays, label: "Events", soon: true },
 ];
+
+function QuickAction({ href, icon: Icon, label, soon }: Quick) {
+  const tone = soon ? "text-white/35" : "text-white";
+  const body = (
+    <>
+      <Icon className={cn("size-8", tone)} strokeWidth={1.5} aria-hidden />
+      <span className={cn("text-center text-[13px] font-semibold leading-tight", tone)}>{label}</span>
+      {soon && <span className="text-[10px] font-medium text-white/30">Soon</span>}
+    </>
+  );
+  if (soon) {
+    return <div aria-disabled className="flex cursor-not-allowed flex-col items-center gap-2 rounded-xl px-2 py-3">{body}</div>;
+  }
+  return (
+    <Link href={href} className="flex flex-col items-center gap-2 rounded-xl px-2 py-3 transition-colors hover:bg-white/[0.07]">
+      {body}
+    </Link>
+  );
+}
 
 export default function HomePage() {
   const me = useMe();
@@ -26,33 +51,50 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* Hero: the opening moment is a real welcome, not a page title
-          sitting alone on white — this is what gives the app weight. */}
-      <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-side to-side-deep p-6 text-white shadow-lifted sm:p-8">
-        <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full bg-brand/30 blur-3xl" aria-hidden />
-        <div className="relative">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Welcome back, {firstName}</h1>
-          <p className="mt-1.5 text-white/60">Here&apos;s what&apos;s happening across your network.</p>
-        </div>
-      </div>
+      {/* Full-bleed hero: breaks out of the page's container so the dark
+          background reaches the browser edge. Everything — headline,
+          search bar, quick-action icons — sits directly on that dark
+          background as one continuous block; there is deliberately no
+          white card anywhere in the hero. Cards start below the fold,
+          same as the reference. */}
+      <section className="relative -mx-4 -mt-4 overflow-hidden bg-side sm:-mx-6 sm:-mt-6 lg:-mx-10 lg:-mt-8 xl:-mx-14">
+        <div className="absolute inset-0 bg-gradient-to-br from-side via-side to-side-deep" aria-hidden />
+        <div className="absolute -right-20 -top-10 size-[420px] rounded-full bg-brand/35 blur-[110px]" aria-hidden />
+        <div className="absolute -left-16 bottom-0 size-72 rounded-full bg-gold/20 blur-3xl" aria-hidden />
+        <div
+          className="absolute inset-0 opacity-[0.07]"
+          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)", backgroundSize: "22px 22px" }}
+          aria-hidden
+        />
+        <div className="relative mx-auto max-w-[1680px] px-6 pb-10 pt-10 sm:pb-12 sm:pt-14 lg:px-10 lg:pb-14 xl:px-14">
+          <h1 className="max-w-2xl text-3xl font-bold leading-[1.15] text-white sm:text-4xl lg:text-5xl">
+            Welcome back, {firstName}.
+          </h1>
+          <p className="mt-3 max-w-lg text-white/55">
+            Connect with fellow alumni, explore schools and partners, and put your network to work.
+          </p>
 
-      <div className="mb-6 flex flex-wrap gap-4">
+          <div className="relative mt-10">
+            <Search className="pointer-events-none absolute left-5 top-1/2 size-5 -translate-y-1/2 text-faint" aria-hidden />
+            <input
+              type="search"
+              disabled
+              placeholder="Search alumni, schools, partners…"
+              className="h-16 w-full rounded-full border-0 bg-white pl-14 pr-5 text-[15px] text-ink placeholder:text-faint disabled:cursor-not-allowed"
+            />
+          </div>
+
+          <div className="mt-8 grid grid-cols-3 gap-2 sm:grid-cols-6">
+            {QUICK.map((item) => <QuickAction key={item.href} {...item} />)}
+          </div>
+        </div>
+      </section>
+
+      <div className="mb-6 mt-8 flex flex-wrap gap-4">
         <StatTile label="Alumni in directory" value={directory.data?.length ?? "—"} tone="brand" />
         <StatTile label="Your connections" value={accepted.length} tone="blue" />
         <StatTile label="Schools" value={schools.data?.length ?? "—"} tone="gold" />
         <StatTile label="Verification" value={verified ? "Verified" : "Pending"} />
-      </div>
-
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {ACTIONS.map(({ href, icon, tone, title, body }) => (
-          <Link key={href} href={href}>
-            <Card elevation="raised" interactive className="h-full">
-              <IconChip icon={icon} tone={tone} />
-              <p className="mt-3 font-semibold">{title}</p>
-              <p className="mt-1 text-sm text-muted">{body}</p>
-            </Card>
-          </Link>
-        ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -83,19 +125,12 @@ export default function HomePage() {
             </ul>
           </Card>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              { title: "Sports & Golf", icon: Trophy, body: "Tournaments and team registration." },
-              { title: "Events", icon: CalendarDays, body: "Homecomings, forums and meetups." },
-            ].map(({ title, icon, body }) => (
-              <Card key={title} elevation="resting" className="border-dashed opacity-80">
-                <IconChip icon={icon} tone="ink" />
-                <p className="mt-3 font-semibold">{title}</p>
-                <p className="mt-1 text-sm text-muted">{body}</p>
-                <p className="mt-3 text-xs font-medium text-faint">Coming soon</p>
-              </Card>
-            ))}
-          </div>
+          <Card elevation="resting" className="border-dashed opacity-80">
+            <IconChip icon={Briefcase} tone="ink" />
+            <p className="mt-3 font-semibold">Opportunities & mentorship</p>
+            <p className="mt-1 text-sm text-muted">Jobs, internships, and mentor matching for alumni.</p>
+            <p className="mt-3 text-xs font-medium text-faint">Coming soon</p>
+          </Card>
         </div>
 
         <div className="space-y-6">
