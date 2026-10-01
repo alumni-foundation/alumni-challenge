@@ -1,4 +1,5 @@
-"""Endpoints and fields the web app relies on."""
+"""Endpoints na ma fields the web app relies on."""
+
 
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession

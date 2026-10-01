@@ -1,17 +1,13 @@
-# Update: real image in the hero, no dark card
+# Update: move icon row below the hero, fill the space with copy
 
 ## Apply (WSL, from repo root)
 
-    unzip -o /mnt/c/Users/Administrator/Downloads/alumni-challenge-update-10.zip -d ~/projects/alumni-challenge/
+    unzip -o /mnt/c/Users/Administrator/Downloads/alumni-challenge-update-11.zip -d ~/projects/alumni-challenge/
     cd ~/projects/alumni-challenge
-    git add . && git commit -m "Hero: real background image instead of flat gradient" && git push
+    git add . && git commit -m "Move quick-action icons out of hero onto the page body" && git push
 
-2 files — the page and the image itself. No backend touched. Restart `npm run dev` if running.
-
-`npx tsc --noEmit`, `npx eslint .` (0 errors), `npx next build` all pass clean.
+1 file. Restart `npm run dev` if running. Typecheck/lint/build all clean.
 
 ## What changed
 
-The hero background is the crowd photo you sent, now living at `web/public/images/hero-demo.jpg`, stretched full-bleed edge to edge with `background-size: cover`. A flat dark overlay sits on top (80% opacity) so the white headline, search bar, and icons stay legible wherever they land on the image — picked flat rather than a fade because the photo is bright sky at the top, exactly where the white headline text sits, so a gradient that lightened toward the top would have made the text unreadable there.
-
-This is explicitly a placeholder, as you said — swap `web/public/images/hero-demo.jpg` for a real photo (graduation, campus, an alumni event) whenever you have one and nothing else changes; same filename, same spot, same overlay treatment.
+The icon row (Browse alumni, Connections, Schools, etc.) is no longer inside the dark hero/search area — it's moved down onto the plain page body, right below the hero, on the normal light background (icons and labels switched from white to dark to match). The space that opened up under the search bar, inside the hero, is filled with a line of copy for now — swap that sentence for a real image whenever you're ready; the layout doesn't need to change to do it.

@@ -19,19 +19,19 @@ const QUICK: Quick[] = [
 ];
 
 function QuickAction({ href, icon: Icon, label, soon }: Quick) {
-  const tone = soon ? "text-white/35" : "text-white";
+  const tone = soon ? "text-faint" : "text-ink";
   const body = (
     <>
       <Icon className={cn("size-8", tone)} strokeWidth={1.5} aria-hidden />
       <span className={cn("text-center text-[13px] font-semibold leading-tight", tone)}>{label}</span>
-      {soon && <span className="text-[10px] font-medium text-white/30">Soon</span>}
+      {soon && <span className="text-[10px] font-medium text-faint">Soon</span>}
     </>
   );
   if (soon) {
     return <div aria-disabled className="flex cursor-not-allowed flex-col items-center gap-2 rounded-xl px-2 py-3">{body}</div>;
   }
   return (
-    <Link href={href} className="flex flex-col items-center gap-2 rounded-xl px-2 py-3 transition-colors hover:bg-white/[0.07]">
+    <Link href={href} className="flex flex-col items-center gap-2 rounded-xl px-2 py-3 transition-colors hover:bg-canvas">
       {body}
     </Link>
   );
@@ -67,15 +67,24 @@ export default function HomePage() {
           aria-hidden
         />
         <div className="absolute inset-0 bg-side/80" aria-hidden />
-        <div className="relative mx-auto max-w-[1680px] px-6 pb-10 pt-10 sm:pb-12 sm:pt-14 lg:px-10 lg:pb-14 xl:px-14">
-          <h1 className="max-w-2xl text-3xl font-bold leading-[1.15] text-white sm:text-4xl lg:text-5xl">
+        <div className="relative mx-auto max-w-[1680px] px-6 py-16 sm:py-20 lg:px-10 lg:py-24 xl:px-14">
+          <h1 className="max-w-3xl text-3xl font-bold leading-[1.15] text-white sm:text-4xl lg:text-5xl">
             Welcome back, {firstName}.
           </h1>
-          <p className="mt-3 max-w-lg text-white/55">
-            Connect with fellow alumni, explore schools and partners, and put your network to work.
+          <p className="mt-4 max-w-xl text-lg text-white/60">
+            Connect with fellow alumni, explore schools and partners, and put your network to work —
+            one place for everything that keeps your community close.
           </p>
+        </div>
+      </section>
 
-          <div className="relative mt-10">
+      {/* Second band: search bar plus a line of copy filling the space
+          where the icon row used to sit. A real image goes here later —
+          for now, words. The icon row moved down onto the plain page
+          body below, out of this dark area entirely. */}
+      <section className="relative -mx-4 overflow-hidden bg-side-deep sm:-mx-6 lg:-mx-10 xl:-mx-14">
+        <div className="relative mx-auto max-w-[1680px] px-6 py-10 sm:py-12 lg:px-10 lg:py-14 xl:px-14">
+          <div className="relative">
             <Search className="pointer-events-none absolute left-5 top-1/2 size-5 -translate-y-1/2 text-faint" aria-hidden />
             <input
               type="search"
@@ -85,13 +94,18 @@ export default function HomePage() {
             />
           </div>
 
-          <div className="mt-8 grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {QUICK.map((item) => <QuickAction key={item.href} {...item} />)}
-          </div>
+          <p className="mx-auto mt-8 max-w-2xl text-center text-white/55">
+            Thousands of alumni, dozens of schools, and the partners who support them —
+            all in one place built for this community.
+          </p>
         </div>
       </section>
 
-      <div className="mb-6 mt-8 flex flex-wrap gap-4">
+      <div className="mx-auto grid max-w-[1680px] grid-cols-3 gap-2 py-8 sm:grid-cols-6">
+        {QUICK.map((item) => <QuickAction key={item.href} {...item} />)}
+      </div>
+
+      <div className="mb-6 flex flex-wrap gap-4">
         <StatTile label="Alumni in directory" value={directory.data?.length ?? "—"} tone="brand" />
         <StatTile label="Your connections" value={accepted.length} tone="blue" />
         <StatTile label="Schools" value={schools.data?.length ?? "—"} tone="gold" />
