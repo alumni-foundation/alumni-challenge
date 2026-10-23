@@ -10,6 +10,10 @@ class ConnectionRequestCreate(BaseModel):
     addressee_id: uuid.UUID
 
 
+class BlockRequest(BaseModel):
+    user_id: uuid.UUID
+
+
 class ConnectionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

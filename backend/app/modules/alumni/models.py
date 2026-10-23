@@ -3,7 +3,8 @@ from __future__ import annotations
 import enum
 import uuid
 
-from sqlalchemy import ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, String, Text, UniqueConstraint, text
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -32,6 +33,16 @@ class ProfileVisibility(enum.StrEnum):
 
 class AlumniProfile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "alumni_profiles"
+    __table_args__ = (
+        Index("ix_alumni_profiles_search_vector", "search_vector", postgresql_using="gin"),
+        # Serves the plain "newest first" directory listing without sorting the whole table.
+        Index(
+            "ix_alumni_profiles_directory_listing",
+            text("created_at DESC"),
+            "id",
+            postgresql_where=text("profile_visibility IN ('public', 'members_only')"),
+        ),
+    )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True),
@@ -67,6 +78,11 @@ class AlumniProfile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     avatar_file_id: Mapped[uuid.UUID | None] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("files.id", ondelete="SET NULL"), nullable=True
     )
+
+    # Full-text search document. Never written by application code: database triggers
+    # (see the search migration) rebuild it whenever the profile, its skills or its
+    # interests change. Deferred so it is never loaded or sent to clients.
+    search_vector: Mapped[str | None] = mapped_column(TSVECTOR, nullable=True, deferred=True)
 
 
 class PeerVouch(UUIDPrimaryKeyMixin, Base):

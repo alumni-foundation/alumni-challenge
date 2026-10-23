@@ -30,4 +30,5 @@ from app.modules.events.models import DomainEvent  # noqa: F401
 from app.modules.files.models import File  # noqa: F401
 from app.modules.identity.models import Session, User  # noqa: F401
 from app.modules.memberships.models import Membership  # noqa: F401
+from app.modules.moderation.models import Report  # noqa: F401
 from app.modules.organizations.models import Organization  # noqa: F401

@@ -2,7 +2,7 @@
 
 import {
   Bell, Briefcase, CalendarDays, ChevronDown, GraduationCap, Handshake, Home, Leaf, LogOut,
-  MoreHorizontal, MessageSquare, Search, Settings, Trophy, User, UserPlus, Users, X,
+  MoreHorizontal, MessageSquare, Search, Settings, ShieldCheck, Trophy, User, UserPlus, Users, X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { authCall } from "@/lib/api/client";
 import { useConnections, useMe, useRoles } from "@/lib/api/hooks";
 import type { Profile } from "@/lib/api/types";
-import { topRoleLabel } from "@/lib/roles";
+import { isAnyAdmin, topRoleLabel } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import { Avatar, Badge, IconButton } from "@/components/ui";
 import { Logo } from "./logo";
@@ -25,6 +25,8 @@ const PRIMARY: Item[] = [
   { label: "Schools", href: "/schools", icon: GraduationCap },
   { label: "Partners", href: "/partners", icon: Handshake },
 ];
+
+const ADMIN_ITEM: Item = { label: "Admin", href: "/admin", icon: ShieldCheck };
 
 const SECONDARY: Item[] = [
   { label: "Sports & Golf", href: "/sports", icon: Trophy, soon: true },
@@ -147,7 +149,9 @@ function ProfileMenu({ profile }: { profile: Profile }) {
 function TopNav({ profile }: { profile: Profile }) {
   const pathname = usePathname();
   const incoming = useIncomingCount();
+  const roles = useRoles();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  const items = isAnyAdmin(roles.data) ? [...PRIMARY, ADMIN_ITEM] : PRIMARY;
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-white">
@@ -161,7 +165,7 @@ function TopNav({ profile }: { profile: Profile }) {
         </Link>
 
         <nav aria-label="Main" className="hidden flex-1 items-center gap-2 md:flex">
-          {PRIMARY.map(({ label, href }) => {
+          {items.map(({ label, href }) => {
             const active = isActive(href);
             return (
               <Link
@@ -201,6 +205,7 @@ const TABS: Item[] = PRIMARY.slice(0, 4);
 function MoreSheet({ profile, onClose }: { profile: Profile; onClose: () => void }) {
   const pathname = usePathname();
   const signOut = useSignOut();
+  const roles = useRoles();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
@@ -223,6 +228,11 @@ function MoreSheet({ profile, onClose }: { profile: Profile; onClose: () => void
           <Link href="/partners" onClick={onClose} className={cn("flex items-center gap-3 rounded-xl px-2 py-2 text-sm", isActive("/partners") ? "font-semibold text-white" : "text-white/75 hover:bg-white/[0.06] hover:text-white")}>
             <Handshake className="size-[18px]" aria-hidden /> Partners
           </Link>
+          {isAnyAdmin(roles.data) && (
+            <Link href="/admin" onClick={onClose} className={cn("flex items-center gap-3 rounded-xl px-2 py-2 text-sm", isActive("/admin") ? "font-semibold text-white" : "text-white/75 hover:bg-white/[0.06] hover:text-white")}>
+              <ShieldCheck className="size-[18px]" aria-hidden /> Admin
+            </Link>
+          )}
           {SECONDARY.map(({ label, href, icon: Icon }) => (
             <div key={href} aria-disabled className="flex items-center gap-3 rounded-xl px-2 py-2 text-sm text-white/35">
               <Icon className="size-[18px]" aria-hidden />
@@ -250,7 +260,7 @@ function BottomTabBar({ profile }: { profile: Profile }) {
   const incoming = useIncomingCount();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const onMoreSection =
-    SECONDARY.some((s) => isActive(s.href)) || pathname === "/settings" || pathname === "/profile" || pathname === "/partners";
+    SECONDARY.some((s) => isActive(s.href)) || pathname === "/settings" || pathname === "/profile" || pathname === "/partners" || isActive("/admin");
 
   return (
     <>

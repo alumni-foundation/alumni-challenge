@@ -44,3 +44,10 @@ class Connection(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         nullable=False,
         default=ConnectionStatus.PENDING,
     )
+    # Set only while status == BLOCKED: the user who initiated the block. Only that user
+    # can lift it.
+    blocked_by: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL", name="fk_connections_blocked_by_users"),
+        nullable=True,
+    )

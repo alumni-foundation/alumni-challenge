@@ -32,6 +32,42 @@ async def list_connections(
     return await service.list_my_connections_detailed(db, user_id=current_user.id)
 
 
+@router.post(
+    "/block", response_model=schemas.ConnectionResponse, status_code=status.HTTP_201_CREATED
+)
+async def block(
+    body: schemas.BlockRequest,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> object:
+    connection = await service.block_user(
+        db, blocker_id=current_user.id, target_user_id=body.user_id
+    )
+    await db.commit()
+    return connection
+
+
+@router.get("/blocked", response_model=list[schemas.ConnectionListItem])
+async def list_blocked(
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> list[dict[str, object]]:
+    return await service.list_blocked_by_me(db, user_id=current_user.id)
+
+
+@router.post("/{connection_id}/unblock", response_model=schemas.ConnectionResponse)
+async def unblock(
+    connection_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> object:
+    connection = await service.unblock_user(
+        db, connection_id=connection_id, current_user_id=current_user.id
+    )
+    await db.commit()
+    return connection
+
+
 @router.patch("/{connection_id}/accept", response_model=schemas.ConnectionResponse)
 async def accept_connection(
     connection_id: uuid.UUID,
