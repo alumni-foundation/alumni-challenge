@@ -2,10 +2,11 @@ import re
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
 from app.core.permissions.roles import Role
 from app.modules.alumni.models import VerificationMethod, VerificationStatus
+from app.modules.files.urls import public_file_path
 from app.modules.identity.models import UserStatus
 from app.modules.memberships.models import MembershipStatus
 from app.modules.organizations.models import OrganizationStatus, OrganizationType
@@ -42,7 +43,14 @@ class OrganizationResponse(BaseModel):
     slug: str
     description: str | None
     status: OrganizationStatus
+    logo_file_id: uuid.UUID | None = None
     created_at: datetime
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def logo_url(self) -> str | None:
+        """A permanent public address: a new logo gets a new address."""
+        return public_file_path(self.logo_file_id) if self.logo_file_id else None
 
 
 class MembershipCreate(BaseModel):
@@ -123,3 +131,7 @@ class RosterItem(BaseModel):
     verification_method: VerificationMethod | None
     email_verified: bool
     joined_at: datetime
+
+
+class SetLogoRequest(BaseModel):
+    file_id: uuid.UUID

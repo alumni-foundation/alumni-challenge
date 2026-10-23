@@ -7,7 +7,9 @@ from app.core.permissions.dependencies import require_roles, require_roles_for_o
 from app.core.permissions.roles import Role
 from app.core.rate_limit import rate_limit
 from app.infrastructure.database.session import get_db_session
+from app.infrastructure.storage import Storage, get_storage
 from app.modules.alumni.models import SchoolEmailDomain, VerificationStatus
+from app.modules.files import attach
 from app.modules.identity.dependencies import get_current_user
 from app.modules.identity.models import User
 from app.modules.memberships import role_changes
@@ -235,3 +237,38 @@ async def school_roster(
     )
     response.headers["X-Total-Count"] = str(total)
     return rows
+
+
+@router.put("/{organization_id}/logo", response_model=schemas.OrganizationResponse)
+async def set_logo(
+    organization_id: uuid.UUID,
+    body: schemas.SetLogoRequest,
+    db: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage),
+    _admin: User = Depends(require_roles_for_org(*_ORG_ADMINS)),
+) -> Organization:
+    """
+    Use an uploaded picture (purpose `organization_logo`, uploaded for this organization) as
+    its logo. The logo it replaces is deleted.
+    """
+    organization = await service.get_active_organization(db, organization_id=organization_id)
+    old_key = await attach.set_logo(db, organization=organization, file_id=body.file_id)
+    await db.commit()
+    if old_key:
+        await storage.delete(old_key)
+    return organization
+
+
+@router.delete("/{organization_id}/logo", response_model=schemas.OrganizationResponse)
+async def remove_logo(
+    organization_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage),
+    _admin: User = Depends(require_roles_for_org(*_ORG_ADMINS)),
+) -> Organization:
+    organization = await service.get_active_organization(db, organization_id=organization_id)
+    old_key = await attach.clear_logo(db, organization=organization)
+    await db.commit()
+    if old_key:
+        await storage.delete(old_key)
+    return organization

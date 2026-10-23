@@ -21,6 +21,7 @@ from app.modules.alumni.models import (
     VerificationStatus,
 )
 from app.modules.connections.models import Connection, ConnectionStatus
+from app.modules.files.urls import signed_file_path
 from app.modules.identity.models import User, UserStatus
 from app.modules.memberships.models import Membership, MembershipStatus
 from app.modules.moderation.models import ReportTargetType
@@ -338,6 +339,11 @@ def build_profile_response_fields(
         "verification_status": profile.verification_status,
         "profile_visibility": profile.profile_visibility,
         "avatar_file_id": profile.avatar_file_id,
+        # Reached only after get_profile_for_viewer said this viewer may see the profile,
+        # so the link goes to exactly the people who may see the profile.
+        "avatar_url": (
+            signed_file_path(profile.avatar_file_id) if profile.avatar_file_id else None
+        ),
         "created_at": profile.created_at,
         "skills": skills or [],
         "interests": interests or [],

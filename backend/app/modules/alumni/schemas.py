@@ -53,6 +53,8 @@ class AlumniProfileResponse(BaseModel):
     verification_status: VerificationStatus
     profile_visibility: ProfileVisibility
     avatar_file_id: uuid.UUID | None
+    # A link that works for five minutes, only present for someone who may see this profile.
+    avatar_url: str | None = None
     created_at: datetime
     skills: list[str] = []
     interests: list[str] = []
@@ -98,3 +100,7 @@ class SetTagsRequest(BaseModel):
             if name not in cleaned:
                 cleaned.append(name)
         return cleaned
+
+
+class SetAvatarRequest(BaseModel):
+    file_id: uuid.UUID

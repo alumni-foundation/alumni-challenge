@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.database.session import get_db_session
+from app.infrastructure.storage import Storage, get_storage
 from app.modules.alumni import directory, schemas, service
 from app.modules.alumni.models import AlumniProfile
+from app.modules.files import attach
 from app.modules.identity.dependencies import get_current_user, get_current_user_optional
 from app.modules.identity.models import User
 
@@ -54,6 +56,37 @@ async def get_my_profile(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, object]:
     profile = await service.get_own_profile(db, user_id=current_user.id)
+    return await service.build_profile_response(db, profile=profile, viewer_user_id=current_user.id)
+
+
+@router.put("/profile/avatar", response_model=schemas.AlumniProfileResponse)
+async def set_avatar(
+    body: schemas.SetAvatarRequest,
+    db: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, object]:
+    """
+    Use one of your own uploaded pictures (purpose `avatar`) as your avatar. The picture it
+    replaces is deleted.
+    """
+    profile, old_key = await attach.set_avatar(db, user=current_user, file_id=body.file_id)
+    await db.commit()
+    if old_key:
+        await storage.delete(old_key)
+    return await service.build_profile_response(db, profile=profile, viewer_user_id=current_user.id)
+
+
+@router.delete("/profile/avatar", response_model=schemas.AlumniProfileResponse)
+async def remove_avatar(
+    db: AsyncSession = Depends(get_db_session),
+    storage: Storage = Depends(get_storage),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, object]:
+    profile, old_key = await attach.clear_avatar(db, user=current_user)
+    await db.commit()
+    if old_key:
+        await storage.delete(old_key)
     return await service.build_profile_response(db, profile=profile, viewer_user_id=current_user.id)
 
 
