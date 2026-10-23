@@ -17,6 +17,7 @@ from arq import cron
 from arq.connections import RedisSettings
 
 from app.core.config import get_settings
+from app.core.observability import init_sentry
 from app.infrastructure.database import all_models  # noqa: F401  (registers every model)
 from app.infrastructure.database.session import async_session_factory
 from app.modules.domain_events import (
@@ -26,6 +27,9 @@ from app.modules.domain_events.service import drain_pending
 
 settings = get_settings()
 logger = logging.getLogger("worker")
+
+# The worker is its own process, so it reports its own errors (a job that crashes).
+init_sentry(settings)
 
 
 async def drain_domain_events(ctx: dict[str, Any]) -> int:

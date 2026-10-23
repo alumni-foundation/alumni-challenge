@@ -1,7 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-import sentry_sdk
 import structlog
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +13,7 @@ from app.core.http.idempotency import IdempotencyMiddleware
 from app.core.http.security_headers import SecurityHeadersMiddleware
 from app.core.logging.middleware import RequestContextMiddleware
 from app.core.logging.setup import configure_logging
+from app.core.observability import init_sentry
 from app.core.rate_limit.writes import limit_writes
 from app.infrastructure.database import all_models  # noqa: F401 — registers every model
 from app.modules.files.policies import UPLOAD_MAX_BODY_BYTES
@@ -23,12 +23,7 @@ settings = get_settings()
 configure_logging()
 logger = structlog.get_logger("startup")
 
-if settings.sentry_dsn:
-    sentry_sdk.init(
-        dsn=settings.sentry_dsn,
-        environment=settings.environment,
-        traces_sample_rate=0.1 if settings.is_production else 1.0,
-    )
+init_sentry(settings)
 
 
 @asynccontextmanager
