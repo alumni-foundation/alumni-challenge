@@ -1,16 +1,60 @@
+import asyncio
+import subprocess
+import sys
 from collections.abc import AsyncGenerator
+from pathlib import Path
+from urllib.parse import urlsplit
 
+import asyncpg
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+import tests._env as test_env
 from app.core.config import get_settings
 from app.infrastructure.database.session import get_db_session
 from app.infrastructure.redis import get_redis_client, reset_redis_client_for_tests
 from app.main import app
 
 settings = get_settings()
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+
+
+def _plain_dsn(url: str) -> str:
+    return url.replace("postgresql+asyncpg://", "postgresql://", 1)
+
+
+async def _ensure_database_exists(database_url: str) -> None:
+    parts = urlsplit(_plain_dsn(database_url))
+    name = parts.path.lstrip("/")
+    maintenance_dsn = parts._replace(path="/postgres").geturl()
+    conn = await asyncpg.connect(maintenance_dsn)
+    try:
+        exists = await conn.fetchval("SELECT 1 FROM pg_database WHERE datname = $1", name)
+        if not exists:
+            await conn.execute(f'CREATE DATABASE "{name}"')
+    finally:
+        await conn.close()
+
+
+def pytest_sessionstart(session: pytest.Session) -> None:
+    """
+    Tests run against their own database, created on demand and brought to the latest
+    migration. Nothing here can touch the development database: tests/_env.py has
+    already pointed DATABASE_URL at a *_test database, and we re-check it here.
+    """
+    database_url = str(settings.database_url)
+    test_env.assert_safe_test_targets(database_url, str(settings.redis_url))
+    asyncio.run(_ensure_database_exists(database_url))
+    # A subprocess keeps alembic's logging setup out of the pytest process.
+    subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        cwd=BACKEND_DIR,
+        check=True,
+        capture_output=True,
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -21,7 +65,12 @@ async def _clean_redis() -> AsyncGenerator[None, None]:
     this, one test's login attempts count toward the next test's rate
     limit and lockout windows — flaky failures that have nothing to do
     with what that test is actually checking.
+
+    The Redis client points at the dedicated test index (see tests/_env.py), so
+    clearing it never touches development data. The guard below makes that a
+    hard stop rather than an assumption.
     """
+    test_env.assert_safe_test_targets(str(settings.database_url), str(settings.redis_url))
     await reset_redis_client_for_tests()
     redis = get_redis_client()
     await redis.flushdb()
