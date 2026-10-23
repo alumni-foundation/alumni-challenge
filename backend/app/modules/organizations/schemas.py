@@ -5,6 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.core.permissions.roles import Role
+from app.modules.alumni.models import VerificationStatus
 from app.modules.organizations.models import OrganizationStatus, OrganizationType
 
 _SLUG_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
@@ -74,3 +75,20 @@ class EmailDomainResponse(BaseModel):
     id: uuid.UUID
     organization_id: uuid.UUID
     domain: str
+
+
+class UserLookupRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+
+
+class UserLookupMatch(BaseModel):
+    user_id: uuid.UUID
+    full_name: str | None
+    roles_in_organization: list[Role]
+    verification_status: VerificationStatus | None
+
+
+class UserLookupResponse(BaseModel):
+    """`match` is null for every address that is not a member of this organization."""
+
+    match: UserLookupMatch | None
