@@ -49,6 +49,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      - api_venv:/app/.venv
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,6 +70,7 @@ services:
       REDIS_URL: redis://redis:6379/0
     volumes:
       - ./backend:/app
+      - worker_venv:/app/.venv
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,3 +84,7 @@ volumes:
     name: alumni_challenge_postgres_data
   redis_data:
     name: alumni_challenge_redis_data
+  # Keep each container's virtualenv off the bind mount: on Windows the mount is
+  # far too slow to hold a .venv.
+  api_venv:
+  worker_venv:
