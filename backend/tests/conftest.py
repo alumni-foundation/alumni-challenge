@@ -1,7 +1,7 @@
 import asyncio
 import subprocess
 import sys
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Iterator
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -15,6 +15,7 @@ import tests._env as test_env
 from app.core.config import get_settings
 from app.infrastructure.database.session import get_db_session
 from app.infrastructure.redis import get_redis_client, reset_redis_client_for_tests
+from app.infrastructure.storage import LocalDiskStorage, get_storage
 from app.main import app
 
 settings = get_settings()
@@ -129,3 +130,12 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def storage(client: AsyncClient, tmp_path: Path) -> Iterator[LocalDiskStorage]:
+    """Uploads go to a throwaway folder. Depends on `client` so the override is set after it
+    and cleared with it."""
+    local = LocalDiskStorage(tmp_path / "uploads")
+    app.dependency_overrides[get_storage] = lambda: local
+    yield local

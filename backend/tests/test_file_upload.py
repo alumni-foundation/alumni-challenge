@@ -2,7 +2,6 @@ import io
 import os
 import re
 import uuid
-from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -13,8 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.permissions.roles import Role
-from app.infrastructure.storage import LocalDiskStorage, get_storage
-from app.main import app
+from app.infrastructure.storage import LocalDiskStorage
 from app.modules.files import service as files_service
 from app.modules.files.models import File, FilePurpose
 from app.modules.identity.models import User
@@ -22,15 +20,6 @@ from tests.test_alumni_privacy import Actor, _grant, _make_actor, _make_school
 
 API = "/api/v1"
 MIB = 1024 * 1024
-
-
-@pytest.fixture
-def storage(client: AsyncClient, tmp_path: Path) -> Iterator[LocalDiskStorage]:
-    """Uploads go to a throwaway folder. Depends on `client` so the override is set after it
-    and cleared with it."""
-    local = LocalDiskStorage(tmp_path / "uploads")
-    app.dependency_overrides[get_storage] = lambda: local
-    yield local
 
 
 def _stored_files(storage: LocalDiskStorage) -> list[Path]:

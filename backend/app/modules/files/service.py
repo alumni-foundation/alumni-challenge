@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors.exceptions import ForbiddenError, NotFoundError, ValidationError
+from app.core.errors.exceptions import ForbiddenError, ValidationError
 from app.core.permissions.dependencies import get_user_roles
 from app.core.permissions.roles import Role
 from app.core.rate_limit import hit
@@ -104,8 +104,18 @@ async def upload_image(
     return row
 
 
-async def get_file(db: AsyncSession, *, file_id: uuid.UUID) -> File:
-    row = await db.get(File, file_id)
-    if row is None:
-        raise NotFoundError("File not found.")
-    return row
+async def get_file_or_none(db: AsyncSession, *, file_id: uuid.UUID) -> File | None:
+    return await db.get(File, file_id)
+
+
+async def remove_file_row(db: AsyncSession, *, row: File) -> str:
+    """
+    Deletes the row and returns the storage key. The caller deletes the bytes only AFTER the
+    commit: if the commit fails the bytes are untouched and nothing is lost, whereas the other
+    order could leave a row pointing at nothing. Anything that used the file (avatar, logo)
+    is cleared by the database (ON DELETE SET NULL).
+    """
+    key = row.storage_key
+    await db.delete(row)
+    await db.flush()
+    return key

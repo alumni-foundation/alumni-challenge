@@ -23,3 +23,12 @@ class FileResponse(BaseModel):
     width: int
     height: int
     created_at: datetime
+
+
+class FileWithUrl(FileResponse):
+    """
+    `url` is where the file can be fetched. For a public file it is permanent. For a private
+    file it is a link that stops working after five minutes: ask again when it expires.
+    """
+
+    url: str
