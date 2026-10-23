@@ -13,7 +13,7 @@ import {
 } from "@/lib/server/auth";
 
 // Login, register, refresh and logout have their own routes. Only these auth paths may pass through.
-const ALLOWED_AUTH = /^auth\/(me|me\/roles|sessions|sessions\/[0-9a-fA-F-]{36})$/;
+const ALLOWED_AUTH = /^auth\/(me|me\/roles|email\/verify\/request|sessions|sessions\/[0-9a-fA-F-]{36})$/;
 
 async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
   const { path } = await ctx.params;

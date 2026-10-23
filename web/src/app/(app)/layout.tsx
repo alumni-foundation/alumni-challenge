@@ -29,7 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
   if (me.isLoading || profile.isLoading) return <Spinner label="Loading your account" />;
   if (noProfile) {
-    return onOnboarding ? <main className="mx-auto max-w-2xl p-4 sm:p-8">{children}</main> : <Spinner />;
+    return onOnboarding ? <main id="main" className="mx-auto max-w-2xl p-4 sm:p-8">{children}</main> : <Spinner />;
   }
   if (!profile.data || onOnboarding) return <Spinner />;
   return <AppShell profile={profile.data}>{children}</AppShell>;

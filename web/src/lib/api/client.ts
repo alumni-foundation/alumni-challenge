@@ -42,8 +42,9 @@ function toError(res: Response, data: unknown): ApiError {
   );
 }
 
-export function safeNext(value: string | null): string {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/home";
+/** Only same-site paths are allowed as a "next" target, so a link can't bounce people elsewhere. */
+export function safeNext(value: string | null): string | null {
+  return value && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\") ? value : null;
 }
 
 /** Calls the backend through the same-origin proxy. Tokens never reach browser JavaScript. */
@@ -60,15 +61,19 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
   }
   const data = await parse(res);
   if (res.status === 401 && typeof window !== "undefined") {
+    // The proxy already tried the refresh token once. A 401 here means the session is over.
     const here = window.location.pathname + window.location.search;
-    window.location.assign(`/login?next=${encodeURIComponent(here)}`);
+    window.location.assign(`/login?reason=expired&next=${encodeURIComponent(here)}`);
   }
   if (!res.ok) throw toError(res, data);
   return data as T;
 }
 
-/** For the few routes that set or clear cookies (login, register, logout). */
-export async function authCall(path: "login" | "register" | "logout", body?: unknown): Promise<unknown> {
+/** For the auth routes that set or clear cookies, or that work without a session. */
+export async function authCall(
+  path: "login" | "register" | "logout" | "forgot-password" | "reset-password" | "verify-email",
+  body?: unknown,
+): Promise<unknown> {
   let res: Response;
   try {
     res = await fetch(`/api/auth/${path}`, {
@@ -82,4 +87,14 @@ export async function authCall(path: "login" | "register" | "logout", body?: unk
   const data = await parse(res);
   if (!res.ok) throw toError(res, data);
   return data;
+}
+
+/** True when a session cookie is valid. Unlike api(), a "no" is not treated as an expired session. */
+export async function isSignedIn(): Promise<boolean> {
+  try {
+    const res = await fetch("/api/backend/auth/me");
+    return res.ok;
+  } catch {
+    return false;
+  }
 }

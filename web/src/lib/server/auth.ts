@@ -93,3 +93,26 @@ export function refreshTokens(refreshToken: string): Promise<RefreshResult> {
 
 export const jsonError = (status: number, code: string, message: string) =>
   NextResponse.json({ error: { code, message } }, { status });
+
+/**
+ * Forwards a sign-in-free auth call (forgot password, reset password, verify email) to the API.
+ * These never carry or set cookies. The API rate-limits them; a 429 is passed straight through.
+ */
+export async function forwardPublicPost(req: NextRequest, apiPath: string): Promise<NextResponse> {
+  if (!isSameOrigin(req)) return jsonError(403, "bad_origin", "Cross-site request blocked.");
+  try {
+    const upstream = await fetch(`${apiBase()}/${apiPath}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: await req.text(),
+      cache: "no-store",
+    });
+    const text = await upstream.text();
+    return new NextResponse(text || null, {
+      status: upstream.status,
+      headers: text ? { "content-type": "application/json" } : undefined,
+    });
+  } catch {
+    return jsonError(503, "unavailable", "The service is unavailable. Try again.");
+  }
+}
