@@ -11,6 +11,7 @@ from collections.abc import Awaitable, Callable
 
 from fastapi import Request
 
+from app.core.config import get_settings
 from app.core.errors.exceptions import RateLimitedError
 from app.infrastructure.redis import get_redis_client
 
@@ -25,6 +26,18 @@ async def hit(key: str, *, limit: int, window_seconds: int) -> None:
 
 
 def client_ip(request: Request) -> str:
+    """
+    The visitor's address. Behind a proxy the socket address is the proxy's, which would put
+    every visitor in one rate-limit bucket and lock everybody out together, so a configured
+    header (TRUSTED_CLIENT_IP_HEADER) is read instead. It is only read when configured, because
+    anyone can send these headers to an API they can reach directly.
+    """
+    header = get_settings().trusted_client_ip_header
+    if header != "none":
+        value = request.headers.get(header)
+        if value:
+            # X-Forwarded-For is a list; the first entry is the original visitor.
+            return value.split(",")[0].strip()[:64]
     return request.client.host if request.client else "unknown"
 
 
@@ -41,4 +54,6 @@ def rate_limit(
             f"ratelimit:{scope}:{client_ip(request)}", limit=limit, window_seconds=window_seconds
         )
 
+    # Lets a test prove that every public write route carries a limit of its own.
+    _dependency.rate_limit_scope = scope  # type: ignore[attr-defined]
     return _dependency

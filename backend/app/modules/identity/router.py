@@ -59,7 +59,11 @@ async def login(
     return schemas.TokenPair(access_token=access_token, refresh_token=refresh_token)
 
 
-@router.post("/refresh", response_model=schemas.TokenPair)
+@router.post(
+    "/refresh",
+    response_model=schemas.TokenPair,
+    dependencies=[Depends(rate_limit("refresh", limit=60, window_seconds=900))],
+)
 async def refresh(
     body: schemas.RefreshRequest,
     db: AsyncSession = Depends(get_db_session),
@@ -130,7 +134,11 @@ async def request_email_verification(
     )
 
 
-@router.post("/email/verify/confirm", response_model=schemas.UserResponse)
+@router.post(
+    "/email/verify/confirm",
+    response_model=schemas.UserResponse,
+    dependencies=[Depends(rate_limit("email_verify_confirm", limit=30, window_seconds=3600))],
+)
 async def confirm_email_verification(
     body: schemas.VerifyEmailConfirmRequest,
     db: AsyncSession = Depends(get_db_session),

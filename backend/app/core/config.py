@@ -50,8 +50,15 @@ class Settings(BaseSettings):
     # Never used for redirects or trust decisions — those never depend on this value.
     frontend_url: str = "http://localhost:3000"
 
+    # Which header carries the real visitor address when the API sits behind a proxy. Behind
+    # Cloudflare use "cf-connecting-ip". Leave as "none" anywhere visitors reach the API
+    # directly: those headers can be forged, and trusting them would let anyone dodge rate limits.
+    trusted_client_ip_header: Literal["none", "cf-connecting-ip", "x-forwarded-for"] = "none"
+
     # Observability
     sentry_dsn: str | None = None
+    sentry_traces_sample_rate: float = 0.1
+    sentry_release: str | None = None
 
     # File storage. "local" writes to disk (development and tests only). "r2" is any
     # S3-compatible object store: Cloudflare R2 in production, MinIO on a developer's machine.

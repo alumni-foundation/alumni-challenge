@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 import sentry_sdk
 import structlog
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
@@ -14,6 +14,7 @@ from app.core.http.idempotency import IdempotencyMiddleware
 from app.core.http.security_headers import SecurityHeadersMiddleware
 from app.core.logging.middleware import RequestContextMiddleware
 from app.core.logging.setup import configure_logging
+from app.core.rate_limit.writes import limit_writes
 from app.infrastructure.database import all_models  # noqa: F401 — registers every model
 from app.modules.files.policies import UPLOAD_MAX_BODY_BYTES
 
@@ -43,6 +44,7 @@ app = FastAPI(
     openapi_url=f"{settings.api_v1_prefix}/openapi.json",
     docs_url=f"{settings.api_v1_prefix}/docs" if not settings.is_production else None,
     lifespan=lifespan,
+    dependencies=[Depends(limit_writes)],
 )
 
 # Order matters: middleware runs outside-in on the way in, inside-out on
