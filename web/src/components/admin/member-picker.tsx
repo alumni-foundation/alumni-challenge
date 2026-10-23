@@ -31,13 +31,13 @@ export function MemberPicker({
 
   if (value) {
     return (
-      <div className="flex h-10 items-center justify-between gap-2 rounded-lg border border-line bg-canvas px-3 text-sm">
+      <div className="flex min-h-11 items-center justify-between gap-2 rounded-control border border-line-strong bg-sunken px-3.5 text-small">
         <span className="truncate font-medium">{value.label}</span>
         <button
           type="button"
           onClick={() => onChange(null)}
           aria-label="Choose someone else"
-          className="rounded p-1 text-muted hover:bg-surface hover:text-ink"
+          className="-mr-2 inline-flex size-10 items-center justify-center rounded-full text-muted hover:bg-surface hover:text-ink"
         >
           <X className="size-4" aria-hidden />
         </button>
@@ -63,28 +63,28 @@ export function MemberPicker({
         <button
           type="button"
           onClick={() => onChange({ id: term.toLowerCase(), label: `User ${term.slice(0, 8)}…` })}
-          className="mt-2 w-full rounded-lg border border-line px-3 py-2 text-left text-sm hover:bg-canvas"
+          className="mt-2 min-h-11 w-full rounded-control border border-line-strong px-3.5 py-2 text-left text-small hover:bg-sunken"
         >
           Use this user ID
         </button>
       )}
       {searching && index.isLoading && <Spinner label="Looking through members" />}
       {searching && index.isError && (
-        <p className="mt-2 text-sm text-brand-ink" role="alert">Couldn’t load members. Paste a user ID instead.</p>
+        <p className="mt-2 text-small text-brand-ink" role="alert">Couldn’t load members. Paste a user ID instead.</p>
       )}
       {searching && index.data && (
-        <ul className="mt-2 overflow-hidden rounded-lg border border-line">
+        <ul className="mt-2 overflow-hidden rounded-control border border-line-strong">
           {matches.map((p) => (
             <li key={p.user_id}>
               <button
                 type="button"
                 onClick={() => onChange({ id: p.user_id, label: p.full_name })}
-                className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-canvas"
+                className="flex min-h-12 w-full items-center gap-3 px-3.5 py-2 text-left text-small hover:bg-sunken"
               >
                 <Avatar name={p.full_name} id={p.user_id} size={28} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{p.full_name}</span>
-                  <span className="block truncate text-xs text-muted">
+                  <span className="block truncate text-caption text-muted">
                     {[p.profession, p.graduation_year ? `Class of ${p.graduation_year}` : null].filter(Boolean).join(", ")}
                   </span>
                 </span>
@@ -92,7 +92,7 @@ export function MemberPicker({
             </li>
           ))}
           {matches.length === 0 && (
-            <li className="px-3 py-3 text-sm text-muted">
+            <li className="px-3.5 py-3 text-small text-muted">
               No match. Members with private profiles don’t appear here, so paste their user ID instead.
             </li>
           )}

@@ -22,6 +22,8 @@ type NavItem = {
   icon: React.ElementType;
   /** Other path prefixes that should highlight this item (a profile page belongs to Directory). */
   also?: string[];
+  /** Left out of the phone tab bar, which has room for five. Still reachable from the dashboard. */
+  desktopOnly?: boolean;
 };
 
 const MEMBER_NAV: NavItem[] = [
@@ -43,6 +45,7 @@ function navFor(view: StaffView): NavItem[] {
         { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
         { label: "Reports", href: "/admin/reports", icon: FileText },
         { label: "Organizations", href: "/admin/organizations", icon: Building2 },
+        { label: "Roles", href: "/admin/roles", icon: ShieldCheck, desktopOnly: true },
         { label: "Activity log", href: "/admin/activity", icon: ScrollText },
         MEMBER_VIEW_ITEM,
       ];
@@ -276,7 +279,7 @@ function PhoneChrome({ profile }: { profile: Profile | null }) {
   const tabs: NavItem[] =
     current.kind === "member"
       ? [...MEMBER_NAV.slice(0, 3), { label: "Profile", href: "/profile", icon: User }]
-      : navFor(current);
+      : navFor(current).filter((i) => !i.desktopOnly);
   const staffView = views.find((v) => v.kind !== "member");
   const withAdmin: NavItem[] =
     current.kind === "member" && staffView

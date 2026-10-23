@@ -1,27 +1,29 @@
 "use client";
 
-import { ArrowLeft, Flag, Pencil, ShieldCheck, ShieldOff, UserCheck, UserMinus, UserPlus, UserX, X } from "lucide-react";
+import { ArrowLeft, Ban, Flag, Gavel, Pencil, RotateCcw, ShieldCheck, ShieldOff, UserCheck, UserMinus, UserPlus, UserX, X } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import {
   Alert, Avatar, Badge, Button, Card, Chip, ConfirmDialog, EmptyState, LinkButton, ReasonDialog, Skeleton, VerifiedMark, useToast,
 } from "@/components/ui";
 import { api, ApiError } from "@/lib/api/client";
 import { friendlyError } from "@/lib/api/messages";
-import { useBlocked, useConnections, useMe, useOrg, useProfile, useRoles, useWrite } from "@/lib/api/hooks";
-import { canVerifyForSchool } from "@/lib/roles";
+import { useBlocked, useConnections, useMe, useMyProfile, useOrg, useProfile, useRoles, useWrite } from "@/lib/api/hooks";
+import { canModerate, canVerifyForSchool, isPlatformAdmin } from "@/lib/roles";
 
 const VOUCHES_NEEDED = 3;
 
-type Dialog = "block" | "remove" | "report" | null;
+type Dialog = "block" | "remove" | "report" | "suspend" | "reactivate" | null;
 
-export default function AlumniProfilePage() {
+function ProfileView() {
   const { profileId } = useParams<{ profileId: string }>();
+  const fromReport = useSearchParams().get("report") !== null;
   const toast = useToast();
   const me = useMe();
   const roles = useRoles();
   const profile = useProfile(profileId);
+  const myProfile = useMyProfile();
   const connections = useConnections();
   const blocked = useBlocked();
   const school = useOrg(profile.data?.school_id ?? "");
@@ -37,6 +39,8 @@ export default function AlumniProfilePage() {
   const vouch = useWrite(() => api(`alumni/${profileId}/vouch`, { method: "POST" }), refresh);
   const verify = useWrite((verified: boolean) => api(`alumni/${profileId}/verify`, { method: "PATCH", body: { verified } }), refresh);
   const unblock = useWrite((id: string) => api(`connections/${id}/unblock`, { method: "POST" }), refresh);
+  const suspend = useWrite(({ userId, reason }: { userId: string; reason: string }) => api(`users/${userId}/suspend`, { method: "POST", body: { reason } }), refresh);
+  const reactivate = useWrite(({ userId, reason }: { userId: string; reason: string }) => api(`users/${userId}/reactivate`, { method: "POST", body: { reason } }), refresh);
   const block = useWrite((userId: string) => api("connections/block", { method: "POST", body: { user_id: userId } }), refresh);
 
   // One place to run an action: clear the last problem, show the server's words if it refuses.
@@ -85,6 +89,8 @@ export default function AlumniProfilePage() {
   const link = connections.data?.find((c) => c.other_user_id === p.user_id && (c.status === "pending" || c.status === "accepted"));
   const blockedRow = blocked.data?.find((c) => c.other_user_id === p.user_id);
   const canVerify = !isMe && canVerifyForSchool(roles.data, p.school_id);
+  const canSuspend = !isMe && canModerate(roles.data);
+  const canReactivate = !isMe && isPlatformAdmin(roles.data);
   const verified = p.verification_status === "verified";
   const work = [p.profession, p.company].filter(Boolean).join(" at ");
   const where = [school.data?.name, p.graduation_year && `Class of ${p.graduation_year}`, p.country].filter(Boolean).join(" · ");
@@ -181,6 +187,9 @@ export default function AlumniProfilePage() {
         <div className="mt-6 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:flex-wrap sm:items-center">
           {isMe ? (
             <LinkButton href="/profile"><Pencil className="size-4" aria-hidden /> Edit profile</LinkButton>
+          ) : myProfile.data === null ? (
+            // Staff accounts often have no member profile of their own, so there is nobody to connect as.
+            <p className="text-small text-muted">You are viewing this as staff. Create your own member profile to connect, vouch or report as a member.</p>
           ) : (
             <>
               {relationship}
@@ -214,6 +223,48 @@ export default function AlumniProfilePage() {
           )}
         </Card>
       )}
+
+      {(canSuspend || canReactivate) && (
+        <Card className="mt-4 space-y-3">
+          <p className="flex items-center gap-2 font-semibold"><Gavel className="size-4 text-brand-ink" aria-hidden /> Moderation</p>
+          {fromReport && (
+            <Alert tone="info">You can see this profile because of an open report. When the report is closed, it will be hidden from you again.</Alert>
+          )}
+          <p className="text-small text-muted">
+            Suspending an account signs the person out and hides their profile. A moderator can’t suspend another moderator or an admin. {canReactivate ? "" : "Only an admin can reactivate an account."}
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {canSuspend && <Button variant="danger" onClick={() => setDialog("suspend")}><Ban className="size-4" aria-hidden /> Suspend account</Button>}
+            {canReactivate && <Button variant="secondary" onClick={() => setDialog("reactivate")}><RotateCcw className="size-4" aria-hidden /> Reactivate account</Button>}
+          </div>
+        </Card>
+      )}
+
+      <ReasonDialog
+        open={dialog === "suspend"}
+        title={`Suspend ${p.full_name}?`}
+        body="They will be signed out and their profile hidden. Say why, so the activity log explains it."
+        label="Reason"
+        confirmLabel="Suspend account"
+        danger
+        onClose={() => setDialog(null)}
+        onSubmit={async (reason) => {
+          await suspend.mutateAsync({ userId: p.user_id, reason });
+          toast("Account suspended.");
+        }}
+      />
+      <ReasonDialog
+        open={dialog === "reactivate"}
+        title={`Reactivate ${p.full_name}?`}
+        body="They will be able to sign in again. Say why, so the activity log explains it."
+        label="Reason"
+        confirmLabel="Reactivate account"
+        onClose={() => setDialog(null)}
+        onSubmit={async (reason) => {
+          await reactivate.mutateAsync({ userId: p.user_id, reason });
+          toast("Account reactivated.");
+        }}
+      />
 
       <ConfirmDialog
         open={dialog === "remove"}
@@ -260,4 +311,8 @@ export default function AlumniProfilePage() {
       />
     </div>
   );
+}
+
+export default function AlumniProfilePage() {
+  return <Suspense><ProfileView /></Suspense>;
 }

@@ -50,7 +50,7 @@ export default function DirectoryPage() {
             <Input
               type="search"
               aria-label="Search alumni"
-              placeholder="Search by name, profession or company"
+              placeholder="Search by name"
               value={form.q}
               onChange={(e) => change({ q: e.target.value })}
               className="pl-10"

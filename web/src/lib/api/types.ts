@@ -14,5 +14,7 @@ export type Visibility = S["ProfileVisibility"];
 export type OrgType = S["OrganizationType"];
 export type OrgCreate = S["OrganizationCreate"];
 export type OrgUpdate = S["OrganizationUpdate"];
+export type Report = S["ReportResponse"];
+export type ReportStatus = S["ReportStatus"];
 
 export type AuditLogEntry = S["AuditLogEntryResponse"];

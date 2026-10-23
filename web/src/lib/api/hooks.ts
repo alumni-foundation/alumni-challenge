@@ -14,6 +14,8 @@ import type {
   OrgUpdate,
   Profile,
   ProfileSummary,
+  Report,
+  ReportStatus,
   Role,
   Session,
   User,
@@ -166,3 +168,15 @@ export const useAddEmailDomain = (orgId: string) =>
     (domain: string) => api<EmailDomain>(`organizations/${orgId}/email-domains`, { method: "POST", body: { domain } }),
     [["domains", orgId], ["audit"]],
   );
+
+export const REPORTS_PAGE_SIZE = 25;
+
+export const useReports = (status: ReportStatus, page: number) =>
+  useQuery({
+    queryKey: ["reports", status, page],
+    queryFn: () =>
+      api<Report[]>(`reports?status=${status}&limit=${REPORTS_PAGE_SIZE}&offset=${page * REPORTS_PAGE_SIZE}`),
+    // Keep the old rows while paging within a tab, but never show another tab's reports under this one.
+    placeholderData: (prev, prevQuery) => (prevQuery?.queryKey[1] === status ? prev : undefined),
+    retry: false,
+  });

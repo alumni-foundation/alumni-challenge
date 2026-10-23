@@ -3,6 +3,16 @@ import type { Membership, Role } from "./api/types";
 export const isPlatformAdmin = (m: Membership[] = []) =>
   m.some((x) => x.organization_id === null && (x.role === "admin" || x.role === "super_admin"));
 
+export const isSuperAdmin = (m: Membership[] = []) =>
+  m.some((x) => x.organization_id === null && x.role === "super_admin");
+
+/**
+ * The platform roles this person may give. Mirrors the server: a super admin can give any of
+ * them, an admin can give moderator only. The server still decides (it also checks rank).
+ */
+export const grantablePlatformRoles = (m: Membership[] = []): Role[] =>
+  isSuperAdmin(m) ? ["moderator", "admin", "super_admin"] : isPlatformAdmin(m) ? ["moderator"] : [];
+
 export const canManageOrg = (m: Membership[] = [], orgId: string) =>
   isPlatformAdmin(m) ||
   m.some(

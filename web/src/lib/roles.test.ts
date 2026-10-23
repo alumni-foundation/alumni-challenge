@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Membership, Role } from "@/lib/api/types";
-import { currentViewKey, landingFor, viewsFor } from "./roles";
+import { currentViewKey, grantablePlatformRoles, isSuperAdmin, landingFor, viewsFor } from "./roles";
 
 const SCHOOL_A = "11111111-1111-4111-8111-111111111111";
 const SCHOOL_B = "22222222-2222-4222-8222-222222222222";
@@ -86,5 +86,21 @@ describe("currentViewKey", () => {
   });
   it("falls back to the member view everywhere else", () => {
     expect(currentViewKey("/directory", views)).toBe("member");
+  });
+});
+
+describe("grantablePlatformRoles", () => {
+  it("lets a super admin give any platform role", () => {
+    expect(grantablePlatformRoles([m("super_admin")])).toEqual(["moderator", "admin", "super_admin"]);
+    expect(isSuperAdmin([m("super_admin")])).toBe(true);
+  });
+  it("lets an admin give the moderator role only", () => {
+    expect(grantablePlatformRoles([m("admin")])).toEqual(["moderator"]);
+    expect(isSuperAdmin([m("admin")])).toBe(false);
+  });
+  it("gives moderators, organization admins and members nothing to grant", () => {
+    expect(grantablePlatformRoles([m("moderator")])).toEqual([]);
+    expect(grantablePlatformRoles([m("school_admin", SCHOOL_A)])).toEqual([]);
+    expect(grantablePlatformRoles([])).toEqual([]);
   });
 });
