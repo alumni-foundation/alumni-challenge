@@ -64,6 +64,32 @@ class Settings(BaseSettings):
     storage_secret_key: SecretStr | None = None
     storage_bucket_name: str | None = None
 
+    # Email. "logging" sends nothing (the default, and what tests use); "smtp" is for Mailpit in
+    # development or a real relay; "resend" is the production provider.
+    mail_backend: Literal["logging", "smtp", "resend"] = "logging"
+    mail_from: str = "Alumni Challenge <no-reply@localhost>"
+    smtp_host: str | None = None
+    smtp_port: int = 1025
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+    smtp_starttls: bool = False
+    resend_api_key: SecretStr | None = None
+
+    @model_validator(mode="after")
+    def _check_mail_settings(self) -> "Settings":
+        if self.mail_backend == "resend" and not self.resend_api_key:
+            raise ValueError("MAIL_BACKEND=resend needs RESEND_API_KEY.")
+        if self.mail_backend == "smtp" and not self.smtp_host:
+            raise ValueError("MAIL_BACKEND=smtp needs SMTP_HOST.")
+        if self.environment == "production":
+            if self.mail_backend == "logging":
+                # Nobody would ever receive a verification or reset email.
+                raise ValueError("Production must send real email: set MAIL_BACKEND=resend.")
+            if not self.frontend_url.startswith("https://"):
+                # Links in emails are built from this. A reset link must never be plain HTTP.
+                raise ValueError("Production FRONTEND_URL must start with https://.")
+        return self
+
     @model_validator(mode="after")
     def _check_storage_settings(self) -> "Settings":
         if self.storage_backend == "r2":

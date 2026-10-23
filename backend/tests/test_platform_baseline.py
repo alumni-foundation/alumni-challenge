@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.permissions.roles import Role
 from app.main import app
+from app.modules.domain_events.service import drain_pending
+from tests.conftest import Mailbox
 from tests.test_alumni_privacy import _grant, _make_actor, _make_school
 
 API = "/api/v1"
@@ -181,18 +183,8 @@ async def test_audit_log_is_forbidden_for_a_plain_alumni(client: AsyncClient) ->
 
 
 async def test_password_reset_is_audited_and_visible_only_to_platform_admins(
-    client: AsyncClient, db_session: AsyncSession
+    client: AsyncClient, db_session: AsyncSession, mailbox: Mailbox
 ) -> None:
-    from app.core.mail.base import Mailer
-    from app.core.mail.dependencies import get_mailer
-
-    class _Mailer(Mailer):
-        def __init__(self) -> None:
-            self.sent: list[dict[str, str]] = []
-
-        async def send(self, *, to: str, subject: str, body: str) -> None:
-            self.sent.append({"to": to, "subject": subject, "body": body})
-
     email = f"reset-{uuid.uuid4().hex[:10]}@example.com"
     await client.post(
         f"{API}/auth/register",
@@ -204,18 +196,14 @@ async def test_password_reset_is_audited_and_visible_only_to_platform_admins(
     await _grant(db_session, platform_admin.user_id, Role.ADMIN, None)
     await _grant(db_session, school_admin.user_id, Role.SCHOOL_ADMIN, school.id)
 
-    mailer = _Mailer()
-    app.dependency_overrides[get_mailer] = lambda: mailer
-    try:
-        await client.post(f"{API}/auth/password/forgot", json={"email": email})
-        token = mailer.sent[0]["body"].split("token=")[1].split("\n")[0].strip()
-        reset = await client.post(
-            f"{API}/auth/password/reset",
-            json={"token": token, "new_password": "a-new-password-123456"},
-        )
-        assert reset.status_code == 200
-    finally:
-        app.dependency_overrides.pop(get_mailer, None)
+    await client.post(f"{API}/auth/password/forgot", json={"email": email})
+    await drain_pending(db_session)
+    token = mailbox.token_from("/reset-password")
+    reset = await client.post(
+        f"{API}/auth/password/reset",
+        json={"token": token, "new_password": "a-new-password-123456"},
+    )
+    assert reset.status_code == 200
 
     as_admin = await client.get(f"{API}/audit-log", headers=platform_admin.headers)
     assert any(row["action"] == "user.password_reset" for row in as_admin.json())

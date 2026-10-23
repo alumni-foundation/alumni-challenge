@@ -8,12 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.errors.exceptions import ConflictError, UnauthorizedError
-from app.core.mail.base import Mailer
 from app.infrastructure.redis import get_redis_client
+from app.modules.domain_events import service as domain_events_service
 from app.modules.identity.models import Session, User, UserStatus
 from app.modules.identity.security import (
     create_access_token,
-    create_purpose_token,
     decode_purpose_token,
     generate_refresh_token,
     hash_password,
@@ -193,23 +192,16 @@ EMAIL_VERIFY_EXPIRE_MINUTES = 24 * 60
 PASSWORD_RESET_EXPIRE_MINUTES = 30
 
 
-async def request_email_verification(db: AsyncSession, *, user: User, mailer: Mailer) -> None:
+async def request_email_verification(db: AsyncSession, *, user: User) -> None:
     """
-    Always succeeds from the caller's point of view even if already
-    verified — resending a verification link to an already-verified
-    address is harmless, and treating it as an error would leak state
-    to a caller who otherwise has no way to know.
+    Queues the email; the worker sends it. Always succeeds from the caller's point of view even
+    if already verified: treating that as an error would leak state to a caller who otherwise
+    has no way to know.
     """
     if user.email_verified_at is not None:
         return
-    token = create_purpose_token(
-        user.id, purpose="email_verify", expire_minutes=EMAIL_VERIFY_EXPIRE_MINUTES
-    )
-    link = f"{settings.frontend_url}/verify-email?token={token}"
-    await mailer.send(
-        to=user.email,
-        subject="Verify your Alumni Challenge email",
-        body=f"Confirm your email address: {link}\n\nThis link expires in 24 hours.",
+    await domain_events_service.publish(
+        db, event_type="email.verification_requested", payload={"user_id": str(user.id)}
     )
 
 
@@ -236,29 +228,17 @@ async def confirm_email_verification(db: AsyncSession, *, token: str) -> User:
     return user
 
 
-async def request_password_reset(db: AsyncSession, *, email: str, mailer: Mailer) -> None:
+async def request_password_reset(db: AsyncSession, *, email: str) -> None:
     """
-    Always returns normally, whether or not the email is registered —
-    the response must never reveal that. If it IS registered, an email
-    goes out; if not, nothing happens and the caller can't tell.
+    Always returns normally, whether or not the email is registered: the response must never
+    reveal that. If it IS registered, a reset email is queued; if not, nothing happens and the
+    caller cannot tell. The link is made when the email is sent, not now.
     """
     user = await db.scalar(select(User).where(User.email == email))
-    if user is None:
+    if user is None or user.status != UserStatus.ACTIVE:
         return
-    token = create_purpose_token(
-        user.id,
-        purpose="password_reset",
-        expire_minutes=PASSWORD_RESET_EXPIRE_MINUTES,
-        extra={"stamp": str(user.security_stamp)},
-    )
-    link = f"{settings.frontend_url}/reset-password?token={token}"
-    await mailer.send(
-        to=user.email,
-        subject="Reset your Alumni Challenge password",
-        body=(
-            f"Reset your password: {link}\n\n"
-            "This link expires in 30 minutes and can only be used once."
-        ),
+    await domain_events_service.publish(
+        db, event_type="email.password_reset_requested", payload={"user_id": str(user.id)}
     )
 
 

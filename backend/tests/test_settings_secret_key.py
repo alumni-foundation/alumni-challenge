@@ -23,6 +23,9 @@ def _settings(environment: str, secret_key: str) -> Settings:
         storage_access_key="access",
         storage_secret_key="secret",  # type: ignore[arg-type]
         storage_bucket_name="bucket",
+        mail_backend="resend",  # type: ignore[arg-type]
+        resend_api_key="re_test",  # type: ignore[arg-type]
+        frontend_url="https://alumni.example",
     )
 
 

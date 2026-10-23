@@ -48,7 +48,14 @@ class File(UUIDPrimaryKeyMixin, Base):
     # The organization an upload was made for (a logo, or the organizer of a poster).
     organization_id: Mapped[uuid.UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),
-        ForeignKey("organizations.id", ondelete="SET NULL", name="fk_files_organization_id"),
+        ForeignKey(
+            "organizations.id",
+            ondelete="SET NULL",
+            name="fk_files_organization_id",
+            # files and organizations point at each other (a logo is a file); this tells
+            # SQLAlchemy to create that one constraint separately.
+            use_alter=True,
+        ),
         nullable=True,
     )
     storage_key: Mapped[str] = mapped_column(String(512), nullable=False)

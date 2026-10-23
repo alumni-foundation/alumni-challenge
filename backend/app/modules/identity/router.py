@@ -3,8 +3,6 @@ import uuid
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.mail.base import Mailer
-from app.core.mail.dependencies import get_mailer
 from app.core.rate_limit import rate_limit
 from app.infrastructure.database.session import get_db_session
 from app.modules.domain_events import service as domain_events_service
@@ -34,7 +32,7 @@ async def register(
 ) -> User:
     user = await service.register_user(db, email=body.email, password=body.password)
     await domain_events_service.publish(
-        db, event_type="user.registered", payload={"user_id": str(user.id), "email": user.email}
+        db, event_type="user.registered", payload={"user_id": str(user.id)}
     )
     await db.commit()
     return user
@@ -124,9 +122,8 @@ async def get_my_roles(
 async def request_email_verification(
     db: AsyncSession = Depends(get_db_session),
     current_user: User = Depends(get_current_user),
-    mailer: Mailer = Depends(get_mailer),
 ) -> schemas.MessageResponse:
-    await service.request_email_verification(db, user=current_user, mailer=mailer)
+    await service.request_email_verification(db, user=current_user)
     await db.commit()
     return schemas.MessageResponse(
         message="If your email isn't verified yet, a link is on its way."
@@ -152,9 +149,8 @@ async def confirm_email_verification(
 async def forgot_password(
     body: schemas.PasswordForgotRequest,
     db: AsyncSession = Depends(get_db_session),
-    mailer: Mailer = Depends(get_mailer),
 ) -> schemas.MessageResponse:
-    await service.request_password_reset(db, email=body.email, mailer=mailer)
+    await service.request_password_reset(db, email=body.email)
     await db.commit()
     return schemas.MessageResponse(
         message="If that email is registered, a reset link is on its way."

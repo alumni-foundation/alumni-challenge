@@ -7,10 +7,10 @@ can't have that failure mode.
 """
 
 import logging
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.domain_events.models import DomainEvent, DomainEventStatus
@@ -20,6 +20,25 @@ logger = logging.getLogger("domain_events")
 
 MAX_ATTEMPTS = 5
 DRAIN_BATCH_SIZE = 20
+
+# Events that carry an email address because the person no longer exists to look up. Their
+# payload is emptied the moment they have been handled, so the address is not kept.
+SCRUB_AFTER_DISPATCH = frozenset({"email.account_deleted"})
+
+# How long to wait before trying again, after the 1st, 2nd, 3rd and 4th failure. The fifth
+# failure dead-letters the event. Spread out so an outage at an email provider (minutes to
+# an hour) is ridden out instead of burning every attempt in the first half minute.
+RETRY_DELAYS = (
+    timedelta(seconds=30),
+    timedelta(minutes=2),
+    timedelta(minutes=10),
+    timedelta(hours=1),
+)
+
+
+def retry_delay(attempts: int) -> timedelta:
+    """`attempts` is the number of failures so far (1 or more)."""
+    return RETRY_DELAYS[min(attempts, len(RETRY_DELAYS)) - 1]
 
 
 async def publish(db: AsyncSession, *, event_type: str, payload: dict[str, Any]) -> DomainEvent:
@@ -51,6 +70,12 @@ async def drain_pending(db: AsyncSession, *, limit: int = DRAIN_BATCH_SIZE) -> i
     stmt = (
         select(DomainEvent)
         .where(DomainEvent.status == DomainEventStatus.PENDING)
+        .where(
+            or_(
+                DomainEvent.next_attempt_at.is_(None),
+                DomainEvent.next_attempt_at <= func.clock_timestamp(),
+            )
+        )
         .order_by(DomainEvent.created_at)
         .limit(limit)
         .with_for_update(skip_locked=True)
@@ -64,7 +89,9 @@ async def drain_pending(db: AsyncSession, *, limit: int = DRAIN_BATCH_SIZE) -> i
         except Exception as exc:  # noqa: BLE001 — a handler's exact error is not our concern here
             event.attempts += 1
             event.last_error = str(exc)[:500]
-            if event.attempts >= MAX_ATTEMPTS:
+            if event.attempts < MAX_ATTEMPTS:
+                event.next_attempt_at = datetime.now(UTC) + retry_delay(event.attempts)
+            else:
                 event.status = DomainEventStatus.FAILED
                 logger.error(
                     "domain_event_dead_lettered",
@@ -76,6 +103,8 @@ async def drain_pending(db: AsyncSession, *, limit: int = DRAIN_BATCH_SIZE) -> i
                 )
         else:
             event.status = DomainEventStatus.DISPATCHED
+            if event.event_type in SCRUB_AFTER_DISPATCH:
+                event.payload = {}
             event.dispatched_at = datetime.now(UTC)
 
     await db.flush()

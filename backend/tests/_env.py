@@ -59,6 +59,11 @@ def configure_test_environment() -> None:
     assert_safe_test_targets(database_url, redis_url)
     os.environ["DATABASE_URL"] = database_url
     os.environ["REDIS_URL"] = redis_url
+    # Tests never send email, never write to a real object store, and always behave as development,
+    # whatever the developer's .env or compose file says.
+    os.environ["MAIL_BACKEND"] = "logging"
+    os.environ["STORAGE_BACKEND"] = "local"
+    os.environ["ENVIRONMENT"] = "development"
 
 
 configure_test_environment()

@@ -1,4 +1,5 @@
 import asyncio
+import re
 import subprocess
 import sys
 from collections.abc import AsyncGenerator, Iterator
@@ -139,3 +140,34 @@ def storage(client: AsyncClient, tmp_path: Path) -> Iterator[LocalDiskStorage]:
     local = LocalDiskStorage(tmp_path / "uploads")
     app.dependency_overrides[get_storage] = lambda: local
     yield local
+
+
+class Mailbox:
+    """Every email the app tried to send during a test, instead of sending it."""
+
+    def __init__(self) -> None:
+        self.sent: list[dict[str, str | None]] = []
+
+    async def send(self, *, to: str, subject: str, body: str, html: str | None = None) -> None:
+        self.sent.append({"to": to, "subject": subject, "body": body, "html": html})
+
+    def links(self, path: str) -> list[str]:
+        """Every link to `path` (for example /verify-email) found in the plain-text bodies."""
+        found: list[str] = []
+        for message in self.sent:
+            found += re.findall(rf"\S*{re.escape(path)}\?token=[\w\-\.]+", message["body"] or "")
+        return found
+
+    def token_from(self, path: str) -> str:
+        return self.links(path)[-1].split("token=", 1)[1]
+
+
+@pytest.fixture
+def mailbox(monkeypatch: pytest.MonkeyPatch) -> Mailbox:
+    """Emails are sent by the worker (drain_pending), through get_mailer(). Patch it where the
+    handlers use it, then drain the queue in the test to 'run the worker'."""
+    import app.modules.domain_events.handlers as handlers_module
+
+    box = Mailbox()
+    monkeypatch.setattr(handlers_module, "get_mailer", lambda: box)
+    return box

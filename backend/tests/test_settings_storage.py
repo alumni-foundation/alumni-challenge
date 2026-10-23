@@ -21,6 +21,10 @@ def _settings(**overrides: Any) -> Settings:
         "secret_key": STRONG_KEY,
         "database_url": "postgresql+asyncpg://u:p@localhost:5432/x",
         "redis_url": "redis://localhost:6379/0",
+        # What any production deployment also needs, so these tests are only about storage.
+        "mail_backend": "resend",
+        "resend_api_key": "re_test",
+        "frontend_url": "https://alumni.example",
         **overrides,
     }
     return Settings(_env_file=None, **values)

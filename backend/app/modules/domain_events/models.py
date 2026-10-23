@@ -39,5 +39,8 @@ class DomainEvent(Base, UUIDPrimaryKeyMixin):
         DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
     )
     dispatched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # After a failure the event waits until this time before it is tried again (see
+    # service.retry_delay). Null means: ready now.
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __mapper_args__ = {"eager_defaults": True}

@@ -17,6 +17,7 @@ from arq import cron
 from arq.connections import RedisSettings
 
 from app.core.config import get_settings
+from app.infrastructure.database import all_models  # noqa: F401  (registers every model)
 from app.infrastructure.database.session import async_session_factory
 from app.modules.domain_events import (
     handlers,  # noqa: F401 — import registers the @on(...) handlers
