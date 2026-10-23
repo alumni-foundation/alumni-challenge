@@ -18,6 +18,14 @@ class FileVisibility(enum.StrEnum):
     PRIVATE = "private"
 
 
+class FilePurpose(enum.StrEnum):
+    """What an upload is for. Each purpose has its own rules in files/policies.py."""
+
+    AVATAR = "avatar"
+    ORGANIZATION_LOGO = "organization_logo"
+    EVENT_POSTER = "event_poster"
+
+
 class File(UUIDPrimaryKeyMixin, Base):
     """
     Metadata only — the actual bytes live in object storage (Cloudflare
