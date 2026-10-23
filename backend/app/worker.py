@@ -60,4 +60,8 @@ class WorkerSettings:
     # this many times by ARQ itself if it raises — separate from, and
     # outer to, the per-event attempt counting inside drain_pending.
     max_tries = 3
+    # The worker serves no HTTP, so its container healthcheck is `arq --check`, which
+    # reads this heartbeat key from Redis. The key expires interval + 1 seconds after
+    # each write, so a hung or dead worker turns the container unhealthy within ~35s.
+    health_check_interval = 30
     job_timeout = 60

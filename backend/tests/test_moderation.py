@@ -41,7 +41,7 @@ async def test_reporting_a_nonexistent_profile_is_422(client: AsyncClient) -> No
         json={"target_type": "profile", "target_id": str(uuid.uuid4()), "reason": "spam"},
         headers=reporter.headers,
     )
-    assert r.status_code == 422
+    assert r.status_code == 422, r.text
 
 
 async def test_filing_a_report_needs_login(client: AsyncClient) -> None:
@@ -49,7 +49,7 @@ async def test_filing_a_report_needs_login(client: AsyncClient) -> None:
         f"{API}/reports",
         json={"target_type": "profile", "target_id": str(uuid.uuid4()), "reason": "x"},
     )
-    assert r.status_code == 401
+    assert r.status_code == 401, r.text
 
 
 async def test_blank_reason_is_rejected(client: AsyncClient) -> None:
@@ -61,7 +61,7 @@ async def test_blank_reason_is_rejected(client: AsyncClient) -> None:
         json={"target_type": "profile", "target_id": pid, "reason": "   "},
         headers=reporter.headers,
     )
-    assert r.status_code == 422
+    assert r.status_code == 422, r.text
 
 
 async def test_you_cannot_report_your_own_profile(client: AsyncClient) -> None:
@@ -72,7 +72,7 @@ async def test_you_cannot_report_your_own_profile(client: AsyncClient) -> None:
         json={"target_type": "profile", "target_id": pid, "reason": "me"},
         headers=owner.headers,
     )
-    assert r.status_code == 422
+    assert r.status_code == 422, r.text
 
 
 async def test_a_second_open_report_from_the_same_person_is_409(client: AsyncClient) -> None:
@@ -85,7 +85,7 @@ async def test_a_second_open_report_from_the_same_person_is_409(client: AsyncCli
         json={"target_type": "profile", "target_id": pid, "reason": "again"},
         headers=reporter.headers,
     )
-    assert r.status_code == 409
+    assert r.status_code == 409, r.text
 
 
 async def test_plain_alumni_cannot_list_or_review_reports(client: AsyncClient) -> None:
@@ -94,11 +94,12 @@ async def test_plain_alumni_cannot_list_or_review_reports(client: AsyncClient) -
     pid = await _make_profile(client, owner)
     report = await _file_report(client, reporter.headers, pid)
 
-    assert (await client.get(f"{API}/reports", headers=reporter.headers)).status_code == 403
+    denied = await client.get(f"{API}/reports", headers=reporter.headers)
+    assert denied.status_code == 403, denied.text
     r = await client.patch(
         f"{API}/reports/{report['id']}", json={"status": "resolved"}, headers=reporter.headers
     )
-    assert r.status_code == 403
+    assert r.status_code == 403, r.text
 
 
 async def test_moderator_lists_and_reviews_reports(
@@ -111,7 +112,7 @@ async def test_moderator_lists_and_reviews_reports(
     report = await _file_report(client, reporter.headers, pid)
 
     listed = await client.get(f"{API}/reports", headers=mod.headers)
-    assert listed.status_code == 200
+    assert listed.status_code == 200, listed.text
     assert report["id"] in [x["id"] for x in listed.json()]
     only_open = await client.get(f"{API}/reports?status=resolved", headers=mod.headers)
     assert report["id"] not in [x["id"] for x in only_open.json()]
@@ -119,7 +120,7 @@ async def test_moderator_lists_and_reviews_reports(
     reviewing = await client.patch(
         f"{API}/reports/{report['id']}", json={"status": "reviewing"}, headers=mod.headers
     )
-    assert reviewing.status_code == 200
+    assert reviewing.status_code == 200, reviewing.text
     assert reviewing.json()["reviewed_by"] == str(mod.user_id)
     assert reviewing.json()["resolved_at"] is None
 
@@ -144,7 +145,7 @@ async def test_reviewing_an_unknown_report_is_404(
     r = await client.patch(
         f"{API}/reports/{uuid.uuid4()}", json={"status": "resolved"}, headers=mod.headers
     )
-    assert r.status_code == 404
+    assert r.status_code == 404, r.text
 
 
 # ------------------------------------------- time-limited moderator visibility
@@ -244,7 +245,7 @@ async def test_report_access_never_lets_a_moderator_verify_a_profile(
     r = await client.patch(
         f"{API}/alumni/{pid}/verify", json={"verified": True}, headers=mod.headers
     )
-    assert r.status_code == 403
+    assert r.status_code == 403, r.text
 
 
 # ---------------------------------------------------------------- blocking
@@ -271,7 +272,7 @@ async def test_block_flow_end_to_end(client: AsyncClient, db_session: AsyncSessi
     pending = await _request(client, a, b)
 
     blocked = await _block(client, a, b)
-    assert blocked.status_code == 201
+    assert blocked.status_code == 201, blocked.text
     assert blocked.json()["status"] == "blocked"
     assert blocked.json()["id"] == pending["id"]  # reused, not duplicated
     rows = await db_session.scalar(select(func.count()).select_from(Connection))
@@ -290,11 +291,11 @@ async def test_block_flow_end_to_end(client: AsyncClient, db_session: AsyncSessi
     again = await client.post(
         f"{API}/connections", json={"addressee_id": str(a.user_id)}, headers=b.headers
     )
-    assert again.status_code == 403
+    assert again.status_code == 403, again.text
 
     # only the blocker can unblock
     other = await client.post(f"{API}/connections/{pending['id']}/unblock", headers=b.headers)
-    assert other.status_code == 403
+    assert other.status_code == 403, other.text
 
     # the blocked person cannot wipe the block through the old remove/accept/decline routes
     for method, path in (
@@ -309,13 +310,13 @@ async def test_block_flow_end_to_end(client: AsyncClient, db_session: AsyncSessi
 
     # the blocker unblocks: status is removed, and a fresh request works
     lifted = await client.post(f"{API}/connections/{pending['id']}/unblock", headers=a.headers)
-    assert lifted.status_code == 200
+    assert lifted.status_code == 200, lifted.text
     assert lifted.json()["status"] == "removed"
     assert (await client.get(f"{API}/connections/blocked", headers=a.headers)).json() == []
     fresh = await client.post(
         f"{API}/connections", json={"addressee_id": str(a.user_id)}, headers=b.headers
     )
-    assert fresh.status_code == 201
+    assert fresh.status_code == 201, fresh.text
     assert fresh.json()["status"] == "pending"
 
 
@@ -325,7 +326,7 @@ async def test_blocking_someone_you_have_no_connection_with_creates_a_blocked_ro
     a = await _make_actor(client)
     b = await _make_actor(client)
     r = await _block(client, a, b)
-    assert r.status_code == 201
+    assert r.status_code == 201, r.text
     assert r.json()["status"] == "blocked"
     assert r.json()["requester_id"] == str(a.user_id)
 
@@ -340,7 +341,7 @@ async def test_blocking_an_accepted_connection_reuses_the_row(
 
     # B blocks A (the other direction from how the row was created)
     r = await _block(client, b, a)
-    assert r.status_code == 201
+    assert r.status_code == 201, r.text
     assert r.json()["id"] == conn["id"]
     assert await db_session.scalar(select(func.count()).select_from(Connection)) == 1
     assert len((await client.get(f"{API}/connections/blocked", headers=b.headers)).json()) == 1
@@ -378,7 +379,7 @@ async def test_blocking_an_unknown_user_is_404(client: AsyncClient) -> None:
     r = await client.post(
         f"{API}/connections/block", json={"user_id": str(uuid.uuid4())}, headers=a.headers
     )
-    assert r.status_code == 404
+    assert r.status_code == 404, r.text
 
 
 async def test_unblocking_a_row_that_is_not_blocked_is_409_and_a_strangers_row_is_404(

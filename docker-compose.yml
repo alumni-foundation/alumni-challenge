@@ -76,6 +76,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Overrides the HTTP healthcheck baked into the image: the worker has no web port.
+    healthcheck:
+      test: ["CMD-SHELL", "/app/.venv/bin/arq --check app.worker.WorkerSettings"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
     command: >
       uv run arq app.worker.WorkerSettings
 

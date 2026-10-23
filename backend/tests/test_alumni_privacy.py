@@ -23,7 +23,9 @@ async def _make_actor(client: AsyncClient) -> Actor:
         "/api/v1/auth/register",
         json={"email": email, "password": PASSWORD, "confirm_18_or_older": True},
     )
+    assert reg.status_code == 201, (reg.status_code, reg.text)
     login = await client.post("/api/v1/auth/login", json={"email": email, "password": PASSWORD})
+    assert login.status_code == 200, (login.status_code, login.text)
     token = login.json()["access_token"]
     return Actor(uuid.UUID(reg.json()["id"]), {"Authorization": f"Bearer {token}"})
 
