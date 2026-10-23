@@ -81,6 +81,7 @@ from app.modules.connections.router import router as connections_router  # noqa:
 from app.modules.domain_events import handlers as _domain_events_handlers  # noqa: E402, F401
 from app.modules.files.router import router as files_router  # noqa: E402
 from app.modules.identity.account_router import router as account_router  # noqa: E402
+from app.modules.identity.self_service import router as self_service_router  # noqa: E402
 from app.modules.memberships.router import router as roles_router  # noqa: E402
 from app.modules.moderation.router import router as moderation_router  # noqa: E402
 from app.modules.organizations.router import router as organizations_router  # noqa: E402
@@ -89,6 +90,7 @@ from app.modules.organizations.router import router as organizations_router  # n
 # registers the handlers — needed here too (not just in worker.py)
 # since tests and any synchronous drain call go through this process.
 app.include_router(account_router, prefix=settings.api_v1_prefix)
+app.include_router(self_service_router, prefix=settings.api_v1_prefix)
 app.include_router(alumni_router, prefix=settings.api_v1_prefix)
 app.include_router(audit_router, prefix=settings.api_v1_prefix)
 app.include_router(connections_router, prefix=settings.api_v1_prefix)

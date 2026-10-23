@@ -7,7 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.core.errors.exceptions import ConflictError, UnauthorizedError
+from app.core.errors.exceptions import ConflictError, UnauthorizedError, ValidationError
+from app.core.rate_limit import hit
 from app.infrastructure.redis import get_redis_client
 from app.modules.domain_events import service as domain_events_service
 from app.modules.identity.models import Session, User, UserStatus
@@ -273,3 +274,74 @@ async def reset_password(db: AsyncSession, *, token: str, new_password: str) -> 
         target_type="user",
         target_id=user.id,
     )
+
+
+# Wrong guesses at the current password are the thing to limit here: someone holding a stolen
+# access token must not be able to guess their way to the password.
+PASSWORD_CHANGE_LIMIT = 10
+PASSWORD_CHANGE_WINDOW_SECONDS = 900
+
+
+async def change_password(
+    db: AsyncSession,
+    *,
+    user: User,
+    current_password: str,
+    new_password: str,
+    keep_refresh_token: str | None,
+) -> int:
+    """
+    Changes the password of a signed-in user and signs every other device out. Returns how many
+    sessions were revoked.
+
+    The caller says which session to keep by sending that session's refresh token. Without it,
+    every session is revoked and the person signs in again. A refresh token that does not
+    belong to this user keeps nothing: sessions are matched by their owner AND the token.
+    The security stamp changes too, so any password-reset link already in an inbox stops working.
+    """
+    await hit(
+        f"ratelimit:password_change:{user.id}",
+        limit=PASSWORD_CHANGE_LIMIT,
+        window_seconds=PASSWORD_CHANGE_WINDOW_SECONDS,
+    )
+    if not verify_password(current_password, user.password_hash):
+        raise ValidationError(
+            "Your current password is not correct.", code="invalid_current_password"
+        )
+    if verify_password(new_password, user.password_hash):
+        raise ValidationError(
+            "Choose a password you have not been using.", code="password_unchanged"
+        )
+
+    user.password_hash = hash_password(new_password)
+    user.security_stamp = uuid_module.uuid4()
+
+    keep_hash = hash_refresh_token(keep_refresh_token) if keep_refresh_token else None
+    sessions = (
+        await db.scalars(
+            select(Session).where(Session.user_id == user.id, Session.revoked_at.is_(None))
+        )
+    ).all()
+    now = datetime.now(UTC)
+    revoked = 0
+    for session in sessions:
+        if keep_hash is not None and session.refresh_token_hash == keep_hash:
+            continue
+        session.revoked_at = now
+        revoked += 1
+    await db.flush()
+
+    from app.modules.audit.service import record as record_audit
+
+    await record_audit(
+        db,
+        actor_user_id=user.id,
+        action="user.password_change",
+        target_type="user",
+        target_id=user.id,
+        context={"sessions_revoked": revoked},
+    )
+    await domain_events_service.publish(
+        db, event_type="email.password_changed", payload={"user_id": str(user.id)}
+    )
+    return revoked

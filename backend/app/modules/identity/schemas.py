@@ -70,3 +70,15 @@ class PasswordResetRequest(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=10, max_length=128)
+    # The refresh token of the device making the change, so that device stays signed in.
+    refresh_token: str | None = None
+
+
+class ChangePasswordResponse(BaseModel):
+    message: str
+    sessions_revoked: int
