@@ -82,3 +82,7 @@ class ChangePasswordRequest(BaseModel):
 class ChangePasswordResponse(BaseModel):
     message: str
     sessions_revoked: int
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=128)

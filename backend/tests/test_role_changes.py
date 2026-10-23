@@ -228,7 +228,7 @@ async def test_the_guard_itself_refuses_to_leave_no_super_admin(db_session: Asyn
     await _grant(db_session, sole.id, Role.SUPER_ADMIN, None)
 
     with pytest.raises(ConflictError, match="last super admin"):
-        await role_changes._lock_super_admins_and_check_one_remains(
+        await role_changes.lock_super_admins_and_check_one_remains(
             db_session, actor_id=sole.id, target_user_id=sole.id
         )
 
@@ -243,7 +243,7 @@ async def test_the_guard_needs_the_caller_to_still_be_a_super_admin(
     await _grant(db_session, holder.id, Role.SUPER_ADMIN, None)
 
     with pytest.raises(ForbiddenError):
-        await role_changes._lock_super_admins_and_check_one_remains(
+        await role_changes.lock_super_admins_and_check_one_remains(
             db_session, actor_id=other.id, target_user_id=holder.id
         )
 

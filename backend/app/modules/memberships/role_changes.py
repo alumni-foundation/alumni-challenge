@@ -111,7 +111,7 @@ async def revoke_platform_role(
         raise ForbiddenError("You do not have permission to revoke this role.")
 
     if role == Role.SUPER_ADMIN:
-        await _lock_super_admins_and_check_one_remains(
+        await lock_super_admins_and_check_one_remains(
             db, actor_id=actor.id, target_user_id=target_user_id
         )
 
@@ -132,7 +132,7 @@ async def revoke_platform_role(
     return membership
 
 
-async def _lock_super_admins_and_check_one_remains(
+async def lock_super_admins_and_check_one_remains(
     db: AsyncSession, *, actor_id: uuid.UUID, target_user_id: uuid.UUID
 ) -> None:
     """
