@@ -16,10 +16,17 @@ const PUBLIC_EXACT = new Set([
 ]);
 const PUBLIC_PREFIXES = ["/schools", "/partners"];
 
-/** Pages that make no sense once you are signed in; they send you on to your landing page. */
-const SIGNED_OUT_ONLY = new Set(["/login", "/register", "/forgot-password"]);
+/**
+ * Pages that make no sense once you are signed in; they send you on to your landing page.
+ * Forgot-password is not here on purpose: Settings offers "Reset by email" to signed-in people.
+ */
+const SIGNED_OUT_ONLY = new Set(["/login", "/register"]);
 
 export const isPublicPath = (pathname: string) =>
   PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 export const isSignedOutOnly = (pathname: string) => SIGNED_OUT_ONLY.has(pathname);
+
+/** The staff areas. Someone working here does not need a member (alumni) profile. */
+export const isStaffArea = (pathname: string) =>
+  ["/admin", "/school", "/partner"].some((p) => pathname === p || pathname.startsWith(`${p}/`));

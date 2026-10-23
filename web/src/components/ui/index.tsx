@@ -2,7 +2,7 @@
 
 import { AlertCircle, BadgeCheck, CheckCircle2, Info, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { cloneElement, isValidElement } from "react";
+import { cloneElement, isValidElement, useState } from "react";
 import { cn, initials, toneFor } from "@/lib/utils";
 
 export { ConfirmDialog, Dialog, ReasonDialog } from "./dialog";
@@ -184,9 +184,11 @@ export function IconButton({ icon: Icon, label, soon = false, dot = false, onCli
 }
 
 export function Avatar({ name, id, size = 40, src }: { name: string; id: string; size?: number; src?: string | null }) {
-  if (src) {
+  // Photo links expire and uploads can fail, so a photo that won't load falls back to initials.
+  const [failed, setFailed] = useState<string | null>(null);
+  if (src && src !== failed) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt="" width={size} height={size} className="shrink-0 rounded-full object-cover ring-2 ring-surface" style={{ width: size, height: size }} />;
+    return <img src={src} alt="" width={size} height={size} className="shrink-0 rounded-full object-cover ring-2 ring-surface" style={{ width: size, height: size }} onError={() => setFailed(src)} />;
   }
   return (
     <span

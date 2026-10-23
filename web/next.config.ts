@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  async redirects() {
+    // The directory moved from /alumni to /directory. Profiles stay at /alumni/:profileId.
+    return [{ source: "/alumni", destination: "/directory", permanent: true }];
+  },
   async headers() {
     return [
       {

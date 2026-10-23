@@ -1,186 +1,124 @@
 "use client";
 
+import { BadgeCheck, Mail, Search, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
-import {
-  Briefcase, CalendarDays, GraduationCap, Handshake, Search, Trophy, UserPlus, Users,
-} from "lucide-react";
-import { Avatar, Card, EmptyState, IconChip, LinkButton, Spinner, StatTile, VerifiedMark } from "@/components/ui";
-import { cn } from "@/lib/utils";
-import { useConnections, useDirectory, useMe, useMyProfile, useOrgs } from "@/lib/api/hooks";
+import { useState } from "react";
+import { Alert, Badge, Button, Card, LinkButton, Skeleton, VerifiedMark, useToast } from "@/components/ui";
+import { api } from "@/lib/api/client";
+import { friendlyError } from "@/lib/api/messages";
+import { useConnections, useMe, useMyProfile } from "@/lib/api/hooks";
+import type { Profile } from "@/lib/api/types";
 
-type Quick = { href: string; icon: React.ElementType; label: string; soon?: boolean };
-const QUICK: Quick[] = [
-  { href: "/alumni", icon: Users, label: "Browse alumni" },
-  { href: "/connections", icon: UserPlus, label: "Connections" },
-  { href: "/schools", icon: GraduationCap, label: "Schools" },
-  { href: "/partners", icon: Handshake, label: "Partners" },
-  { href: "/sports", icon: Trophy, label: "Sports & Golf", soon: true },
-  { href: "/events", icon: CalendarDays, label: "Events", soon: true },
-];
+const VOUCHES_NEEDED = 3;
 
-function QuickAction({ href, icon: Icon, label, soon }: Quick) {
-  const tone = soon ? "text-faint" : "text-ink";
-  const body = (
-    <>
-      <Icon className={cn("size-8", tone)} strokeWidth={1.5} aria-hidden />
-      <span className={cn("text-center text-[13px] font-semibold leading-tight", tone)}>{label}</span>
-      {soon && <span className="text-[10px] font-medium text-faint">Soon</span>}
-    </>
-  );
-  if (soon) {
-    return <div aria-disabled className="flex cursor-not-allowed flex-col items-center gap-2 rounded-xl px-2 py-3">{body}</div>;
-  }
-  return (
-    <Link href={href} className="flex flex-col items-center gap-2 rounded-xl px-2 py-3 transition-colors hover:bg-canvas">
-      {body}
-    </Link>
-  );
+/** The profile details that are still empty, in plain words. The owner always sees all of their own fields. */
+function missingFields(p: Profile): string[] {
+  const out: string[] = [];
+  if (!p.school_id) out.push("your school");
+  if (!p.graduation_year) out.push("your graduation year");
+  if (!p.profession) out.push("your profession");
+  if (!p.company) out.push("your company");
+  if (!p.bio) out.push("a short bio");
+  if (p.skills.length === 0) out.push("your skills");
+  if (p.interests.length === 0) out.push("your interests");
+  if (!p.avatar_url) out.push("a photo");
+  return out;
 }
 
 export default function HomePage() {
+  const toast = useToast();
   const me = useMe();
   const profile = useMyProfile();
-  const directory = useDirectory(0);
   const connections = useConnections();
-  const schools = useOrgs("school");
-  const firstName = profile.data?.full_name.split(" ")[0] ?? "there";
-  const all = connections.data ?? [];
-  const pending = all.filter((c) => c.status === "pending" && c.addressee_id === me.data?.id);
-  const accepted = all.filter((c) => c.status === "accepted");
-  const verified = profile.data?.verification_status === "verified";
+  const [resending, setResending] = useState(false);
+
+  async function resend() {
+    setResending(true);
+    try {
+      await api("auth/email/verify/request", { method: "POST" });
+      toast("We sent you a new link.");
+    } catch (e) {
+      toast(friendlyError(e), "info");
+    } finally {
+      setResending(false);
+    }
+  }
+
+  const p = profile.data;
+  const emailVerified = Boolean(me.data?.email_verified_at);
+  const waiting = (connections.data ?? []).filter((c) => c.status === "pending" && c.addressee_id === me.data?.id).length;
+  const verified = p?.verification_status === "verified";
+  const missing = p ? missingFields(p) : [];
+  const firstName = p?.full_name.split(" ")[0];
 
   return (
-    <div>
-      {/* Full-bleed hero: breaks out of the page's container so the dark
-          background reaches the browser edge. Everything — headline,
-          search bar, quick-action icons — sits directly on that dark
-          background as one continuous block; there is deliberately no
-          white card anywhere in the hero. Cards start below the fold,
-          same as the reference. */}
-      <section className="relative -mx-4 -mt-4 overflow-hidden bg-side sm:-mx-6 sm:-mt-6 lg:-mx-10 lg:-mt-8 xl:-mx-14">
-        {/* Demo placeholder — swap the file at web/public/images/hero-demo.jpg
-            for a real campus/graduation photo whenever one's ready; nothing
-            else here needs to change. */}
-        <div
-          className="absolute inset-0 bg-cover bg-bottom"
-          style={{ backgroundImage: "url(/images/hero-demo.jpg)" }}
-          aria-hidden
-        />
-        <div className="absolute inset-0 bg-side/80" aria-hidden />
-        <div className="relative mx-auto max-w-[1680px] px-6 py-16 sm:py-20 lg:px-10 lg:py-24 xl:px-14">
-          <h1 className="max-w-3xl text-3xl font-bold leading-[1.15] text-white sm:text-4xl lg:text-5xl">
-            Welcome back, {firstName}.
-          </h1>
-          <p className="mt-4 max-w-xl text-lg text-white/60">
-            Connect with fellow alumni, explore schools and partners, and put your network to work —
-            one place for everything that keeps your community close.
+    <div className="mx-auto max-w-3xl space-y-6">
+      <header>
+        <h1 className="text-title">{firstName ? `Welcome, ${firstName}` : "Welcome"}</h1>
+        <p className="mt-1 text-muted">Find your school family and keep in touch.</p>
+      </header>
+
+      {me.data && !emailVerified && (
+        <Alert tone="warn">
+          <p className="font-semibold">Verify your email</p>
+          <p className="mt-0.5">We sent a link to {me.data.email}. Open it to confirm your address.</p>
+          <Button variant="secondary" size="sm" className="mt-3" loading={resending} onClick={resend}>
+            <Mail className="size-4" aria-hidden /> Resend link
+          </Button>
+        </Alert>
+      )}
+
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <LinkButton href="/directory" className="sm:flex-1"><Search className="size-4" aria-hidden /> Find alumni</LinkButton>
+        <LinkButton href="/profile" variant="secondary" className="sm:flex-1">Edit my profile</LinkButton>
+        <LinkButton href="/connections" variant="secondary" className="sm:flex-1"><Users className="size-4" aria-hidden /> My connections</LinkButton>
+      </div>
+
+      {waiting > 0 && (
+        <Link href="/connections?tab=received" className="block rounded-card">
+          <Card interactive className="flex items-center gap-3">
+            <span className="inline-flex size-11 items-center justify-center rounded-xl bg-brand-soft text-brand-ink"><UserPlus className="size-5" aria-hidden /></span>
+            <span>
+              <span className="block font-semibold">
+                {waiting} connection {waiting === 1 ? "request is" : "requests are"} waiting for you
+              </span>
+              <span className="block text-small text-muted">Open them to accept or decline.</span>
+            </span>
+          </Card>
+        </Link>
+      )}
+
+      <Card className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 text-heading"><BadgeCheck className="size-5 text-muted" aria-hidden /> Verification</h2>
+          {profile.isLoading ? <Skeleton className="h-6 w-24" /> : <Badge tone={verified ? "blue" : "neutral"}>{verified ? "Verified" : "Unverified"}</Badge>}
+        </div>
+        {verified ? (
+          <p className="text-small text-muted">Your school has confirmed you. Others see a <VerifiedMark /> next to your name.</p>
+        ) : (
+          <>
+            <p className="text-small text-muted">A verified mark shows other alumni that you really went to your school. There are three ways to get it:</p>
+            <ol className="list-decimal space-y-1.5 pl-5 text-small">
+              <li>Sign up with a school email address.</li>
+              <li>Ask your school’s administrator to verify you.</li>
+              <li>
+                Get vouches from verified alumni of your school.
+                {p && <> You have <strong>{p.vouch_count} of {VOUCHES_NEEDED}</strong>.</>}
+              </li>
+            </ol>
+          </>
+        )}
+      </Card>
+
+      {p && missing.length > 0 && (
+        <Card className="space-y-2">
+          <h2 className="text-heading">Complete your profile</h2>
+          <p className="text-small text-muted">
+            People find you more easily with more detail. You haven’t added {missing.join(", ")} yet.
           </p>
-        </div>
-      </section>
-
-      {/* Second band: search bar plus a line of copy filling the space
-          where the icon row used to sit. A real image goes here later —
-          for now, words. The icon row moved down onto the plain page
-          body below, out of this dark area entirely. */}
-      <section className="relative -mx-4 overflow-hidden bg-side-deep sm:-mx-6 lg:-mx-10 xl:-mx-14">
-        <div className="relative mx-auto max-w-[1680px] px-6 py-10 sm:py-12 lg:px-10 lg:py-14 xl:px-14">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-5 top-1/2 size-5 -translate-y-1/2 text-faint" aria-hidden />
-            <input
-              type="search"
-              disabled
-              placeholder="Search alumni, schools, partners…"
-              className="h-16 w-full rounded-full border-0 bg-surface pl-14 pr-5 text-[15px] text-ink placeholder:text-faint disabled:cursor-not-allowed"
-            />
-          </div>
-
-          <p className="mx-auto mt-8 max-w-2xl text-center text-white/55">
-            Thousands of alumni, dozens of schools, and the partners who support them —
-            all in one place built for this community.
-          </p>
-        </div>
-      </section>
-
-      <div className="mx-auto grid max-w-[1680px] grid-cols-3 gap-2 py-8 sm:grid-cols-6">
-        {QUICK.map((item) => <QuickAction key={item.href} {...item} />)}
-      </div>
-
-      <div className="mb-6 flex flex-wrap gap-4">
-        <StatTile label="Alumni in directory" value={directory.data?.length ?? "—"} tone="brand" />
-        <StatTile label="Your connections" value={accepted.length} tone="blue" />
-        <StatTile label="Schools" value={schools.data?.length ?? "—"} tone="gold" />
-        <StatTile label="Verification" value={verified ? "Verified" : "Pending"} />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Card elevation="raised">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-semibold">Recently active alumni</h2>
-              <Link href="/alumni" className="text-sm font-medium text-brand-ink hover:underline">View all</Link>
-            </div>
-            {directory.isLoading && <Spinner />}
-            {directory.data && directory.data.length === 0 && (
-              <EmptyState title="No one in the directory yet" body="Be the first — invite classmates to join." />
-            )}
-            <ul className="divide-y divide-line">
-              {directory.data?.slice(0, 6).map((p) => (
-                <li key={p.id}>
-                  <Link href={`/alumni/${p.id}`} className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-canvas">
-                    <Avatar name={p.full_name} id={p.id} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {p.full_name} {p.verification_status === "verified" && <VerifiedMark />}
-                      </p>
-                      <p className="truncate text-xs text-muted">{[p.profession, p.country].filter(Boolean).join(" · ") || "Alumni member"}</p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Card>
-
-          <Card elevation="resting" className="border-dashed opacity-80">
-            <IconChip icon={Briefcase} tone="ink" />
-            <p className="mt-3 font-semibold">Opportunities & mentorship</p>
-            <p className="mt-1 text-sm text-muted">Jobs, internships, and mentor matching for alumni.</p>
-            <p className="mt-3 text-xs font-medium text-faint">Coming soon</p>
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card elevation="raised">
-            <h2 className="mb-3 font-semibold">Pending requests</h2>
-            {connections.isLoading && <Spinner label="Loading" />}
-            {pending.length === 0 && !connections.isLoading && <p className="text-sm text-muted">No pending requests.</p>}
-            <ul className="space-y-3">
-              {pending.slice(0, 5).map((c) => (
-                <li key={c.id} className="flex items-center gap-3">
-                  <Avatar name={c.other_full_name ?? "Alumni member"} id={c.other_user_id} size={32} />
-                  <span className="flex-1 truncate text-sm">{c.other_full_name ?? "Alumni member"}</span>
-                </li>
-              ))}
-            </ul>
-            {pending.length > 0 && <LinkButton href="/connections" variant="secondary" size="sm" className="mt-3 w-full">Review requests</LinkButton>}
-          </Card>
-
-          <Card elevation="raised">
-            <h2 className="mb-3 font-semibold">Featured schools</h2>
-            {schools.isLoading && <Spinner label="Loading" />}
-            <ul className="space-y-1">
-              {schools.data?.slice(0, 5).map((s) => (
-                <li key={s.id}>
-                  <Link href={`/schools/${s.id}`} className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm hover:bg-canvas">
-                    <IconChip icon={GraduationCap} tone="gold" size={30} />
-                    <span className="truncate">{s.name}</span>
-                  </Link>
-                </li>
-              ))}
-              {schools.data?.length === 0 && <p className="text-sm text-muted">No schools yet.</p>}
-            </ul>
-          </Card>
-        </div>
-      </div>
+          <LinkButton href="/profile" variant="secondary" size="sm">Add details</LinkButton>
+        </Card>
+      )}
     </div>
   );
 }

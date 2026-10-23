@@ -1,105 +1,263 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Lock, ShieldCheck, UserCheck, UserPlus } from "lucide-react";
-import { Alert, Avatar, Badge, Button, Card, Chip, EmptyState, Spinner, VerifiedMark } from "@/components/ui";
-import { useConnections, useMe, useProfile, useRoles, useWrite } from "@/lib/api/hooks";
-import { canVerifyForSchool } from "@/lib/roles";
+import { ArrowLeft, Flag, Pencil, ShieldCheck, ShieldOff, UserCheck, UserMinus, UserPlus, UserX, X } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useState } from "react";
+import {
+  Alert, Avatar, Badge, Button, Card, Chip, ConfirmDialog, EmptyState, LinkButton, ReasonDialog, Skeleton, VerifiedMark, useToast,
+} from "@/components/ui";
 import { api, ApiError } from "@/lib/api/client";
+import { friendlyError } from "@/lib/api/messages";
+import { useBlocked, useConnections, useMe, useOrg, useProfile, useRoles, useWrite } from "@/lib/api/hooks";
+import { canVerifyForSchool } from "@/lib/roles";
+
+const VOUCHES_NEEDED = 3;
+
+type Dialog = "block" | "remove" | "report" | null;
 
 export default function AlumniProfilePage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
+  const { profileId } = useParams<{ profileId: string }>();
+  const toast = useToast();
   const me = useMe();
   const roles = useRoles();
-  const profile = useProfile(id);
+  const profile = useProfile(profileId);
   const connections = useConnections();
+  const blocked = useBlocked();
+  const school = useOrg(profile.data?.school_id ?? "");
+  const [dialog, setDialog] = useState<Dialog>(null);
+  const [problem, setProblem] = useState<string | null>(null);
 
-  const connect = useWrite((addressee_id: string) => api("connections", { method: "POST", body: { addressee_id } }), [["connections"]]);
-  const vouch = useWrite(() => api(`alumni/${id}/vouch`, { method: "POST" }), [["profile", id]]);
-  const verify = useWrite((verified: boolean) => api(`alumni/${id}/verify`, { method: "PATCH", body: { verified } }), [["profile", id]]);
+  // Whatever an action changes, these are refreshed afterwards.
+  const refresh = [["connections"], ["blocked"], ["profile", profileId], ["directory"]];
+  const connect = useWrite((userId: string) => api("connections", { method: "POST", body: { addressee_id: userId } }), refresh);
+  const cancel = useWrite((id: string) => api(`connections/${id}`, { method: "DELETE" }), refresh);
+  const accept = useWrite((id: string) => api(`connections/${id}/accept`, { method: "PATCH" }), refresh);
+  const decline = useWrite((id: string) => api(`connections/${id}/decline`, { method: "PATCH" }), refresh);
+  const vouch = useWrite(() => api(`alumni/${profileId}/vouch`, { method: "POST" }), refresh);
+  const verify = useWrite((verified: boolean) => api(`alumni/${profileId}/verify`, { method: "PATCH", body: { verified } }), refresh);
+  const unblock = useWrite((id: string) => api(`connections/${id}/unblock`, { method: "POST" }), refresh);
+  const block = useWrite((userId: string) => api("connections/block", { method: "POST", body: { user_id: userId } }), refresh);
 
-  if (profile.isLoading) return <Spinner label="Loading profile" />;
-  if (profile.isError) {
-    const notFound = profile.error instanceof ApiError && profile.error.status === 404;
+  // One place to run an action: clear the last problem, show the server's words if it refuses.
+  async function act(fn: () => Promise<unknown>, success: string) {
+    setProblem(null);
+    try {
+      await fn();
+      toast(success);
+    } catch (e) {
+      setProblem(friendlyError(e));
+    }
+  }
+
+  if (profile.isLoading || me.isLoading) {
     return (
-      <EmptyState
-        title={notFound ? "Profile not visible" : "Couldn't load this profile"}
-        body={notFound ? "This member has set their profile to private, or it doesn't exist." : "Try again in a moment."}
-        action={<Button variant="secondary" onClick={() => router.back()}><ArrowLeft className="size-4" /> Back</Button>}
-      />
+      <div className="mx-auto max-w-2xl space-y-4" role="status" aria-label="Loading profile">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-64 rounded-card" />
+      </div>
     );
   }
+  if (profile.isError) {
+    // Hidden, suspended and non-existent profiles all answer 404 on purpose. Never say which.
+    const unavailable = profile.error instanceof ApiError && profile.error.status === 404;
+    return (
+      <div className="mx-auto max-w-2xl">
+        <EmptyState
+          title={unavailable ? "This profile isn’t available." : "We couldn’t load this profile."}
+          body={unavailable ? undefined : "Check your connection and try again."}
+          action={
+            unavailable ? (
+              <LinkButton href="/directory" variant="secondary">Back to the directory</LinkButton>
+            ) : (
+              <Button variant="secondary" onClick={() => void profile.refetch()}>Try again</Button>
+            )
+          }
+        />
+      </div>
+    );
+  }
+
   const p = profile.data!;
-  const isMe = p.user_id === me.data?.id;
-  const existing = connections.data?.find((c) => c.other_user_id === p.user_id);
+  const myId = me.data?.id;
+  const isMe = p.user_id === myId;
+  // Declined and removed rows are history, not a relationship.
+  const link = connections.data?.find((c) => c.other_user_id === p.user_id && (c.status === "pending" || c.status === "accepted"));
+  const blockedRow = blocked.data?.find((c) => c.other_user_id === p.user_id);
   const canVerify = !isMe && canVerifyForSchool(roles.data, p.school_id);
+  const verified = p.verification_status === "verified";
+  const work = [p.profession, p.company].filter(Boolean).join(" at ");
+  const where = [school.data?.name, p.graduation_year && `Class of ${p.graduation_year}`, p.country].filter(Boolean).join(" · ");
+
+  let relationship: React.ReactNode = null;
+  if (blockedRow) {
+    relationship = (
+      <>
+        <Badge>You blocked this person</Badge>
+        <Button variant="secondary" loading={unblock.isPending} onClick={() => act(() => unblock.mutateAsync(blockedRow.id), "Unblocked.")}>Unblock</Button>
+      </>
+    );
+  } else if (!link) {
+    relationship = (
+      <Button loading={connect.isPending} onClick={() => act(() => connect.mutateAsync(p.user_id), "Request sent.")}>
+        <UserPlus className="size-4" aria-hidden /> Connect
+      </Button>
+    );
+  } else if (link.status === "accepted") {
+    relationship = (
+      <>
+        <Badge tone="ok">Connected</Badge>
+        <Button variant="secondary" onClick={() => setDialog("remove")}><UserMinus className="size-4" aria-hidden /> Remove connection</Button>
+      </>
+    );
+  } else if (link.requester_id === myId) {
+    relationship = (
+      <>
+        <Badge>Request sent</Badge>
+        <Button variant="secondary" loading={cancel.isPending} onClick={() => act(() => cancel.mutateAsync(link.id), "Request cancelled.")}>Cancel request</Button>
+      </>
+    );
+  } else {
+    relationship = (
+      <>
+        <Button loading={accept.isPending} onClick={() => act(() => accept.mutateAsync(link.id), "You are now connected.")}>Accept</Button>
+        <Button variant="secondary" loading={decline.isPending} onClick={() => act(() => decline.mutateAsync(link.id), "Request declined.")}>Decline</Button>
+      </>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
-      <button onClick={() => router.back()} className="mb-4 flex items-center gap-1 text-sm text-muted hover:text-ink">
-        <ArrowLeft className="size-4" /> Back
-      </button>
-      {connect.isError && <div className="mb-4"><Alert>{connect.error.message}</Alert></div>}
-      {vouch.isError && <div className="mb-4"><Alert>{vouch.error.message}</Alert></div>}
+      <Link href="/directory" className="mb-4 inline-flex min-h-11 items-center gap-1.5 text-small text-muted hover:text-ink">
+        <ArrowLeft className="size-4" aria-hidden /> Directory
+      </Link>
+
+      {problem && (
+        <div className="mb-4">
+          <Alert>
+            <span className="flex items-start justify-between gap-3">
+              {problem}
+              <button type="button" onClick={() => setProblem(null)} aria-label="Dismiss message" className="-m-2 inline-flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-black/5">
+                <X className="size-4" aria-hidden />
+              </button>
+            </span>
+          </Alert>
+        </div>
+      )}
 
       <Card>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Avatar name={p.full_name} id={p.id} size={64} />
-            <div>
-              <h1 className="flex items-center gap-1.5 text-xl font-bold">
-                {p.full_name} {p.verification_status === "verified" && <VerifiedMark />}
-              </h1>
-              <p className="text-muted">{[p.profession, p.company].filter(Boolean).join(" at ") || "Alumni member"}</p>
-              <p className="text-sm text-muted">{[p.country, p.graduation_year && `Class of ${p.graduation_year}`].filter(Boolean).join(" · ")}</p>
-            </div>
+        <div className="flex items-start gap-4">
+          <Avatar name={p.full_name} id={p.id} size={72} src={p.avatar_url} />
+          <div className="min-w-0">
+            <h1 className="flex flex-wrap items-center gap-x-2 text-title">
+              <span className="break-words">{p.full_name}</span>
+              {verified && <VerifiedMark />}
+            </h1>
+            {work && <p className="text-body">{work}</p>}
+            {where && <p className="text-small text-muted">{where}</p>}
           </div>
-          {!isMe && (
-            <div className="flex flex-col gap-2">
-              {existing ? (
-                <Badge tone={existing.status === "accepted" ? "ok" : "neutral"}>
-                  {existing.status === "accepted" ? "Connected" : existing.status === "pending" ? "Request pending" : existing.status}
-                </Badge>
-              ) : (
-                <Button size="sm" loading={connect.isPending} onClick={() => connect.mutate(p.user_id)}>
-                  <UserPlus className="size-4" /> Connect
-                </Button>
-              )}
-              {p.verification_status !== "verified" && (
-                <Button size="sm" variant="secondary" loading={vouch.isPending} onClick={() => vouch.mutate()}>
-                  <UserCheck className="size-4" /> Vouch for them
-                </Button>
-              )}
-            </div>
-          )}
         </div>
 
-        {p.bio && <p className="mt-4 text-sm leading-relaxed">{p.bio}</p>}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Badge tone={verified ? "blue" : "neutral"}>{verified ? "Verified alumnus" : "Not verified yet"}</Badge>
+          {!verified && <span className="text-caption text-muted">{p.vouch_count} of {VOUCHES_NEEDED} vouches</span>}
+        </div>
 
-        {(p.skills.length > 0 || p.interests.length > 0) && (
-          <div className="mt-4 space-y-2">
-            {p.skills.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">{p.skills.map((s) => <Chip key={s}>{s}</Chip>)}</div>
-            )}
-            {p.interests.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">{p.interests.map((s) => <Chip key={s}>{s}</Chip>)}</div>
-            )}
-          </div>
+        {p.bio && <p className="mt-4 whitespace-pre-line text-body">{p.bio}</p>}
+
+        {p.skills.length > 0 && (
+          <section className="mt-5" aria-label="Skills">
+            <h2 className="mb-2 text-small font-semibold">Skills</h2>
+            <div className="flex flex-wrap gap-2">{p.skills.map((s) => <Chip key={s}>{s}</Chip>)}</div>
+          </section>
+        )}
+        {p.interests.length > 0 && (
+          <section className="mt-4" aria-label="Interests">
+            <h2 className="mb-2 text-small font-semibold">Interests</h2>
+            <div className="flex flex-wrap gap-2">{p.interests.map((s) => <Chip key={s}>{s}</Chip>)}</div>
+          </section>
         )}
 
-        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-4 text-xs text-muted">
-          <span className="flex items-center gap-1"><Lock className="size-3.5" /> {p.profile_visibility.replace("_", " ")}</span>
-          <span>{p.vouch_count} vouch{p.vouch_count === 1 ? "" : "es"}</span>
+        <div className="mt-6 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:flex-wrap sm:items-center">
+          {isMe ? (
+            <LinkButton href="/profile"><Pencil className="size-4" aria-hidden /> Edit profile</LinkButton>
+          ) : (
+            <>
+              {relationship}
+              <span className="hidden flex-1 sm:block" />
+              {!verified && (
+                <Button variant="secondary" loading={vouch.isPending} onClick={() => act(() => vouch.mutateAsync(undefined), "Thank you for vouching.")}>
+                  <UserCheck className="size-4" aria-hidden /> Vouch
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => setDialog("report")}><Flag className="size-4" aria-hidden /> Report</Button>
+              {!blockedRow && <Button variant="ghost" onClick={() => setDialog("block")}><UserX className="size-4" aria-hidden /> Block</Button>}
+            </>
+          )}
         </div>
       </Card>
 
-      {canVerify && p.verification_status !== "verified" && (
+      {canVerify && (
         <Card className="mt-4">
-          <p className="mb-3 flex items-center gap-2 font-semibold"><ShieldCheck className="size-4 text-brand-ink" /> School admin action</p>
-          <Button size="sm" loading={verify.isPending} onClick={() => verify.mutate(true)}>Mark as verified</Button>
+          <p className="mb-1 flex items-center gap-2 font-semibold"><ShieldCheck className="size-4 text-brand-ink" aria-hidden /> School verification</p>
+          <p className="mb-3 text-small text-muted">
+            {verified ? "This person is verified. You can take the verification away." : "Confirm that this person went to the school."}
+          </p>
+          {verified ? (
+            <Button variant="danger" loading={verify.isPending} onClick={() => act(() => verify.mutateAsync(false), "Verification removed.")}>
+              <ShieldOff className="size-4" aria-hidden /> Remove verification
+            </Button>
+          ) : (
+            <Button loading={verify.isPending} onClick={() => act(() => verify.mutateAsync(true), "Verified.")}>
+              <ShieldCheck className="size-4" aria-hidden /> Verify
+            </Button>
+          )}
         </Card>
       )}
+
+      <ConfirmDialog
+        open={dialog === "remove"}
+        title="Remove this connection?"
+        body={<>You and {p.full_name} will no longer be connected. You can send a new request later.</>}
+        confirmLabel="Remove connection"
+        danger
+        onClose={() => setDialog(null)}
+        onConfirm={async () => {
+          if (!link) return;
+          await cancel.mutateAsync(link.id);
+          toast("Connection removed.");
+        }}
+      />
+      <ConfirmDialog
+        open={dialog === "block"}
+        title={`Block ${p.full_name}?`}
+        body={<>They won’t be able to find you or contact you, and any connection between you ends. You can unblock them later from Settings, but you would need to connect again.</>}
+        confirmLabel="Block"
+        danger
+        onClose={() => setDialog(null)}
+        onConfirm={async () => {
+          await block.mutateAsync(p.user_id);
+          toast("Blocked.");
+        }}
+      />
+      <ReasonDialog
+        open={dialog === "report"}
+        title={`Report ${p.full_name}`}
+        body="Tell our moderators what is wrong. Only moderators will see this."
+        label="What happened?"
+        confirmLabel="Send report"
+        danger
+        onClose={() => setDialog(null)}
+        onSubmit={async (reason) => {
+          try {
+            await api("reports", { method: "POST", body: { target_type: "profile", target_id: p.id, reason } });
+          } catch (e) {
+            if (e instanceof ApiError && e.status === 409) throw new ApiError(409, e.code, "You already reported this.");
+            throw e;
+          }
+          toast("Thank you. Our moderators will take a look.");
+        }}
+      />
     </div>
   );
 }

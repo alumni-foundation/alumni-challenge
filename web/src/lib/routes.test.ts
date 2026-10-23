@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPublicPath, isSignedOutOnly } from "./routes";
+import { isPublicPath, isSignedOutOnly, isStaffArea } from "./routes";
 
 describe("isPublicPath", () => {
   it.each(["/", "/schools", "/schools/abc", "/partners", "/partners/abc", "/terms", "/privacy", "/community-rules", "/contact", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/403", "/404", "/suspended"])(
@@ -20,8 +20,16 @@ describe("isPublicPath", () => {
 
 describe("isSignedOutOnly", () => {
   it("covers the pages a signed-in person should be moved on from", () => {
-    expect(["/login", "/register", "/forgot-password"].every(isSignedOutOnly)).toBe(true);
+    expect(["/login", "/register"].every(isSignedOutOnly)).toBe(true);
+    expect(isSignedOutOnly("/forgot-password")).toBe(false);
     expect(isSignedOutOnly("/verify-email")).toBe(false);
     expect(isSignedOutOnly("/reset-password")).toBe(false);
+  });
+});
+
+describe("isStaffArea", () => {
+  it("covers admin, school and partner pages only", () => {
+    expect(["/admin", "/admin/reports", "/school/abc", "/partner/abc/edit"].every(isStaffArea)).toBe(true);
+    expect(["/home", "/schools", "/partners/abc", "/adminfoo", "/directory"].some(isStaffArea)).toBe(false);
   });
 });

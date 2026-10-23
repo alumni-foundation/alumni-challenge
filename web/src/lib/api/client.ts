@@ -47,14 +47,16 @@ export function safeNext(value: string | null): string | null {
   return value && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\") ? value : null;
 }
 
-/** Calls the backend through the same-origin proxy. Tokens never reach browser JavaScript. */
-export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+type Sent = { method?: string; body?: unknown; form?: FormData };
+
+async function request(path: string, init: Sent): Promise<{ res: Response; data: unknown }> {
   let res: Response;
   try {
     res = await fetch(`/api/backend/${path}`, {
       method: init.method ?? "GET",
+      // A FormData body sets its own content type (with the multipart boundary).
       headers: init.body !== undefined ? { "content-type": "application/json" } : undefined,
-      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+      body: init.form ?? (init.body !== undefined ? JSON.stringify(init.body) : undefined),
     });
   } catch {
     throw new ApiError(0, "network", "Can't reach the server. Check your connection.");
@@ -66,7 +68,24 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
     window.location.assign(`/login?reason=expired&next=${encodeURIComponent(here)}`);
   }
   if (!res.ok) throw toError(res, data);
-  return data as T;
+  return { res, data };
+}
+
+/** Calls the backend through the same-origin proxy. Tokens never reach browser JavaScript. */
+export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  return (await request(path, init)).data as T;
+}
+
+/** A list plus the API's count of everything that matched (it stops counting at 10,000). */
+export async function apiPage<T>(path: string): Promise<{ items: T[]; total: number | null }> {
+  const { res, data } = await request(path, {});
+  const header = res.headers.get("x-total-count");
+  return { items: data as T[], total: header === null ? null : Number(header) };
+}
+
+/** Uploads one file (multipart). The caller adds the fields, such as `purpose`. */
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  return (await request(path, { method: "POST", form })).data as T;
 }
 
 /** For the auth routes that set or clear cookies, or that work without a session. */

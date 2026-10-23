@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { api, ApiError } from "./client";
+import { api, ApiError, apiPage } from "./client";
 import type {
   AuditLogEntry,
   Connection,
@@ -49,6 +49,31 @@ export const useDirectory = (page: number) =>
     placeholderData: (prev) => prev,
   });
 
+export type DirectoryFilters = { q: string; country: string; schoolId: string; year: string; verifiedOnly: boolean; skill: string };
+export const NO_FILTERS: DirectoryFilters = { q: "", country: "", schoolId: "", year: "", verifiedOnly: false, skill: "" };
+
+export function directoryQuery(f: DirectoryFilters, page: number): string {
+  const qs = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(page * PAGE_SIZE) });
+  if (f.q.trim()) qs.set("q", f.q.trim());
+  if (f.country.trim()) qs.set("country", f.country.trim());
+  if (f.schoolId) qs.set("school_id", f.schoolId);
+  if (f.year.trim()) qs.set("graduation_year", f.year.trim());
+  if (f.verifiedOnly) qs.set("verified", "true");
+  if (f.skill.trim()) qs.set("skill", f.skill.trim());
+  return qs.toString();
+}
+
+/** One page of directory results and the total number of matches (null if the API didn't say). */
+export const useDirectorySearch = (filters: DirectoryFilters, page: number) =>
+  useQuery({
+    queryKey: ["directory", filters, page],
+    queryFn: () => apiPage<ProfileSummary>(`alumni/directory?${directoryQuery(filters, page)}`),
+    placeholderData: (prev) => prev,
+  });
+
+export const useBlocked = () =>
+  useQuery({ queryKey: ["blocked"], queryFn: () => api<Connection[]>("connections/blocked") });
+
 export const useProfile = (id: string) =>
   useQuery({ queryKey: ["profile", id], queryFn: () => api<Profile>(`alumni/${id}`), retry: false });
 
@@ -63,7 +88,7 @@ export const useOrgs = (type: OrgType) =>
   });
 
 export const useOrg = (id: string) =>
-  useQuery({ queryKey: ["org", id], queryFn: () => api<Organization>(`organizations/${id}`), retry: false });
+  useQuery({ queryKey: ["org", id], queryFn: () => api<Organization>(`organizations/${id}`), retry: false, enabled: id !== "" });
 
 export const useSessions = () =>
   useQuery({ queryKey: ["sessions"], queryFn: () => api<Session[]>("auth/sessions") });

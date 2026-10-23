@@ -45,12 +45,18 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
     access = fresh.access_token;
   }
 
-  const body = unsafe ? await req.text() : undefined;
+  // Uploads are the one place a body is not JSON. Pass the file through with its multipart boundary.
+  const contentType = req.headers.get("content-type") ?? "";
+  const multipart = joined === "files" && contentType.startsWith("multipart/form-data");
+  const body = !unsafe ? undefined : multipart ? await req.arrayBuffer() : await req.text();
   const url = `${apiBase()}/${joined}${req.nextUrl.search}`;
   const call = (token: string) =>
     fetch(url, {
       method: req.method,
-      headers: { authorization: `Bearer ${token}`, ...(body ? { "content-type": "application/json" } : {}) },
+      headers: {
+        authorization: `Bearer ${token}`,
+        ...(body ? { "content-type": multipart ? contentType : "application/json" } : {}),
+      },
       body: body || undefined,
       cache: "no-store",
     }).catch(() => null);
@@ -65,10 +71,13 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
   if (!upstream) return unavailable();
 
   const text = await upstream.text();
-  const res = new NextResponse(upstream.status === 204 ? null : text, {
-    status: upstream.status,
-    headers: { "content-type": upstream.headers.get("content-type") ?? "application/json" },
-  });
+  const headers: Record<string, string> = {
+    "content-type": upstream.headers.get("content-type") ?? "application/json",
+  };
+  // The directory reports how many people match in this header.
+  const total = upstream.headers.get("x-total-count");
+  if (total) headers["x-total-count"] = total;
+  const res = new NextResponse(upstream.status === 204 ? null : text, { status: upstream.status, headers });
   if (fresh) setAuthCookies(res, fresh);
   return res;
 }
