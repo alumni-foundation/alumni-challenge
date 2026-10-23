@@ -12,6 +12,11 @@ from app.core.config import get_settings
 settings = get_settings()
 _hasher = PasswordHasher()
 
+# Tolerance for ordinary clock drift between the machines that issue and check tokens.
+# Deliberately small and a constant, not a setting: a wide leeway keeps expired and
+# not-yet-valid tokens alive, so it must never be raised to paper over a wrong clock.
+JWT_LEEWAY_SECONDS = 10
+
 
 def hash_password(plain_password: str) -> str:
     return _hasher.hash(plain_password)
@@ -45,7 +50,10 @@ def create_access_token(user_id: uuid.UUID) -> str:
 def decode_access_token(token: str) -> uuid.UUID:
     """Raises jwt exceptions on failure — caller maps them to UnauthorizedError."""
     payload = jwt.decode(
-        token, settings.secret_key.get_secret_value(), algorithms=[settings.jwt_algorithm]
+        token,
+        settings.secret_key.get_secret_value(),
+        algorithms=[settings.jwt_algorithm],
+        leeway=JWT_LEEWAY_SECONDS,
     )
     if payload.get("type") != "access":
         raise jwt.InvalidTokenError("Not an access token")
@@ -97,7 +105,10 @@ def create_purpose_token(
 def decode_purpose_token(token: str, *, purpose: str) -> dict[str, Any]:
     """Raises jwt exceptions on failure — callers map them to UnauthorizedError."""
     payload = jwt.decode(
-        token, settings.secret_key.get_secret_value(), algorithms=[settings.jwt_algorithm]
+        token,
+        settings.secret_key.get_secret_value(),
+        algorithms=[settings.jwt_algorithm],
+        leeway=JWT_LEEWAY_SECONDS,
     )
     if payload.get("type") != purpose:
         raise jwt.InvalidTokenError("Token is not valid for this purpose.")
