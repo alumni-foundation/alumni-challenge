@@ -15,6 +15,7 @@ from app.core.http.security_headers import SecurityHeadersMiddleware
 from app.core.logging.middleware import RequestContextMiddleware
 from app.core.logging.setup import configure_logging
 from app.infrastructure.database import all_models  # noqa: F401 — registers every model
+from app.modules.files.policies import UPLOAD_MAX_BODY_BYTES
 
 settings = get_settings()
 
@@ -60,7 +61,11 @@ app.add_middleware(
     # Without this the browser hides the header from the web app's JavaScript.
     expose_headers=["X-Total-Count"],
 )
-app.add_middleware(BodySizeLimitMiddleware)
+app.add_middleware(
+    BodySizeLimitMiddleware,
+    # Uploads are the only route allowed a body bigger than the global 2 MiB.
+    route_limits={("POST", f"{settings.api_v1_prefix}/files"): UPLOAD_MAX_BODY_BYTES},
+)
 
 register_exception_handlers(app)
 
@@ -74,6 +79,7 @@ from app.modules.alumni.router import router as alumni_router  # noqa: E402
 from app.modules.audit.router import router as audit_router  # noqa: E402
 from app.modules.connections.router import router as connections_router  # noqa: E402
 from app.modules.domain_events import handlers as _domain_events_handlers  # noqa: E402, F401
+from app.modules.files.router import router as files_router  # noqa: E402
 from app.modules.identity.account_router import router as account_router  # noqa: E402
 from app.modules.memberships.router import router as roles_router  # noqa: E402
 from app.modules.moderation.router import router as moderation_router  # noqa: E402
@@ -86,6 +92,7 @@ app.include_router(account_router, prefix=settings.api_v1_prefix)
 app.include_router(alumni_router, prefix=settings.api_v1_prefix)
 app.include_router(audit_router, prefix=settings.api_v1_prefix)
 app.include_router(connections_router, prefix=settings.api_v1_prefix)
+app.include_router(files_router, prefix=settings.api_v1_prefix)
 app.include_router(moderation_router, prefix=settings.api_v1_prefix)
 app.include_router(roles_router, prefix=settings.api_v1_prefix)
 app.include_router(organizations_router, prefix=settings.api_v1_prefix)

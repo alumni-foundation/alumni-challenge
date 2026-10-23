@@ -1,9 +1,9 @@
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 from typing import Any
 
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-_DEFAULT_MAX_BYTES = 2 * 1024 * 1024  # 2 MiB — no endpoint accepts file uploads yet (Phase 4)
+_DEFAULT_MAX_BYTES = 2 * 1024 * 1024  # 2 MiB for every route that has no entry of its own
 
 _413_BODY = b'{"error":{"code":"payload_too_large","message":"Request body is too large."}}'
 
@@ -44,14 +44,27 @@ class BodySizeLimitMiddleware:
        an unbounded body from ever being fully buffered in memory.
     """
 
-    def __init__(self, app: ASGIApp, *, max_bytes: int = _DEFAULT_MAX_BYTES) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        *,
+        max_bytes: int = _DEFAULT_MAX_BYTES,
+        route_limits: Mapping[tuple[str, str], int] | None = None,
+    ) -> None:
+        """
+        `route_limits` maps an exact (method, path) to its own larger limit, for the few
+        routes that really take big bodies (file upload). Every other route keeps `max_bytes`.
+        """
         self.app = app
         self.max_bytes = max_bytes
+        self.route_limits = dict(route_limits or {})
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
+
+        limit = self.route_limits.get((scope["method"], scope["path"]), self.max_bytes)
 
         for name, value in scope.get("headers", []):
             if name == b"content-length":
@@ -59,7 +72,7 @@ class BodySizeLimitMiddleware:
                     declared = int(value)
                 except ValueError:
                     declared = 0
-                if declared > self.max_bytes:
+                if declared > limit:
                     await _send_413(send)
                     return
                 break
@@ -72,7 +85,7 @@ class BodySizeLimitMiddleware:
             message: MutableMapping[str, Any] = await receive()
             if message["type"] == "http.request":
                 seen += len(message.get("body", b""))
-                if seen > self.max_bytes:
+                if seen > limit:
                     too_large = True
             if too_large:
                 raise _PayloadTooLarge
