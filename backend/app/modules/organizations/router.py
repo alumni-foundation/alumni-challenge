@@ -7,12 +7,12 @@ from app.core.permissions.dependencies import require_roles, require_roles_for_o
 from app.core.permissions.roles import Role
 from app.core.rate_limit import rate_limit
 from app.infrastructure.database.session import get_db_session
-from app.modules.alumni.models import SchoolEmailDomain
+from app.modules.alumni.models import SchoolEmailDomain, VerificationStatus
 from app.modules.identity.dependencies import get_current_user
 from app.modules.identity.models import User
 from app.modules.memberships import role_changes
 from app.modules.memberships.models import Membership
-from app.modules.organizations import lookup, schemas, service
+from app.modules.organizations import lookup, rosters, schemas, service
 from app.modules.organizations.models import Organization, OrganizationType
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
@@ -176,3 +176,62 @@ async def revoke_membership(
     )
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/{organization_id}/members", response_model=list[schemas.MemberListItem])
+async def list_members(
+    organization_id: uuid.UUID,
+    response: Response,
+    db: AsyncSession = Depends(get_db_session),
+    _admin: User = Depends(require_roles_for_org(*_ORG_ADMINS)),
+    role: Role | None = None,
+    include_revoked: bool = False,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> list[rosters.MemberRow]:
+    """
+    The people who hold a role in THIS organization. Revoked roles are left out unless
+    `include_revoked` is set. The total is in the X-Total-Count header.
+    """
+    organization = await service.get_active_organization(db, organization_id=organization_id)
+    rows, total = await rosters.list_members(
+        db,
+        organization=organization,
+        role=role,
+        include_revoked=include_revoked,
+        limit=limit,
+        offset=offset,
+    )
+    response.headers["X-Total-Count"] = str(total)
+    return rows
+
+
+@router.get("/{organization_id}/roster", response_model=list[schemas.RosterItem])
+async def school_roster(
+    organization_id: uuid.UUID,
+    response: Response,
+    db: AsyncSession = Depends(get_db_session),
+    _admin: User = Depends(require_roles_for_org(Role.SCHOOL_ADMIN, Role.ADMIN, Role.SUPER_ADMIN)),
+    verification: VerificationStatus | None = Query(
+        default=None, description="`unverified` lists the alumni waiting to be verified"
+    ),
+    graduation_year: int | None = Query(default=None, ge=1900, le=2100),
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> list[rosters.RosterRow]:
+    """
+    The alumni who declared this school, for its admins. Name, graduation year, country and
+    verification state only, including profiles whose owner set them to private. The total
+    is in the X-Total-Count header.
+    """
+    organization = await service.get_active_organization(db, organization_id=organization_id)
+    rows, total = await rosters.list_school_roster(
+        db,
+        organization=organization,
+        verification=verification,
+        graduation_year=graduation_year,
+        limit=limit,
+        offset=offset,
+    )
+    response.headers["X-Total-Count"] = str(total)
+    return rows

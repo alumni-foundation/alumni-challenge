@@ -5,7 +5,9 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.core.permissions.roles import Role
-from app.modules.alumni.models import VerificationStatus
+from app.modules.alumni.models import VerificationMethod, VerificationStatus
+from app.modules.identity.models import UserStatus
+from app.modules.memberships.models import MembershipStatus
 from app.modules.organizations.models import OrganizationStatus, OrganizationType
 
 _SLUG_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
@@ -92,3 +94,32 @@ class UserLookupResponse(BaseModel):
     """`match` is null for every address that is not a member of this organization."""
 
     match: UserLookupMatch | None
+
+
+class MemberListItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    membership_id: uuid.UUID
+    user_id: uuid.UUID
+    email: str
+    full_name: str | None
+    role: Role
+    status: MembershipStatus
+    account_status: UserStatus
+    since: datetime
+
+
+class RosterItem(BaseModel):
+    """What a school admin needs to verify someone, and nothing else."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    profile_id: uuid.UUID
+    user_id: uuid.UUID
+    full_name: str
+    graduation_year: int | None
+    country: str | None
+    verification_status: VerificationStatus
+    verification_method: VerificationMethod | None
+    email_verified: bool
+    joined_at: datetime
