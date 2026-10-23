@@ -315,9 +315,47 @@ Each item: measure, write the decision, build if justified.
 
 ---
 
+## ADDED DURING THE BUILD (rule 3: written down the day it was found)
+
+Decisions of 23 Oct 2026 (owner):
+
+- Build order changed from phase order, because bookings need these first: (1) platform
+  fixes and role/seed tools, (2) files and uploads, (3) minimum notifications (email and SMS
+  through the queue, behind a provider-agnostic interface with a logging fake until real
+  keys exist), (4) events (Phase 5), (5) payments (Phase 6, fake provider first, then M-Pesa
+  STK Push, then cards), (6) sports and golf (Phase 7), then the rest in phase order.
+- M-Pesa moves from deferred to required for launch of paid events (still needs Daraja
+  credentials and Safaricom approval; the whole flow must work on the fake provider first).
+- Postgres 17 in development, CI and production.
+- Guest booking and group payment: stop and ask the owner before building either.
+
+Done, with the evidence that proves it:
+
+- [x] Tests run on their own database and their own Redis index and refuse to run otherwise
+  (`tests/_env.py`, `tests/test_test_environment.py`)
+- [x] JWT leeway fixed at 10 seconds, as a constant, tested to reject tokens issued 2 minutes
+  ahead (`tests/test_token_clock_tolerance.py`)
+- [x] CI runs `alembic check` and an upgrade/downgrade/upgrade cycle (`.github/workflows/ci.yml`)
+- [x] Staging and production refuse to start with a placeholder or short `SECRET_KEY`
+  (`tests/test_settings_secret_key.py`)
+- [x] Worker container has its own healthcheck (`arq --check`)
+- [x] `seed-demo` replaces `create-dev-account`: one account per role, development only,
+  password printed once and never stored (`tests/test_seed_demo.py`)
+- [x] Organization user lookup by email: scoped, rate limited, audited, no existence leak
+  (`tests/test_user_lookup.py`)
+- [x] Grant and revoke roles with the rank rule; the last super admin cannot be revoked, also
+  under concurrency (`tests/test_role_changes.py`)
+- [x] Organization member list and school roster with a waiting-for-verification filter
+  (`tests/test_org_members_roster.py`)
+- [ ] Events seeded by `seed-demo` (waits for Phase 5)
+- [ ] Platform-wide user lookup by email for admins (not built; it cannot hide whether an
+  address exists, so it needs an owner decision)
+
+---
+
 ## DEFERRED BY DECISION (tracked, not forgotten)
 
-- [ ] M-Pesa (Daraja) provider: paybill/till, Safaricom go-live approval, real money flows. Until this is done, paid flows run on the fake provider only and cannot collect real money.
+- [ ] M-Pesa (Daraja) provider (now REQUIRED for launch of paid events, 23 Oct 2026; build after the fake provider): paybill/till, Safaricom go-live approval, real money flows. Until this is done, paid flows run on the fake provider only and cannot collect real money.
 - [ ] Kubernetes, autoscaling, node autoscaling: only when measured load requires it
 
 ## LATER LIST
