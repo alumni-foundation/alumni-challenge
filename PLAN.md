@@ -355,7 +355,21 @@ Done, with the evidence that proves it:
 - [x] Permanent public URLs for logos and posters; five-minute signed URLs for private files;
   profile `avatar_url` only for viewers who may see the profile (`tests/test_file_serving.py`,
   `tests/test_file_attach.py`)
-- [ ] Cloudflare R2 storage adapter (needs R2 buckets and keys from the client)
+- [x] S3-compatible storage adapter for Cloudflare R2 behind `STORAGE_BACKEND`, tested against an
+  emulator (`tests/test_storage.py`). Still to do with the real bucket: create it and its keys.
+- [x] Real email: Resend and SMTP adapters (logging fake is the default), Mailpit in development,
+  sent from the queue with backoff and a dead letter; no token or body logged outside development
+  (`tests/test_mail.py`, `tests/test_domain_events.py`)
+- [x] Change password (signs out other devices), data export, account deletion by anonymization
+  (`tests/test_change_password.py`, `tests/test_data_export.py`, `tests/test_account_deletion.py`)
+- [x] Rate limit on every write route, with a test that fails if a public one lacks its own;
+  real visitor address behind Cloudflare (`tests/test_write_rate_limits.py`)
+- [x] Sentry from environment variables with sensitive data scrubbed (`tests/test_sentry.py`)
+- [x] Production image target, separate migration command, health checks incl. Redis status,
+  backup and restore scripts rehearsed on the dev database, `docs/DEPLOYMENT.md` kept honest by
+  `tests/test_deployment_doc.py`
+- [ ] Deploy pipeline, registry, staging environment, Cloudflare rules, scheduled off-server
+  backups: need the client's servers and accounts (see `docs/DEPLOYMENT.md`, section 10)
 - [ ] Cleanup job for uploads that were never attached (they count against the per-user cap
   until the owner deletes them)
 - [ ] Malware scanning and image variants (thumbnails): still the open Phase 4 items
