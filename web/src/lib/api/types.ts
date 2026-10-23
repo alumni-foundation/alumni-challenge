@@ -15,6 +15,9 @@ export type OrgType = S["OrganizationType"];
 export type OrgCreate = S["OrganizationCreate"];
 export type OrgUpdate = S["OrganizationUpdate"];
 export type Report = S["ReportResponse"];
+export type MemberListItem = S["MemberListItem"];
+export type RosterItem = S["RosterItem"];
+export type UserLookupMatch = S["UserLookupMatch"];
 export type ReportStatus = S["ReportStatus"];
 
 export type AuditLogEntry = S["AuditLogEntryResponse"];

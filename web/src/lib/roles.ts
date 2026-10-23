@@ -139,6 +139,7 @@ export function currentViewKey(pathname: string, views: StaffView[]): string {
   const staff = views.filter((v) => v.kind !== "member");
   const match = staff.find((v) => pathname === v.href || pathname.startsWith(`${v.href}/`));
   if (match) return match.key;
+  if (pathname === "/school" || pathname === "/partner") return staff.find((v) => v.kind === pathname.slice(1))?.key ?? "member";
   if (pathname.startsWith("/admin")) return staff.find((v) => v.kind === "platform" || v.kind === "moderator")?.key ?? "member";
   return "member";
 }

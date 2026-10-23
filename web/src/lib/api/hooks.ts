@@ -7,6 +7,7 @@ import type {
   AuditLogEntry,
   Connection,
   EmailDomain,
+  MemberListItem,
   Membership,
   Organization,
   OrgCreate,
@@ -17,6 +18,7 @@ import type {
   Report,
   ReportStatus,
   Role,
+  RosterItem,
   Session,
   User,
 } from "./types";
@@ -178,5 +180,34 @@ export const useReports = (status: ReportStatus, page: number) =>
       api<Report[]>(`reports?status=${status}&limit=${REPORTS_PAGE_SIZE}&offset=${page * REPORTS_PAGE_SIZE}`),
     // Keep the old rows while paging within a tab, but never show another tab's reports under this one.
     placeholderData: (prev, prevQuery) => (prevQuery?.queryKey[1] === status ? prev : undefined),
+    retry: false,
+  });
+
+export const TEAM_PAGE_SIZE = 50;
+export const ROSTER_PAGE_SIZE = 25;
+
+/** The people who hold a role in one organization, plus the API's total. */
+export const useOrgMembers = (orgId: string, page: number) =>
+  useQuery({
+    queryKey: ["org-members", orgId, page],
+    queryFn: () =>
+      apiPage<MemberListItem>(`organizations/${orgId}/members?limit=${TEAM_PAGE_SIZE}&offset=${page * TEAM_PAGE_SIZE}`),
+    placeholderData: (prev, prevQuery) => (prevQuery?.queryKey[1] === orgId ? prev : undefined),
+    retry: false,
+  });
+
+export type RosterFilter = { unverifiedOnly: boolean; year: string };
+
+/** The alumni who declared this school, with the total (it can include private profiles). */
+export const useRoster = (orgId: string, filter: RosterFilter, page: number) =>
+  useQuery({
+    queryKey: ["roster", orgId, filter, page],
+    queryFn: () => {
+      const qs = new URLSearchParams({ limit: String(ROSTER_PAGE_SIZE), offset: String(page * ROSTER_PAGE_SIZE) });
+      if (filter.unverifiedOnly) qs.set("verification", "unverified");
+      if (filter.year.trim()) qs.set("graduation_year", filter.year.trim());
+      return apiPage<RosterItem>(`organizations/${orgId}/roster?${qs.toString()}`);
+    },
+    placeholderData: (prev) => prev,
     retry: false,
   });

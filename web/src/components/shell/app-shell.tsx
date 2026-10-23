@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Building2, Check, ChevronDown, FileText, Home, LayoutDashboard, LogOut, Repeat, ScrollText,
+  Building2, Check, ChevronDown, FileText, Globe, GraduationCap, Home, LayoutDashboard, LogOut, Pencil, Repeat, ScrollText,
   Settings, ShieldCheck, User, UserPlus, Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -52,8 +52,23 @@ function navFor(view: StaffView): NavItem[] {
     case "moderator":
       return [{ label: "Reports", href: "/admin/reports", icon: FileText }, MEMBER_VIEW_ITEM];
     case "school":
+      return [
+        { label: "Overview", href: view.href, icon: Building2 },
+        { label: "Alumni", href: `${view.href}/roster`, icon: GraduationCap },
+        { label: "Team", href: `${view.href}/team`, icon: Users },
+        { label: "Activity", href: `${view.href}/activity`, icon: ScrollText },
+        { label: "Edit", href: `${view.href}/edit`, icon: Pencil, desktopOnly: true },
+        { label: "Email domains", href: `${view.href}/email-domains`, icon: Globe, desktopOnly: true },
+        MEMBER_VIEW_ITEM,
+      ];
     case "partner":
-      return [{ label: "Overview", href: view.href, icon: Building2 }, MEMBER_VIEW_ITEM];
+      return [
+        { label: "Overview", href: view.href, icon: Building2 },
+        { label: "Team", href: `${view.href}/team`, icon: Users },
+        { label: "Activity", href: `${view.href}/activity`, icon: ScrollText },
+        { label: "Edit", href: `${view.href}/edit`, icon: Pencil, desktopOnly: true },
+        MEMBER_VIEW_ITEM,
+      ];
   }
 }
 
@@ -62,7 +77,7 @@ function useIsActive() {
   return (item: NavItem) => {
     const roots = [item.href, ...(item.also ?? [])];
     // Dashboard and home are exact matches, otherwise they would light up for every page under them.
-    const exact = item.href === "/admin" || item.href === "/home";
+    const exact = item.href === "/admin" || item.href === "/home" || /^\/(school|partner)\/[^/]+$/.test(item.href);
     return roots.some((r) => pathname === r || (!exact && pathname.startsWith(`${r}/`)));
   };
 }

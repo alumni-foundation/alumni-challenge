@@ -104,3 +104,10 @@ describe("grantablePlatformRoles", () => {
     expect(grantablePlatformRoles([])).toEqual([]);
   });
 });
+
+describe("currentViewKey for the school and partner pickers", () => {
+  it("marks the school view on the bare /school picker", () => {
+    const v = viewsFor([m("school_admin", SCHOOL_A), m("school_admin", SCHOOL_B)]);
+    expect(currentViewKey("/school", v)).toBe(`school:${SCHOOL_A}`);
+  });
+});
