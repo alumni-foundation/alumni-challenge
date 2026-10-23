@@ -2,6 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Prose } from "@/components/public/prose";
 
+/*
+ * LEGAL REVIEW REQUIRED BEFORE LAUNCH. This is a plain-language draft written from what the
+ * product does today. It claims only features that exist now: it does not promise data export
+ * or account deletion, which the backend has not shipped. Have a lawyer review it, and update it
+ * whenever those features (or photos, messaging, events or payments) arrive.
+ */
+
 export const metadata: Metadata = { title: "Privacy" };
 
 export default function Privacy() {
@@ -11,8 +18,8 @@ export default function Privacy() {
       <ul>
         <li>Your email address and a protected form of your password.</li>
         <li>
-          Your profile: name, school, graduation year, country, profession, company, a short bio, your skills and
-          interests, and your photo once photos are available.
+          Your profile: name, school, graduation year, country, profession, company, a short bio, and your skills and
+          interests.
         </li>
         <li>Your connections, the people you have blocked, and the reports you have made.</li>
         <li>
@@ -46,10 +53,7 @@ export default function Privacy() {
       <ul>
         <li>Change what you share, or who sees it, at any time from your profile.</li>
         <li>Sign out of any device from your settings.</li>
-        <li>
-          To have your account removed or your data exported, <Link href="/contact">contact us</Link>. We are building
-          these as self-service tools.
-        </li>
+        <li>Block anyone, or report them, from their profile.</li>
       </ul>
 
       <h2>Questions</h2>

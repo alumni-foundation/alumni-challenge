@@ -2,6 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Prose } from "@/components/public/prose";
 
+/*
+ * LEGAL REVIEW REQUIRED BEFORE LAUNCH. This is a plain-language draft written from what the
+ * product does today. It claims only features that exist now: it does not promise data export
+ * or account deletion, which the backend has not shipped. Have a lawyer review it, and update it
+ * whenever those features (or photos, messaging, events or payments) arrive.
+ */
+
 export const metadata: Metadata = { title: "Terms of use" };
 
 export default function Terms() {
