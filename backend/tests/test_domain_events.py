@@ -9,9 +9,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.mail.base import Mailer
-from app.modules.events.models import DomainEvent, DomainEventStatus
-from app.modules.events.registry import on
-from app.modules.events.service import MAX_ATTEMPTS, drain_pending, publish
+from app.modules.domain_events.models import DomainEvent, DomainEventStatus
+from app.modules.domain_events.registry import on
+from app.modules.domain_events.service import MAX_ATTEMPTS, drain_pending, publish
 
 API = "/api/v1"
 
@@ -103,9 +103,9 @@ async def test_registration_publishes_user_registered_and_drain_sends_the_welcom
     # The handler runs from drain_pending (the worker's job), never from
     # inside a FastAPI request — it calls get_mailer() directly rather
     # than through Depends(), so app.dependency_overrides can't reach it.
-    # Patching the name where events/handlers.py imported it is the
+    # Patching the name where domain_events/handlers.py imported it is the
     # correct way to fake it out here.
-    import app.modules.events.handlers as handlers_module
+    import app.modules.domain_events.handlers as handlers_module
 
     mailer = _CapturingMailer()
     monkeypatch.setattr(handlers_module, "get_mailer", lambda: mailer)

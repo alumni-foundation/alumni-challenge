@@ -13,8 +13,8 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.events.models import DomainEvent, DomainEventStatus
-from app.modules.events.registry import handlers_for
+from app.modules.domain_events.models import DomainEvent, DomainEventStatus
+from app.modules.domain_events.registry import handlers_for
 
 logger = logging.getLogger("domain_events")
 

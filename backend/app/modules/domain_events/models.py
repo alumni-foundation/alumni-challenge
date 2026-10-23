@@ -19,7 +19,7 @@ class DomainEventStatus(enum.StrEnum):
 class DomainEvent(Base, UUIDPrimaryKeyMixin):
     """
     The outbox: publishing an event means writing a row here in the SAME
-    transaction as whatever triggered it (see events/service.py). That's
+    transaction as whatever triggered it (see domain_events/service.py). That's
     what makes delivery reliable — the event can never be "lost" between
     committing the real change and telling the queue about it, because
     there is no separate step; a background poller (the ARQ cron job in

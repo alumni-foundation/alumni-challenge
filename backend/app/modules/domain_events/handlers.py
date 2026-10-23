@@ -9,7 +9,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.mail.dependencies import get_mailer
-from app.modules.events.registry import on
+from app.modules.domain_events.registry import on
 
 
 @on("user.registered")

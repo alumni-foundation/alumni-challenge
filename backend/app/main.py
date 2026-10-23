@@ -73,7 +73,7 @@ app.include_router(identity_router, prefix=settings.api_v1_prefix)
 from app.modules.alumni.router import router as alumni_router  # noqa: E402
 from app.modules.audit.router import router as audit_router  # noqa: E402
 from app.modules.connections.router import router as connections_router  # noqa: E402
-from app.modules.events import handlers as _events_handlers  # noqa: E402, F401
+from app.modules.domain_events import handlers as _domain_events_handlers  # noqa: E402, F401
 from app.modules.identity.account_router import router as account_router  # noqa: E402
 from app.modules.moderation.router import router as moderation_router  # noqa: E402
 from app.modules.organizations.router import router as organizations_router  # noqa: E402

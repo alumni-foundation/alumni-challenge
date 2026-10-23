@@ -18,8 +18,10 @@ from arq.connections import RedisSettings
 
 from app.core.config import get_settings
 from app.infrastructure.database.session import async_session_factory
-from app.modules.events import handlers  # noqa: F401 — import registers the @on(...) handlers
-from app.modules.events.service import drain_pending
+from app.modules.domain_events import (
+    handlers,  # noqa: F401 — import registers the @on(...) handlers
+)
+from app.modules.domain_events.service import drain_pending
 
 settings = get_settings()
 logger = logging.getLogger("worker")
