@@ -16,6 +16,13 @@ def _settings(environment: str, secret_key: str) -> Settings:
         secret_key=secret_key,  # type: ignore[arg-type]
         database_url=DATABASE_URL,  # type: ignore[arg-type]
         redis_url=REDIS_URL,  # type: ignore[arg-type]
+        # A deployed environment must use object storage; supply it so these tests are
+        # only about the secret key.
+        storage_backend="r2",  # type: ignore[arg-type]
+        storage_endpoint_url="https://example.invalid",
+        storage_access_key="access",
+        storage_secret_key="secret",  # type: ignore[arg-type]
+        storage_bucket_name="bucket",
     )
 
 

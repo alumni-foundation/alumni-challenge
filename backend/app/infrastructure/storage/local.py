@@ -3,7 +3,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from app.infrastructure.storage.base import StorageError
+from app.infrastructure.storage.base import StorageError, validate_key
 
 
 class LocalDiskStorage:
@@ -19,10 +19,7 @@ class LocalDiskStorage:
         self._root = root.resolve()
 
     def _path(self, key: str) -> Path:
-        if not key or key.startswith(("/", "\\")) or "\\" in key or "\x00" in key:
-            raise StorageError("Invalid storage key.")
-        if any(part in ("", ".", "..") for part in key.split("/")):
-            raise StorageError("Invalid storage key.")
+        validate_key(key)
         path = (self._root / key).resolve()
         if not path.is_relative_to(self._root):
             raise StorageError("Invalid storage key.")

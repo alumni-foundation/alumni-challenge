@@ -53,16 +53,38 @@ class Settings(BaseSettings):
     # Observability
     sentry_dsn: str | None = None
 
-    # File storage. "local" writes to disk (development and tests); "r2" is Cloudflare R2
-    # (S3-compatible) and is not built yet.
+    # File storage. "local" writes to disk (development and tests only). "r2" is any
+    # S3-compatible object store: Cloudflare R2 in production, MinIO on a developer's machine.
     storage_backend: Literal["local", "r2"] = "local"
     storage_local_path: str = "var/uploads"
 
-    # Object storage (Cloudflare R2, S3-compatible)
+    # Object storage settings, required when storage_backend is "r2". The bucket must be private.
     storage_endpoint_url: str | None = None
     storage_access_key: str | None = None
     storage_secret_key: SecretStr | None = None
     storage_bucket_name: str | None = None
+
+    @model_validator(mode="after")
+    def _check_storage_settings(self) -> "Settings":
+        if self.storage_backend == "r2":
+            missing = [
+                name
+                for name, value in (
+                    ("STORAGE_ENDPOINT_URL", self.storage_endpoint_url),
+                    ("STORAGE_ACCESS_KEY", self.storage_access_key),
+                    ("STORAGE_SECRET_KEY", self.storage_secret_key),
+                    ("STORAGE_BUCKET_NAME", self.storage_bucket_name),
+                )
+                if not value
+            ]
+            if missing:
+                raise ValueError(
+                    f"STORAGE_BACKEND=r2 needs these settings too: {', '.join(missing)}."
+                )
+        if self.environment == "production" and self.storage_backend == "local":
+            # A container's disk is wiped on every redeploy, so uploads would silently vanish.
+            raise ValueError("Production must use STORAGE_BACKEND=r2, not local disk.")
+        return self
 
     @model_validator(mode="after")
     def _refuse_placeholder_secret_outside_development(self) -> "Settings":

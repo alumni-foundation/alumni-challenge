@@ -38,11 +38,20 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
+      # An S3-compatible object store, so the R2 code path is tested for real.
+      s3mock:
+        image: adobe/s3mock:latest
+        env:
+          initialBuckets: alumni-test
+        ports:
+          - 9090:9090
+
     env:
       ENVIRONMENT: development
       SECRET_KEY: ci-test-secret-key
       DATABASE_URL: postgresql+asyncpg://alumni:alumni_test_password@localhost:5432/alumni_challenge_test
       REDIS_URL: redis://localhost:6379/0
+      TEST_S3_ENDPOINT_URL: http://localhost:9090
 
     steps:
       - uses: actions/checkout@v4

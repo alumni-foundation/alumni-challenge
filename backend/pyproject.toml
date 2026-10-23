@@ -20,6 +20,7 @@ dependencies = [
     "structlog>=24.4.0",
     "sentry-sdk[fastapi]>=2.18.0",
     "pillow>=11.0.0",
+    "boto3>=1.35.0",
 ]
 
 [dependency-groups]
@@ -46,6 +47,11 @@ ignore = [
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
+
+# boto3 ships no type information; everything else stays strict.
+[[tool.mypy.overrides]]
+module = ["boto3.*", "botocore.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

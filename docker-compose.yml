@@ -35,6 +35,21 @@ services:
       timeout: 5s
       retries: 10
 
+  # An S3-compatible object store for development, so the same code path as production
+  # (Cloudflare R2) runs on your machine. MinIO's official images are no longer published, so
+  # this is Adobe's S3Mock. It ignores credentials and keeps files in memory.
+  # To use it from the app, set in backend/.env:
+  #   STORAGE_BACKEND=r2
+  #   STORAGE_ENDPOINT_URL=http://s3mock:9090
+  #   STORAGE_ACCESS_KEY=dev   STORAGE_SECRET_KEY=dev   STORAGE_BUCKET_NAME=alumni-dev
+  s3mock:
+    image: adobe/s3mock:latest
+    restart: unless-stopped
+    environment:
+      initialBuckets: alumni-dev,alumni-test
+    ports:
+      - "9090:9090"
+
   api:
     build:
       context: ./backend
@@ -45,6 +60,8 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://alumni:alumni_dev_password@postgres:5432/alumni_challenge
       REDIS_URL: redis://redis:6379/0
+      # Where the object-storage tests find the emulator above.
+      TEST_S3_ENDPOINT_URL: http://s3mock:9090
     ports:
       - "8000:8000"
     volumes:
