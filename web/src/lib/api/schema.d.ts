@@ -188,6 +188,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/email/verify/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request Email Verification */
+        post: operations["request_email_verification_api_v1_auth_email_verify_request_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/email/verify/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Email Verification */
+        post: operations["confirm_email_verification_api_v1_auth_email_verify_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password/forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Forgot Password */
+        post: operations["forgot_password_api_v1_auth_password_forgot_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset Password */
+        post: operations["reset_password_api_v1_auth_password_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{user_id}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suspend */
+        post: operations["suspend_api_v1_users__user_id__suspend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{user_id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reactivate */
+        post: operations["reactivate_api_v1_users__user_id__reactivate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/alumni/profile": {
         parameters: {
             query?: never;
@@ -218,6 +320,28 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/alumni/profile/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Avatar
+         * @description Use one of your own uploaded pictures (purpose `avatar`) as your avatar. The picture it
+         *     replaces is deleted.
+         */
+        put: operations["set_avatar_api_v1_alumni_profile_avatar_put"];
+        post?: never;
+        /** Remove Avatar */
+        delete: operations["remove_avatar_api_v1_alumni_profile_avatar_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -266,9 +390,13 @@ export interface paths {
         };
         /**
          * List Directory
-         * @description Authenticated members only. Only profiles set to public or members_only
-         *     are listed: connections_only and private profiles never appear in a
-         *     general scan, whoever is looking. Summary fields only.
+         * @description Authenticated members only. Only profiles set to public or members_only are listed:
+         *     connections_only and private profiles never appear in a general scan or a search, whoever
+         *     is looking, and suspended or deleted accounts are left out. Summary fields only.
+         *
+         *     `q` matches word prefixes across name, profession, company, country, skills, interests
+         *     and bio, best matches first. Without `q`, newest first. The total number of matches
+         *     (before limit/offset) is returned in the X-Total-Count header.
          */
         get: operations["list_directory_api_v1_alumni_directory_get"];
         put?: never;
@@ -330,6 +458,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Audit Log
+         * @description Platform admins see everything. A school_admin or partner_admin
+         *     sees only entries tagged with an organization they administer —
+         *     membership grants, email-domain changes, profile verifications for
+         *     THEIR school, not anyone else's, and never platform-wide actions
+         *     like a password reset. Anyone holding neither gets 403.
+         */
+        get: operations["list_audit_log_api_v1_audit_log_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/connections": {
         parameters: {
             query?: never;
@@ -342,6 +494,57 @@ export interface paths {
         put?: never;
         /** Create Connection Request */
         post: operations["create_connection_request_api_v1_connections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/connections/block": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Block */
+        post: operations["block_api_v1_connections_block_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/connections/blocked": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Blocked */
+        get: operations["list_blocked_api_v1_connections_blocked_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/connections/{connection_id}/unblock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unblock */
+        post: operations["unblock_api_v1_connections__connection_id__unblock_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -394,6 +597,157 @@ export interface paths {
         post?: never;
         /** Remove Connection */
         delete: operations["remove_connection_api_v1_connections__connection_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload File
+         * @description Upload a picture (JPEG, PNG or WebP). This route, and only this route, accepts a body
+         *     larger than 2 MiB (up to 6 MiB; each purpose has its own smaller limit).
+         *
+         *     The file name and Content-Type the client sends are ignored: the type is decided from
+         *     the bytes, and the picture is rebuilt from its pixels, which strips location data and
+         *     anything hidden in or after the image.
+         */
+        post: operations["upload_file_api_v1_files_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/files/{file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get File
+         * @description Details of one of your own files, with a fresh link to it.
+         */
+        get: operations["get_file_api_v1_files__file_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete File
+         * @description Delete one of your own files. Anything that was using it (an avatar, a logo) loses it.
+         */
+        delete: operations["delete_file_api_v1_files__file_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/files/{file_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * File Content
+         * @description The picture itself. No login needed, because an <img> tag cannot send one.
+         *
+         *     A public file (logo, poster) is open to anyone and cached for good. A private file needs
+         *     the short-lived `token` from a signed link. Every way of being refused (no such file, no
+         *     token, a bad, expired or someone else's token) gives the same plain 404, so this cannot be
+         *     used to find out which files exist.
+         */
+        get: operations["file_content_api_v1_files__file_id__content_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Reports */
+        get: operations["list_reports_api_v1_reports_get"];
+        put?: never;
+        /** File Report */
+        post: operations["file_report_api_v1_reports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/{report_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Review Report */
+        patch: operations["review_report_api_v1_reports__report_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/users/{user_id}/platform-roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grant Platform Role
+         * @description Give someone a platform-wide role (super_admin, admin or moderator). A super admin can
+         *     grant any of them; an admin can grant moderator only, and only to someone ranked below
+         *     admin. Nobody can change their own roles.
+         */
+        post: operations["grant_platform_role_api_v1_users__user_id__platform_roles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{user_id}/platform-roles/{role}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke Platform Role
+         * @description Same rank rule as granting. The last super admin can never be revoked.
+         */
+        delete: operations["revoke_platform_role_api_v1_users__user_id__platform_roles__role__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -470,10 +824,131 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/user-lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Look Up Member
+         * @description Find a member of THIS organization by email, for example to appoint them as a manager.
+         *     Always answers 200. Anyone who is not a member of this organization, including people
+         *     with accounts elsewhere and addresses nobody uses, gets `{"match": null}`, so this cannot
+         *     be used to find out who is on the platform. Limited to 30 lookups an hour per admin.
+         *     The address is a POST body (not a URL) so it stays out of access logs, and the audit
+         *     entry keeps only a fingerprint of it.
+         */
+        post: operations["look_up_member_api_v1_organizations__organization_id__user_lookup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/memberships/{membership_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke Membership
+         * @description Remove a role from this organization. School and partner admins can remove their own
+         *     managers (event_manager, sports_manager); only platform admins can remove an
+         *     organization admin. Nobody can remove their own role.
+         */
+        delete: operations["revoke_membership_api_v1_organizations__organization_id__memberships__membership_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Members
+         * @description The people who hold a role in THIS organization. Revoked roles are left out unless
+         *     `include_revoked` is set. The total is in the X-Total-Count header.
+         */
+        get: operations["list_members_api_v1_organizations__organization_id__members_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/roster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * School Roster
+         * @description The alumni who declared this school, for its admins. Name, graduation year, country and
+         *     verification state only, including profiles whose owner set them to private. The total
+         *     is in the X-Total-Count header.
+         */
+        get: operations["school_roster_api_v1_organizations__organization_id__roster_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{organization_id}/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Logo
+         * @description Use an uploaded picture (purpose `organization_logo`, uploaded for this organization) as
+         *     its logo. The logo it replaces is deleted.
+         */
+        put: operations["set_logo_api_v1_organizations__organization_id__logo_put"];
+        post?: never;
+        /** Remove Logo */
+        delete: operations["remove_logo_api_v1_organizations__organization_id__logo_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountStatusResponse */
+        AccountStatusResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            status: components["schemas"]["UserStatus"];
+        };
         /** AlumniProfileCreate */
         AlumniProfileCreate: {
             /** Full Name */
@@ -532,6 +1007,8 @@ export interface components {
             profile_visibility: components["schemas"]["ProfileVisibility"];
             /** Avatar File Id */
             avatar_file_id: string | null;
+            /** Avatar Url */
+            avatar_url?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -596,6 +1073,47 @@ export interface components {
             /** Company */
             company?: string | null;
             profile_visibility?: components["schemas"]["ProfileVisibility"] | null;
+        };
+        /** AuditLogEntryResponse */
+        AuditLogEntryResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Actor User Id */
+            actor_user_id: string | null;
+            /** Action */
+            action: string;
+            /** Target Type */
+            target_type: string;
+            /** Target Id */
+            target_id: string | null;
+            /** Context */
+            context: {
+                [key: string]: unknown;
+            };
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** BlockRequest */
+        BlockRequest: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
+        /** Body_upload_file_api_v1_files_post */
+        Body_upload_file_api_v1_files_post: {
+            purpose: components["schemas"]["FilePurpose"];
+            /** Organization Id */
+            organization_id?: string | null;
+            /** File */
+            file: string;
         };
         /**
          * ConnectionListItem
@@ -693,6 +1211,48 @@ export interface components {
             /** Domain */
             domain: string;
         };
+        /**
+         * FilePurpose
+         * @description What an upload is for. Each purpose has its own rules in files/policies.py.
+         * @enum {string}
+         */
+        FilePurpose: "avatar" | "organization_logo" | "event_poster";
+        /**
+         * FileVisibility
+         * @enum {string}
+         */
+        FileVisibility: "public" | "private";
+        /**
+         * FileWithUrl
+         * @description `url` is where the file can be fetched. For a public file it is permanent. For a private
+         *     file it is a link that stops working after five minutes: ask again when it expires.
+         */
+        FileWithUrl: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            purpose: components["schemas"]["FilePurpose"];
+            visibility: components["schemas"]["FileVisibility"];
+            /** Organization Id */
+            organization_id: string | null;
+            /** Mime Type */
+            mime_type: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Url */
+            url: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -707,6 +1267,31 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** MemberListItem */
+        MemberListItem: {
+            /**
+             * Membership Id
+             * Format: uuid
+             */
+            membership_id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string | null;
+            role: components["schemas"]["Role"];
+            status: components["schemas"]["MembershipStatus"];
+            account_status: components["schemas"]["UserStatus"];
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
         };
         /** MembershipCreate */
         MembershipCreate: {
@@ -733,6 +1318,16 @@ export interface components {
             organization_id: string | null;
             role: components["schemas"]["Role"];
         };
+        /**
+         * MembershipStatus
+         * @enum {string}
+         */
+        MembershipStatus: "active" | "revoked";
+        /** MessageResponse */
+        MessageResponse: {
+            /** Message */
+            message: string;
+        };
         /** OrganizationCreate */
         OrganizationCreate: {
             type: components["schemas"]["OrganizationType"];
@@ -758,11 +1353,18 @@ export interface components {
             /** Description */
             description: string | null;
             status: components["schemas"]["OrganizationStatus"];
+            /** Logo File Id */
+            logo_file_id?: string | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Logo Url
+             * @description A permanent public address: a new logo gets a new address.
+             */
+            readonly logo_url: string | null;
         };
         /**
          * OrganizationStatus
@@ -780,6 +1382,25 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
+        };
+        /** PasswordForgotRequest */
+        PasswordForgotRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+        };
+        /** PasswordResetRequest */
+        PasswordResetRequest: {
+            /** Token */
+            token: string;
+            /** New Password */
+            new_password: string;
+        };
+        /** PlatformRoleRequest */
+        PlatformRoleRequest: {
+            role: components["schemas"]["Role"];
         };
         /**
          * ProfileVisibility
@@ -806,6 +1427,62 @@ export interface components {
              */
             confirm_18_or_older: boolean;
         };
+        /** ReportCreate */
+        ReportCreate: {
+            target_type: components["schemas"]["ReportTargetType"];
+            /**
+             * Target Id
+             * Format: uuid
+             */
+            target_id: string;
+            /** Reason */
+            reason: string;
+        };
+        /** ReportResponse */
+        ReportResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Reporter User Id
+             * Format: uuid
+             */
+            reporter_user_id: string;
+            target_type: components["schemas"]["ReportTargetType"];
+            /**
+             * Target Id
+             * Format: uuid
+             */
+            target_id: string;
+            /** Reason */
+            reason: string;
+            status: components["schemas"]["ReportStatus"];
+            /** Reviewed By */
+            reviewed_by: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Resolved At */
+            resolved_at: string | null;
+        };
+        /** ReportReview */
+        ReportReview: {
+            status: components["schemas"]["ReportStatus"];
+        };
+        /**
+         * ReportStatus
+         * @enum {string}
+         */
+        ReportStatus: "open" | "reviewing" | "resolved" | "dismissed";
+        /**
+         * ReportTargetType
+         * @enum {string}
+         */
+        ReportTargetType: "profile" | "message" | "content";
         /**
          * Role
          * @description Matches MEMBERSHIPS.role in the Phase 0 ERD. super_admin and admin
@@ -814,6 +1491,37 @@ export interface components {
          * @enum {string}
          */
         Role: "super_admin" | "admin" | "moderator" | "school_admin" | "partner_admin" | "event_manager" | "sports_manager" | "alumni";
+        /**
+         * RosterItem
+         * @description What a school admin needs to verify someone, and nothing else.
+         */
+        RosterItem: {
+            /**
+             * Profile Id
+             * Format: uuid
+             */
+            profile_id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Full Name */
+            full_name: string;
+            /** Graduation Year */
+            graduation_year: number | null;
+            /** Country */
+            country: string | null;
+            verification_status: components["schemas"]["VerificationStatus"];
+            verification_method: components["schemas"]["VerificationMethod"] | null;
+            /** Email Verified */
+            email_verified: boolean;
+            /**
+             * Joined At
+             * Format: date-time
+             */
+            joined_at: string;
+        };
         /** SessionResponse */
         SessionResponse: {
             /**
@@ -836,6 +1544,22 @@ export interface components {
              */
             last_used_at: string;
         };
+        /** SetAvatarRequest */
+        SetAvatarRequest: {
+            /**
+             * File Id
+             * Format: uuid
+             */
+            file_id: string;
+        };
+        /** SetLogoRequest */
+        SetLogoRequest: {
+            /**
+             * File Id
+             * Format: uuid
+             */
+            file_id: string;
+        };
         /**
          * SetTagsRequest
          * @description Full replacement list of skills or interests: trimmed, lowercased, de-duplicated.
@@ -843,6 +1567,11 @@ export interface components {
         SetTagsRequest: {
             /** Names */
             names: string[];
+        };
+        /** StatusChangeRequest */
+        StatusChangeRequest: {
+            /** Reason */
+            reason: string;
         };
         /** TokenPair */
         TokenPair: {
@@ -855,6 +1584,31 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /** UserLookupMatch */
+        UserLookupMatch: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Full Name */
+            full_name: string | null;
+            /** Roles In Organization */
+            roles_in_organization: components["schemas"]["Role"][];
+            verification_status: components["schemas"]["VerificationStatus"] | null;
+        };
+        /** UserLookupRequest */
+        UserLookupRequest: {
+            /** Email */
+            email: string;
+        };
+        /**
+         * UserLookupResponse
+         * @description `match` is null for every address that is not a member of this organization.
+         */
+        UserLookupResponse: {
+            match: components["schemas"]["UserLookupMatch"] | null;
         };
         /** UserResponse */
         UserResponse: {
@@ -875,6 +1629,11 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * UserStatus
+         * @enum {string}
+         */
+        UserStatus: "active" | "suspended" | "deleted";
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -889,10 +1648,20 @@ export interface components {
             ctx?: Record<string, never>;
         };
         /**
+         * VerificationMethod
+         * @enum {string}
+         */
+        VerificationMethod: "admin" | "peer" | "email_domain";
+        /**
          * VerificationStatus
          * @enum {string}
          */
         VerificationStatus: "unverified" | "verified";
+        /** VerifyEmailConfirmRequest */
+        VerifyEmailConfirmRequest: {
+            /** Token */
+            token: string;
+        };
         /** VerifyProfileRequest */
         VerifyProfileRequest: {
             /** Verified */
@@ -1170,6 +1939,195 @@ export interface operations {
             };
         };
     };
+    request_email_verification_api_v1_auth_email_verify_request_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    confirm_email_verification_api_v1_auth_email_verify_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmailConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forgot_password_api_v1_auth_password_forgot_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordForgotRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_password_api_v1_auth_password_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suspend_api_v1_users__user_id__suspend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reactivate_api_v1_users__user_id__reactivate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_profile_api_v1_alumni_profile_post: {
         parameters: {
             query?: never;
@@ -1237,6 +2195,59 @@ export interface operations {
         };
     };
     get_my_profile_api_v1_alumni_profile_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlumniProfileResponse"];
+                };
+            };
+        };
+    };
+    set_avatar_api_v1_alumni_profile_avatar_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetAvatarRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlumniProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_avatar_api_v1_alumni_profile_avatar_delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -1325,6 +2336,13 @@ export interface operations {
     list_directory_api_v1_alumni_directory_get: {
         parameters: {
             query?: {
+                /** @description Search text */
+                q?: string | null;
+                school_id?: string | null;
+                country?: string | null;
+                graduation_year?: number | null;
+                verified?: boolean | null;
+                skill?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -1451,6 +2469,38 @@ export interface operations {
             };
         };
     };
+    list_audit_log_api_v1_audit_log_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogEntryResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_connections_api_v1_connections_get: {
         parameters: {
             query?: never;
@@ -1486,6 +2536,90 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    block_api_v1_connections_block_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_blocked_api_v1_connections_blocked_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionListItem"][];
+                };
+            };
+        };
+    };
+    unblock_api_v1_connections__connection_id__unblock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1572,6 +2706,298 @@ export interface operations {
             header?: never;
             path: {
                 connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_file_api_v1_files_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_file_api_v1_files_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileWithUrl"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_file_api_v1_files__file_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileWithUrl"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_file_api_v1_files__file_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_content_api_v1_files__file_id__content_get: {
+        parameters: {
+            query?: {
+                token?: string | null;
+            };
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_reports_api_v1_reports_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["ReportStatus"] | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_report_api_v1_reports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_report_api_v1_reports__report_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportReview"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    grant_platform_role_api_v1_users__user_id__platform_roles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_platform_role_api_v1_users__user_id__platform_roles__role__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                role: components["schemas"]["Role"];
             };
             cookie?: never;
         };
@@ -1815,6 +3241,210 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmailDomainResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    look_up_member_api_v1_organizations__organization_id__user_lookup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserLookupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserLookupResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_membership_api_v1_organizations__organization_id__memberships__membership_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+                membership_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_members_api_v1_organizations__organization_id__members_get: {
+        parameters: {
+            query?: {
+                role?: components["schemas"]["Role"] | null;
+                include_revoked?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberListItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    school_roster_api_v1_organizations__organization_id__roster_get: {
+        parameters: {
+            query?: {
+                /** @description `unverified` lists the alumni waiting to be verified */
+                verification?: components["schemas"]["VerificationStatus"] | null;
+                graduation_year?: number | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_logo_api_v1_organizations__organization_id__logo_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetLogoRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_logo_api_v1_organizations__organization_id__logo_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationResponse"];
                 };
             };
             /** @description Validation Error */
