@@ -32,3 +32,6 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+
+# Owner's private project brief (not for the public repo)
+Alumni Challenge Project Brief for Claude Code (Backend)*.md
