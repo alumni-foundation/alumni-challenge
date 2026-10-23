@@ -45,7 +45,7 @@ export default function AdminHome() {
   return (
     <div>
       <PageHeader title="Admin" subtitle={`You’re signed in as ${topRoleLabel(roles)}.`} />
-      <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-white">
+      <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
         {visible.map(({ href, title, body, icon, soon }) => {
           const inner = (
             <>

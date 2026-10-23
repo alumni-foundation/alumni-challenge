@@ -121,7 +121,7 @@ export default function AdminOrganizations() {
               onClick={() => setFilter(key)}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-                filter === key ? "bg-ink text-white" : "text-muted hover:bg-white hover:text-ink",
+                filter === key ? "bg-ink text-white" : "text-muted hover:bg-surface hover:text-ink",
               )}
             >
               {label}
@@ -139,7 +139,7 @@ export default function AdminOrganizations() {
         />
       )}
       {all.length > 0 && (
-        <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-white">
+        <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
           {all.map((o) => (
             <li key={o.id}>
               <Link href={`/admin/organizations/${o.id}`} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-canvas">

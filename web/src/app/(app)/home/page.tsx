@@ -90,7 +90,7 @@ export default function HomePage() {
               type="search"
               disabled
               placeholder="Search alumni, schools, partners…"
-              className="h-16 w-full rounded-full border-0 bg-white pl-14 pr-5 text-[15px] text-ink placeholder:text-faint disabled:cursor-not-allowed"
+              className="h-16 w-full rounded-full border-0 bg-surface pl-14 pr-5 text-[15px] text-ink placeholder:text-faint disabled:cursor-not-allowed"
             />
           </div>
 
@@ -117,7 +117,7 @@ export default function HomePage() {
           <Card elevation="raised">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-semibold">Recently active alumni</h2>
-              <Link href="/alumni" className="text-sm font-medium text-brand hover:underline">View all</Link>
+              <Link href="/alumni" className="text-sm font-medium text-brand-ink hover:underline">View all</Link>
             </div>
             {directory.isLoading && <Spinner />}
             {directory.data && directory.data.length === 0 && (

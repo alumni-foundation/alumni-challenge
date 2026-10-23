@@ -91,7 +91,7 @@ function MoreMenu({ isActive }: { isActive: (href: string) => boolean }) {
         More <ChevronDown className={cn("size-3.5 transition-transform", open && "rotate-180")} aria-hidden />
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-2 w-64 rounded-xl border border-line bg-white p-2 shadow-lifted">
+        <div className="absolute left-0 top-full z-30 mt-2 w-64 rounded-xl border border-line bg-surface p-2 shadow-lifted">
           {SECONDARY.map(({ label, icon: Icon }) => (
             <div key={label} aria-disabled className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-faint">
               <Icon className="size-4" aria-hidden />
@@ -121,7 +121,7 @@ function ProfileMenu({ profile }: { profile: Profile }) {
         <ChevronDown className={cn("hidden size-3.5 text-muted transition-transform sm:block", open && "rotate-180")} aria-hidden />
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-30 mt-2 w-60 rounded-xl border border-line bg-white p-2 shadow-lifted">
+        <div className="absolute right-0 top-full z-30 mt-2 w-60 rounded-xl border border-line bg-surface p-2 shadow-lifted">
           <div className="border-b border-line px-3 py-2">
             <p className="truncate text-sm font-semibold">{profile.full_name}</p>
             <p className="truncate text-xs text-muted">{topRoleLabel(roles.data)}</p>
@@ -132,7 +132,7 @@ function ProfileMenu({ profile }: { profile: Profile }) {
           <Link href="/settings" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink hover:bg-canvas">
             <Settings className="size-4" aria-hidden /> Settings
           </Link>
-          <button onClick={signOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-brand hover:bg-brand-soft">
+          <button onClick={signOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-brand-ink hover:bg-brand-soft">
             <LogOut className="size-4" aria-hidden /> Sign out
           </button>
         </div>
@@ -154,7 +154,7 @@ function TopNav({ profile }: { profile: Profile }) {
   const items = isAnyAdmin(roles.data) ? [...PRIMARY, ADMIN_ITEM] : PRIMARY;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-white">
+    <header className="sticky top-0 z-30 border-b border-line bg-surface">
       <div className="mx-auto flex h-24 max-w-[1680px] items-center gap-8 px-6 lg:px-10 xl:px-14">
         <Link href="/home" className="flex shrink-0 items-center gap-3">
           <Logo size={48} tone="dark" />
@@ -210,7 +210,7 @@ function MoreSheet({ profile, onClose }: { profile: Profile; onClose: () => void
 
   return (
     <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="More">
-      <button className="absolute inset-0 bg-black/50" aria-label="Close" onClick={onClose} />
+      <button className="absolute inset-0 bg-scrim" aria-label="Close" onClick={onClose} />
       <div className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-3xl bg-side pb-[env(safe-area-inset-bottom,0px)] text-white shadow-lifted">
         <div className="flex items-center justify-between px-5 pb-2 pt-4">
           <Link href="/profile" onClick={onClose} className="flex items-center gap-3">
@@ -307,7 +307,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
       <div className="hidden lg:block">
         <TopNav profile={profile} />
       </div>
-      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-surface/90 px-4 py-3 backdrop-blur lg:hidden">
         <Logo size={32} tone="dark" />
         <span className="font-bold tracking-wide text-ink">ALUMNI CHALLENGE</span>
         <div className="ml-auto flex items-center gap-2">
@@ -315,7 +315,7 @@ export function AppShell({ profile, children }: { profile: Profile; children: Re
           <IconButton icon={Bell} label="Notifications" soon />
         </div>
       </header>
-      <main>
+      <main id="main">
         <div className="mx-auto max-w-[1680px] px-4 pb-24 pt-4 sm:px-6 sm:pt-6 lg:px-10 lg:pb-8 lg:pt-8 xl:px-14">{children}</div>
       </main>
       <BottomTabBar profile={profile} />

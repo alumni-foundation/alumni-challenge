@@ -96,7 +96,7 @@ export default function AlumniProfilePage() {
 
       {canVerify && p.verification_status !== "verified" && (
         <Card className="mt-4">
-          <p className="mb-3 flex items-center gap-2 font-semibold"><ShieldCheck className="size-4 text-brand" /> School admin action</p>
+          <p className="mb-3 flex items-center gap-2 font-semibold"><ShieldCheck className="size-4 text-brand-ink" /> School admin action</p>
           <Button size="sm" loading={verify.isPending} onClick={() => verify.mutate(true)}>Mark as verified</Button>
         </Card>
       )}

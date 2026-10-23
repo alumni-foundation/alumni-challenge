@@ -74,7 +74,7 @@ export default function AuditLogPage() {
         <EmptyState title={page === 0 ? "Nothing recorded yet" : "No more entries"} body={page === 0 ? "Admin actions will show up here." : undefined} />
       )}
       {entries.length > 0 && (
-        <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-white">
+        <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
           {entries.map((e) => (
             <li key={e.id} className="px-5 py-3.5">
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">

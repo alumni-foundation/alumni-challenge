@@ -37,7 +37,7 @@ export function MemberPicker({
           type="button"
           onClick={() => onChange(null)}
           aria-label="Choose someone else"
-          className="rounded p-1 text-muted hover:bg-white hover:text-ink"
+          className="rounded p-1 text-muted hover:bg-surface hover:text-ink"
         >
           <X className="size-4" aria-hidden />
         </button>
@@ -70,7 +70,7 @@ export function MemberPicker({
       )}
       {searching && index.isLoading && <Spinner label="Looking through members" />}
       {searching && index.isError && (
-        <p className="mt-2 text-sm text-brand" role="alert">Couldn’t load members. Paste a user ID instead.</p>
+        <p className="mt-2 text-sm text-brand-ink" role="alert">Couldn’t load members. Paste a user ID instead.</p>
       )}
       {searching && index.data && (
         <ul className="mt-2 overflow-hidden rounded-lg border border-line">
