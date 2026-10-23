@@ -4,8 +4,6 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
-
 from app.core.errors.exceptions import ConflictError, NotFoundError, ValidationError
 from app.modules.alumni.models import AlumniProfile
 from app.modules.audit import service as audit_service
