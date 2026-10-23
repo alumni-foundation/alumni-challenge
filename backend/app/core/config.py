@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     # Observability
     sentry_dsn: str | None = None
 
+    # File storage. "local" writes to disk (development and tests); "r2" is Cloudflare R2
+    # (S3-compatible) and is not built yet.
+    storage_backend: Literal["local", "r2"] = "local"
+    storage_local_path: str = "var/uploads"
+
     # Object storage (Cloudflare R2, S3-compatible)
     storage_endpoint_url: str | None = None
     storage_access_key: str | None = None

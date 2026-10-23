@@ -19,6 +19,7 @@ dependencies = [
     "python-multipart>=0.0.17",
     "structlog>=24.4.0",
     "sentry-sdk[fastapi]>=2.18.0",
+    "pillow>=11.0.0",
 ]
 
 [dependency-groups]
