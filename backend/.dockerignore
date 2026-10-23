@@ -1,0 +1,14 @@
+# Nothing here belongs in the image: secrets, local data, caches, tests.
+.venv
+.env
+.env.*
+!.env.example
+var
+tests
+__pycache__
+*.pyc
+.mypy_cache
+.ruff_cache
+.pytest_cache
+*.dump
+*.sql
