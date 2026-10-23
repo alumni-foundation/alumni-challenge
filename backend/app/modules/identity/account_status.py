@@ -9,21 +9,16 @@ from app.core.errors.exceptions import (
     ValidationError,
 )
 from app.core.permissions.dependencies import get_user_roles
-from app.core.permissions.roles import Role
+from app.core.permissions.roles import rank_of
 from app.modules.audit import service as audit_service
 from app.modules.identity.models import User, UserStatus
 from app.modules.identity.service import _revoke_all_sessions
 
-# Who may act on whom. You can only change the status of an account ranked strictly below
+# Who may act on whom: you can only change the status of an account ranked strictly below
 # you, so a moderator cannot touch another moderator or an admin, an admin cannot touch
 # another admin, and nobody can touch a super admin through the API (that stays a
-# command-line job). Roles tied to one school or partner do not rank: only platform-wide
-# roles count here.
-_RANK = {Role.SUPER_ADMIN: 3, Role.ADMIN: 2, Role.MODERATOR: 1}
-
-
-def _rank(roles: set[Role]) -> int:
-    return max((_RANK.get(role, 0) for role in roles), default=0)
+# command-line job). The ranking itself lives in core.permissions.roles.
+_rank = rank_of
 
 
 async def _load_target(

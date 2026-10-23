@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.permissions.dependencies import require_roles, require_roles_for_org
@@ -10,6 +10,7 @@ from app.infrastructure.database.session import get_db_session
 from app.modules.alumni.models import SchoolEmailDomain
 from app.modules.identity.dependencies import get_current_user
 from app.modules.identity.models import User
+from app.modules.memberships import role_changes
 from app.modules.memberships.models import Membership
 from app.modules.organizations import lookup, schemas, service
 from app.modules.organizations.models import Organization, OrganizationType
@@ -154,3 +155,24 @@ async def look_up_member(
             verification_status=found.verification_status,
         )
     )
+
+
+@router.delete(
+    "/{organization_id}/memberships/{membership_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+async def revoke_membership(
+    organization_id: uuid.UUID,
+    membership_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db_session),
+    admin: User = Depends(require_roles_for_org(*_ORG_ADMINS)),
+) -> Response:
+    """
+    Remove a role from this organization. School and partner admins can remove their own
+    managers (event_manager, sports_manager); only platform admins can remove an
+    organization admin. Nobody can remove their own role.
+    """
+    await role_changes.revoke_organization_membership(
+        db, actor=admin, organization_id=organization_id, membership_id=membership_id
+    )
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

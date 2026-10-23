@@ -19,3 +19,13 @@ class Role(enum.StrEnum):
 
 
 PLATFORM_WIDE_ROLES = {Role.SUPER_ADMIN, Role.ADMIN, Role.MODERATOR}
+
+
+# Who outranks whom, for actions on other people's accounts and platform roles. Only the
+# platform-wide roles rank; roles tied to one school or partner count as 0. This is the one
+# place the ranking is written down.
+ROLE_RANK = {Role.SUPER_ADMIN: 3, Role.ADMIN: 2, Role.MODERATOR: 1}
+
+
+def rank_of(roles: set[Role]) -> int:
+    return max((ROLE_RANK.get(role, 0) for role in roles), default=0)

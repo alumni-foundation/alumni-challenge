@@ -116,6 +116,9 @@ async def assign_membership(
     else:
         raise ValidationError("This role cannot be assigned to an organization member.")
 
+    if target_user_id == actor.id:
+        raise ValidationError("You cannot change your own roles.")
+
     target = await db.get(User, target_user_id)
     if target is None or target.status != UserStatus.ACTIVE:
         raise NotFoundError("User not found.")
