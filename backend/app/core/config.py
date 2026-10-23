@@ -1,8 +1,13 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import PostgresDsn, RedisDsn, SecretStr
+from pydantic import PostgresDsn, RedisDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+MIN_DEPLOYED_SECRET_KEY_LENGTH = 32
+# Values that have appeared in .env.example or in docs. Matched case-insensitively.
+KNOWN_PLACEHOLDER_SECRET_KEYS = {"my-secret key"}
+PLACEHOLDER_SECRET_KEY_PREFIX = "change-me"
 
 
 class Settings(BaseSettings):
@@ -53,6 +58,28 @@ class Settings(BaseSettings):
     storage_access_key: str | None = None
     storage_secret_key: SecretStr | None = None
     storage_bucket_name: str | None = None
+
+    @model_validator(mode="after")
+    def _refuse_placeholder_secret_outside_development(self) -> "Settings":
+        """
+        The repo is public and .env.example is copied to .env, so a staging or production
+        deploy that forgot to set its own SECRET_KEY would sign tokens with a key anyone
+        can read. Refuse to start rather than run that way.
+        """
+        if self.environment == "development":
+            return self
+        key = self.secret_key.get_secret_value()
+        lowered = key.strip().lower()
+        if (
+            lowered.startswith(PLACEHOLDER_SECRET_KEY_PREFIX)
+            or lowered in KNOWN_PLACEHOLDER_SECRET_KEYS
+            or len(key) < MIN_DEPLOYED_SECRET_KEY_LENGTH
+        ):
+            raise ValueError(
+                f"SECRET_KEY is a placeholder or shorter than {MIN_DEPLOYED_SECRET_KEY_LENGTH} "
+                f"characters; set a real random secret before running in {self.environment}."
+            )
+        return self
 
     @property
     def is_production(self) -> bool:
