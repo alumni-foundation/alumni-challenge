@@ -50,3 +50,31 @@ A school admin sees their school's alumni (those who declared the school) even w
 is private, but only name, graduation year, country and verification state. Never email,
 company, profession or bio. Members and roster lists are gated by the organization permission
 check and also filtered by organization in the query.
+
+# Files and uploads (step 3)
+
+## What we never trust
+
+The file name and Content-Type a client sends are never read. The type is decided by opening
+the bytes (JPEG, PNG or WebP only; no GIF, SVG or animation). The picture is then rebuilt from
+its raw pixels and encoded fresh, so location data, comments, colour profiles, text chunks and
+anything appended after the image cannot survive. Pictures over 25 megapixels are refused before
+they are decoded, whatever their file size. The storage key is made by the server
+(`public|private/<purpose>/<uuid>.<ext>`) and is never shown to clients.
+
+## Public and private
+
+Logos and event posters are public: one permanent address, cached for good, and a replacement
+gets a new address. Avatars are private: they are fetched through a signed link that works for
+five minutes, handed out only inside a profile response, which exists only for viewers who
+passed the profile visibility check. Every refusal on the content route is the same plain 404.
+
+## Limits
+
+Per-purpose size and dimension limits; 50 files per person; 20 uploads an hour per person. All
+are checked before any image is decoded. Only `POST /files` accepts a body over 2 MiB (6 MiB).
+
+## Not built yet
+
+R2 adapter (interface and local backend are done), malware scanning, thumbnails, and a cleanup
+job for uploads that were never attached.

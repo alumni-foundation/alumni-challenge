@@ -347,6 +347,18 @@ Done, with the evidence that proves it:
   under concurrency (`tests/test_role_changes.py`)
 - [x] Organization member list and school roster with a waiting-for-verification filter
   (`tests/test_org_members_roster.py`)
+- [x] Storage interface with a local-disk backend (`tests/test_storage.py`)
+- [x] Image uploads: type decided from content, picture rebuilt from pixels (EXIF/GPS, comments,
+  appended bytes stripped), 25 megapixel cap, per-purpose policy, server-generated keys, per-user
+  file cap, upload rate limit, a larger body limit on the upload route only
+  (`tests/test_images.py`, `tests/test_file_upload.py`)
+- [x] Permanent public URLs for logos and posters; five-minute signed URLs for private files;
+  profile `avatar_url` only for viewers who may see the profile (`tests/test_file_serving.py`,
+  `tests/test_file_attach.py`)
+- [ ] Cloudflare R2 storage adapter (needs R2 buckets and keys from the client)
+- [ ] Cleanup job for uploads that were never attached (they count against the per-user cap
+  until the owner deletes them)
+- [ ] Malware scanning and image variants (thumbnails): still the open Phase 4 items
 - [ ] Events seeded by `seed-demo` (waits for Phase 5)
 - [ ] Platform-wide user lookup by email for admins (not built; it cannot hide whether an
   address exists, so it needs an owner decision)
