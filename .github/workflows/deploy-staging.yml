@@ -6,6 +6,9 @@ on:
 
 jobs:
   tests:
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/ci.yml
 
   publish:
