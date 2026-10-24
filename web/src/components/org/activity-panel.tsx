@@ -5,6 +5,7 @@ import { Button, Card, EmptyState, ErrorState, Skeleton } from "@/components/ui"
 import { ApiError } from "@/lib/api/client";
 import { AUDIT_PAGE_SIZE, useAuditLog, useMemberIndex, useOrgs } from "@/lib/api/hooks";
 import type { AuditLogEntry, Role } from "@/lib/api/types";
+import { auditWords } from "@/lib/admin-overview";
 import { roleLabel } from "@/lib/roles";
 import { formatDate } from "@/lib/utils";
 
@@ -19,10 +20,7 @@ const ACTIONS: Record<string, string> = {
   "user.password_reset": "Reset a password",
 };
 
-const humanize = (s: string) => {
-  const t = s.replace(/[._]/g, " ").trim();
-  return t.charAt(0).toUpperCase() + t.slice(1);
-};
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const str = (v: unknown) => (typeof v === "string" ? v : v == null ? "" : String(v));
 
 /**
@@ -55,7 +53,7 @@ export function ActivityPanel() {
           org && `at ${org}`,
         ].filter(Boolean).join(" ");
       default:
-        return str(c.reason) || (e.target_id ? `${humanize(e.target_type)} ${e.target_id.slice(0, 8)}` : humanize(e.target_type));
+        return str(c.reason);
     }
   }
 
@@ -74,7 +72,7 @@ export function ActivityPanel() {
             {entries.map((e) => (
               <li key={e.id} className="py-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <p className="font-medium">{ACTIONS[e.action] ?? humanize(e.action)}</p>
+                  <p className="font-medium">{cap(ACTIONS[e.action] ?? auditWords(e.action, e.target_type))}</p>
                   <time dateTime={e.created_at} className="text-small text-muted">{formatDate(e.created_at)}</time>
                 </div>
                 <p className="mt-0.5 break-words text-small text-muted">

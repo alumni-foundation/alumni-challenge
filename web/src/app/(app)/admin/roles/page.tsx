@@ -47,7 +47,7 @@ export default function PlatformRolesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <PageHeader title="Platform roles" subtitle="Who can moderate and administer the whole platform." />
 
       <Card className="space-y-5">
@@ -61,7 +61,7 @@ export default function PlatformRolesPage() {
         </Field>
         {problem && <Alert>{problem}</Alert>}
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button onClick={grant} loading={granting} disabled={!person}>
+          <Button variant="dark" onClick={grant} loading={granting} disabled={!person}>
             <ShieldCheck className="size-4" aria-hidden /> Give role
           </Button>
           <Button variant="danger" onClick={() => setRevoking(true)} disabled={!person}>

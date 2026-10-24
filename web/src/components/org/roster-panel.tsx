@@ -105,7 +105,7 @@ export function RosterPanel({ org }: { org: Organization }) {
                         </div>
                       </div>
                       {!verified && (
-                        <Button size="sm" loading={verifying === p.profile_id} disabled={verifying !== null} onClick={() => void verifyOne(p)}>
+                        <Button variant="dark" size="sm" loading={verifying === p.profile_id} disabled={verifying !== null} onClick={() => void verifyOne(p)}>
                           <ShieldCheck className="size-4" aria-hidden /> Verify
                         </Button>
                       )}

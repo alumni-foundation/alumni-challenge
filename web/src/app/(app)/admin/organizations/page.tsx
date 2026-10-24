@@ -64,7 +64,7 @@ function CreateForm({ onDone }: { onDone: (org: Organization) => void }) {
           <div className="sm:col-span-2"><Alert>{create.error.message}</Alert></div>
         )}
         <div className="sm:col-span-2">
-          <Button type="submit" loading={create.isPending}>Create organization</Button>
+          <Button variant="dark" type="submit" loading={create.isPending}>Create organization</Button>
         </div>
       </form>
     </Card>
@@ -102,7 +102,7 @@ export default function AdminOrganizations() {
         subtitle={platform ? "Every organization on the platform." : "The organizations you manage."}
         actions={
           platform && !creating ? (
-            <Button onClick={() => setCreating(true)}><Plus className="size-4" aria-hidden /> New organization</Button>
+            <Button variant="dark" onClick={() => setCreating(true)}><Plus className="size-4" aria-hidden /> New organization</Button>
           ) : undefined
         }
       />

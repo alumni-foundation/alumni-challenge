@@ -59,7 +59,7 @@ export function DomainsPanel({ org }: { org: Organization }) {
             <Input id="dom" value={value} onChange={(e) => { setValue(e.target.value); add.reset(); }} placeholder="school.ac.ke" autoCapitalize="none" autoCorrect="off" inputMode="url" />
           </Field>
         </div>
-        <Button type="submit" loading={add.isPending} className="sm:mt-[26px]">Add domain</Button>
+        <Button variant="dark" type="submit" loading={add.isPending} className="sm:mt-[26px]">Add domain</Button>
       </form>
     </Card>
   );

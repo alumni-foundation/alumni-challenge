@@ -20,7 +20,7 @@ export function OrgGate({ id, kind, children }: { id: string; kind: OrgKind; chi
 
   if (org.isLoading || roles.isLoading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4" role="status" aria-label="Loading">
+      <div className="max-w-3xl space-y-4" role="status" aria-label="Loading">
         <Skeleton className="h-16 rounded-card" />
         <Skeleton className="h-48 rounded-card" />
       </div>

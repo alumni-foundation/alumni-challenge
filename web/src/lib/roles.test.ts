@@ -76,6 +76,14 @@ describe("viewsFor", () => {
 });
 
 describe("currentViewKey", () => {
+  it("keeps a platform admin or moderator in their own navigation on school and partner pages", () => {
+    const platform = viewsFor([m("admin")]);
+    expect(currentViewKey(`/school/${SCHOOL_A}/roster`, platform)).toBe("platform");
+    expect(currentViewKey(`/partner/${PARTNER}`, platform)).toBe("platform");
+    expect(currentViewKey(`/school/${SCHOOL_A}`, viewsFor([m("moderator")]))).toBe("moderator");
+    expect(currentViewKey(`/school/${SCHOOL_A}`, viewsFor([m("alumni")]))).toBe("member");
+  });
+
   const views = viewsFor([m("admin"), m("moderator"), m("school_admin", SCHOOL_A)]);
 
   it("marks the school view while inside that school", () => {

@@ -64,7 +64,7 @@ function ReportCard({ report, onChange, busy }: { report: Report; onChange: (sta
         )}
         {active && (
           <>
-            <Button size="sm" loading={busy === "resolved"} disabled={busy !== null} onClick={() => onChange("resolved")}>Resolve</Button>
+            <Button variant="dark" size="sm" loading={busy === "resolved"} disabled={busy !== null} onClick={() => onChange("resolved")}>Resolve</Button>
             <Button variant="ghost" size="sm" loading={busy === "dismissed"} disabled={busy !== null} onClick={() => onChange("dismissed")}>Dismiss</Button>
           </>
         )}
@@ -106,7 +106,7 @@ export default function ReportsPage() {
   const hasNext = items.length === REPORTS_PAGE_SIZE;
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeader title="Reports" subtitle="What members have asked us to look at, newest first." />
       <div className="mb-4">
         <Alert tone="info">

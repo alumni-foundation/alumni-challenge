@@ -63,7 +63,7 @@ function Lookup({ org, allowed }: { org: Organization; allowed: Role[] }) {
             <Input id="lookup-email" type="email" autoComplete="off" inputMode="email" value={email} onChange={(e) => { setEmail(e.target.value); setChecked(null); setMatch(null); }} />
           </Field>
         </div>
-        <Button type="submit" loading={busy} disabled={!email.trim()} className="sm:mt-[26px]"><Search className="size-4" aria-hidden /> Look up</Button>
+        <Button variant="dark" type="submit" loading={busy} disabled={!email.trim()} className="sm:mt-[26px]"><Search className="size-4" aria-hidden /> Look up</Button>
       </form>
 
       {checked !== null && match === null && (
@@ -92,7 +92,7 @@ function Lookup({ org, allowed }: { org: Organization; allowed: Role[] }) {
                   </Select>
                 </Field>
               </div>
-              <Button
+              <Button variant="dark"
                 loading={grant.isPending}
                 onClick={async () => {
                   try {

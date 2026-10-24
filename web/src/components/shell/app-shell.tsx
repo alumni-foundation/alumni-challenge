@@ -53,7 +53,11 @@ function navFor(view: StaffView): NavItem[] {
         MEMBER_VIEW_ITEM,
       ];
     case "moderator":
-      return [{ label: "Reports", href: "/admin/reports", icon: FileText }, MEMBER_VIEW_ITEM];
+      return [
+        { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+        { label: "Reports", href: "/admin/reports", icon: FileText },
+        MEMBER_VIEW_ITEM,
+      ];
     case "school":
       return [
         { label: "Overview", href: view.href, icon: Building2 },

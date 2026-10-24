@@ -140,6 +140,8 @@ export function currentViewKey(pathname: string, views: StaffView[]): string {
   const match = staff.find((v) => pathname === v.href || pathname.startsWith(`${v.href}/`));
   if (match) return match.key;
   if (pathname === "/school" || pathname === "/partner") return staff.find((v) => v.kind === pathname.slice(1))?.key ?? "member";
+  // A platform admin or moderator who opens a school or partner page keeps the staff navigation, not the member one.
+  if (pathname.startsWith("/school/") || pathname.startsWith("/partner/")) return staff.find((v) => v.kind === "platform" || v.kind === "moderator")?.key ?? "member";
   if (pathname.startsWith("/admin")) return staff.find((v) => v.kind === "platform" || v.kind === "moderator")?.key ?? "member";
   return "member";
 }

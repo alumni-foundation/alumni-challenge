@@ -44,7 +44,7 @@ export function EditPanel({ org }: { org: Organization }) {
           </Field>
           <p className="text-small text-muted">Web address name: <span className="font-medium text-ink">{org.slug}</span> (can’t be changed)</p>
           {update.isError && Object.keys(server).length === 0 && <Alert>{update.error.message}</Alert>}
-          <Button type="submit" loading={update.isPending} disabled={!dirty}>Save changes</Button>
+          <Button variant="dark" type="submit" loading={update.isPending} disabled={!dirty}>Save changes</Button>
         </form>
       </Card>
     </div>
