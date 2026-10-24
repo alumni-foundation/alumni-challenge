@@ -32,7 +32,7 @@ Builder: solo. Status key: `[ ]` not done, `[x]` done.
 - [ ] Decide how existing alumni get in: self-signup, invite, bulk import by school admins, profile claiming
 - [ ] Decide first-launch audience and the first schools/partners
 
-**Gate:** ERD, permission matrix and privacy rules reviewed by you (and Lee). No table is built that is not on the ERD.
+**Gate:** ERD, permission matrix and privacy rules reviewed by you (and an independent reviewer). No table is built that is not on the ERD.
 
 ---
 
