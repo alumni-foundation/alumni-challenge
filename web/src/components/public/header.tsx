@@ -8,6 +8,7 @@ import { NavLinks, type NavItem } from "./nav-links";
 const LINKS: NavItem[] = [
   { href: "/schools", label: "Schools" },
   { href: "/partners", label: "Partners" },
+  { href: "/events", label: "Events" },
 ];
 
 const overlayLink = "min-h-11 items-center px-4 text-small font-medium text-white/90 transition-colors hover:text-white aria-[current]:text-white";

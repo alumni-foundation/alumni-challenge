@@ -52,12 +52,15 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
   const multipart = joined === "files" && contentType.startsWith("multipart/form-data");
   const body = !unsafe ? undefined : multipart ? await req.arrayBuffer() : await req.text();
   const url = `${apiBase()}/${joined}${req.nextUrl.search}`;
+  // A booking is sent once however many times it is retried: the API needs the same key on every retry.
+  const idempotencyKey = req.headers.get("idempotency-key")?.slice(0, 255);
   const call = (token: string) =>
     fetch(url, {
       method: req.method,
       headers: {
         ...visitor,
         authorization: `Bearer ${token}`,
+        ...(idempotencyKey ? { "idempotency-key": idempotencyKey } : {}),
         ...(body ? { "content-type": multipart ? contentType : "application/json" } : {}),
       },
       body: body || undefined,

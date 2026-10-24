@@ -47,7 +47,7 @@ export function safeNext(value: string | null): string | null {
   return value && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\") ? value : null;
 }
 
-type Sent = { method?: string; body?: unknown; form?: FormData };
+type Sent = { method?: string; body?: unknown; form?: FormData; headers?: Record<string, string> };
 
 async function request(path: string, init: Sent): Promise<{ res: Response; data: unknown }> {
   let res: Response;
@@ -55,7 +55,7 @@ async function request(path: string, init: Sent): Promise<{ res: Response; data:
     res = await fetch(`/api/backend/${path}`, {
       method: init.method ?? "GET",
       // A FormData body sets its own content type (with the multipart boundary).
-      headers: init.body !== undefined ? { "content-type": "application/json" } : undefined,
+      headers: init.body !== undefined || init.headers ? { ...(init.body !== undefined ? { "content-type": "application/json" } : {}), ...init.headers } : undefined,
       body: init.form ?? (init.body !== undefined ? JSON.stringify(init.body) : undefined),
     });
   } catch {
@@ -72,7 +72,7 @@ async function request(path: string, init: Sent): Promise<{ res: Response; data:
 }
 
 /** Calls the backend through the same-origin proxy. Tokens never reach browser JavaScript. */
-export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+export async function api<T>(path: string, init: { method?: string; body?: unknown; headers?: Record<string, string> } = {}): Promise<T> {
   return (await request(path, init)).data as T;
 }
 
