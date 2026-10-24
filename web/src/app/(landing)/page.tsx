@@ -25,13 +25,13 @@ export default async function Home() {
           <SectionHead eyebrow="Schools" id="schools-title" href="/schools">
             Find the school you <em className="accent-serif">belong</em> to.
           </SectionHead>
-          <OrgGrid orgs={schools?.slice(0, 6) ?? null} base="/schools" noun="schools" />
+          <OrgGrid orgs={schools?.slice(0, 6) ?? null} base="/schools" noun="schools" reveal />
         </section>
         <section aria-labelledby="partners-title" id="partners" className="scroll-mt-6">
           <SectionHead eyebrow="Partners" id="partners-title" href="/partners">
             Organisations that back the <em className="accent-serif">community</em>.
           </SectionHead>
-          <OrgGrid orgs={partners?.slice(0, 6) ?? null} base="/partners" noun="partners" />
+          <OrgGrid orgs={partners?.slice(0, 6) ?? null} base="/partners" noun="partners" reveal />
         </section>
       </div>
     </>
