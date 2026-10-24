@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, useToast } from "@/components/ui";
+import { Alert, Button, Skeleton, useToast } from "@/components/ui";
 import { api, ApiError } from "@/lib/api/client";
+import { useMyTickets } from "@/lib/api/hooks";
 import { friendlyError } from "@/lib/api/messages";
 
 /**
@@ -13,6 +14,8 @@ export function ClaimTicket({ code }: { code: string }) {
   const toast = useToast();
   const [state, setState] = useState<"idle" | "busy" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
+  // A ticket already in my tickets (I booked it, or claimed it before) has nothing to claim.
+  const mine = useMyTickets();
 
   async function claim() {
     setState("busy");
@@ -27,6 +30,8 @@ export function ClaimTicket({ code }: { code: string }) {
     }
   }
 
+  if (mine.isLoading) return <Skeleton className="h-16" />;
+  if (mine.data?.some((t) => t.code === code)) return <p className="text-small text-ink">This ticket is in your tickets. You will find it under My tickets.</p>;
   if (state === "done") return <Alert tone="ok">This ticket is now in your account. You will find it under My tickets.</Alert>;
   return (
     <div className="space-y-3">

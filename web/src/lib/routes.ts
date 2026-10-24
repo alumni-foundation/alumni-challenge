@@ -43,4 +43,12 @@ export const isStaffArea = (pathname: string) =>
  * Pages that work without a member (alumni) profile: the staff areas, and Settings, which is about
  * the account (password, devices, data) and not the member profile.
  */
-export const worksWithoutProfile = (pathname: string) => isStaffArea(pathname) || pathname === "/settings";
+export const worksWithoutProfile = (pathname: string) =>
+  isStaffArea(pathname) || pathname === "/settings" || isEventsArea(pathname);
+
+/**
+ * Events, bookings and tickets are about the account, not the alumni profile: staff, and people who have not
+ * finished onboarding, can still open an emailed ticket link or look at events. (Booking only needs a name.)
+ */
+export const isEventsArea = (pathname: string) =>
+  ["/events", "/bookings", "/tickets"].some((p) => pathname === p || pathname.startsWith(`${p}/`));

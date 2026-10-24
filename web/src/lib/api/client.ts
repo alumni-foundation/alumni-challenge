@@ -47,6 +47,12 @@ export function safeNext(value: string | null): string | null {
   return value && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\") ? value : null;
 }
 
+/** Where an expired session sends the person. A ticket code is a credential, so it is never copied into that address. */
+export function expiredLoginUrl(pathname: string, search: string): string {
+  const here = /^\/tickets\/[0-9a-f]{64}/.test(pathname) ? "/tickets" : pathname + search;
+  return `/login?reason=expired&next=${encodeURIComponent(here)}`;
+}
+
 type Sent = { method?: string; body?: unknown; form?: FormData; headers?: Record<string, string> };
 
 async function request(path: string, init: Sent): Promise<{ res: Response; data: unknown }> {
@@ -64,8 +70,7 @@ async function request(path: string, init: Sent): Promise<{ res: Response; data:
   const data = await parse(res);
   if (res.status === 401 && typeof window !== "undefined") {
     // The proxy already tried the refresh token once. A 401 here means the session is over.
-    const here = window.location.pathname + window.location.search;
-    window.location.assign(`/login?reason=expired&next=${encodeURIComponent(here)}`);
+    window.location.assign(expiredLoginUrl(window.location.pathname, window.location.search));
   }
   if (!res.ok) throw toError(res, data);
   return { res, data };

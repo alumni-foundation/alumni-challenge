@@ -76,3 +76,13 @@ describe("bookingProblem", () => {
     expect(bookingProblem(err(409, "sold_out")).keepKey).toBeUndefined();
   });
 });
+
+describe("expiredLoginUrl", () => {
+  it("never puts a ticket code in the login address", async () => {
+    const { expiredLoginUrl } = await import("./api/client");
+    const code = "b".repeat(64);
+    expect(expiredLoginUrl(`/tickets/${code}`, "")).not.toContain(code);
+    expect(expiredLoginUrl(`/tickets/${code}`, "")).toBe("/login?reason=expired&next=%2Ftickets");
+    expect(expiredLoginUrl("/events/abc", "?x=1")).toBe("/login?reason=expired&next=%2Fevents%2Fabc%3Fx%3D1");
+  });
+});

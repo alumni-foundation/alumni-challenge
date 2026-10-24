@@ -40,6 +40,14 @@ describe("isSignedOutOnly", () => {
   });
 });
 
+describe("worksWithoutProfile for events", () => {
+  it("lets someone with no alumni profile open events, bookings and tickets", () => {
+    for (const p of ["/events", "/events/abc", "/bookings", "/bookings/abc", "/tickets", `/tickets/${"a".repeat(64)}`]) expect(worksWithoutProfile(p)).toBe(true);
+    expect(worksWithoutProfile("/directory")).toBe(false);
+    expect(worksWithoutProfile("/eventsfoo")).toBe(false);
+  });
+});
+
 describe("isStaffArea", () => {
   it("covers admin, school and partner pages only", () => {
     expect(["/admin", "/admin/reports", "/school/abc", "/partner/abc/edit"].every(isStaffArea)).toBe(true);
