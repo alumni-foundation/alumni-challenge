@@ -3,8 +3,14 @@ import { ApiError } from "./client";
 import { friendlyError, loginErrorMessage, SUSPENDED, TOO_MANY_ATTEMPTS } from "./messages";
 
 describe("loginErrorMessage", () => {
-  it("explains a suspended account", () => {
-    expect(loginErrorMessage(new ApiError(401, "unauthorized", "This account is not active."))).toBe(SUSPENDED);
+  it("explains a suspended account from the error code, whatever the message says", () => {
+    expect(loginErrorMessage(new ApiError(401, "account_suspended", "Any wording at all."))).toBe(SUSPENDED);
+  });
+
+  it("does not guess from the message text", () => {
+    expect(loginErrorMessage(new ApiError(401, "unauthorized", "This account is not active."))).toBe(
+      "This account is not active.",
+    );
   });
 
   it("keeps the server's wording for a wrong password", () => {

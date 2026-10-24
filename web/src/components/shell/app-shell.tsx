@@ -155,14 +155,14 @@ function SwitchView() {
     <div ref={ref} className="relative">
       <button
         type="button"
+        aria-label="Switch view"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-11 items-center gap-2 rounded-full border border-line-strong bg-surface px-3.5 text-small font-medium hover:bg-sunken"
+        className="inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full border border-line-strong bg-surface px-3.5 text-small font-medium hover:bg-sunken"
       >
         <Repeat className="size-4 text-muted" aria-hidden />
-        <span className="hidden sm:inline">Switch view</span>
-        <span className="sr-only sm:hidden">Switch view</span>
+        <span aria-hidden className="hidden sm:inline lg:hidden xl:inline">Switch view</span>
         <ChevronDown className={cn("size-3.5 text-muted transition-transform", open && "rotate-180")} aria-hidden />
       </button>
       {open && (
@@ -236,7 +236,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/start" className="flex min-h-11 shrink-0 items-center gap-2.5" aria-label="Alumni Challenge home">
       <Logo size={compact ? 32 : 40} tone="dark" />
-      <span className={cn("font-bold tracking-wide text-ink", compact ? "hidden min-[400px]:inline" : "text-lead")}>ALUMNI CHALLENGE</span>
+      <span className={cn("font-bold tracking-wide text-ink", compact ? "hidden min-[400px]:inline" : "hidden text-lead xl:inline")}>ALUMNI CHALLENGE</span>
     </Link>
   );
 }
@@ -251,7 +251,7 @@ function TopNav({ profile }: { profile: Profile | null }) {
 
   return (
     <header className="sticky top-0 z-30 hidden border-b border-line bg-surface lg:block">
-      <div className="mx-auto flex h-20 max-w-[1680px] items-center gap-8 px-10 xl:px-14">
+      <div className="mx-auto flex h-20 max-w-[1680px] items-center gap-4 px-6 xl:gap-6 xl:px-10 2xl:gap-8 2xl:px-14">
         <Brand />
         <nav aria-label="Main" className="flex flex-1 items-center gap-1">
           {items.map((item) => {
@@ -262,7 +262,7 @@ function TopNav({ profile }: { profile: Profile | null }) {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex min-h-11 items-center gap-1.5 rounded-lg px-4 text-body font-medium transition-colors",
+                  "relative flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-body font-medium transition-colors xl:px-3 2xl:px-4",
                   active ? "text-ink" : "text-muted hover:text-ink",
                 )}
               >
@@ -270,7 +270,7 @@ function TopNav({ profile }: { profile: Profile | null }) {
                 {item.href === "/connections" && incoming > 0 && (
                   <span className="rounded-full bg-brand px-1.5 text-caption font-semibold text-white" aria-label={`${incoming} waiting`}>{incoming}</span>
                 )}
-                {active && <span className="absolute inset-x-4 -bottom-[17px] h-0.5 rounded-full bg-brand-ink" aria-hidden />}
+                {active && <span className="absolute inset-x-2.5 -bottom-[17px] xl:inset-x-3 2xl:inset-x-4 h-0.5 rounded-full bg-brand-ink" aria-hidden />}
               </Link>
             );
           })}

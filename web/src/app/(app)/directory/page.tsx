@@ -18,7 +18,12 @@ export default function DirectoryPage() {
   const schools = useOrgs("school");
 
   // Typing waits until it pauses; the dropdown and the switch apply straight away.
-  const typed = useDebounced({ q: form.q, country: form.country, year: form.year, skill: form.skill }, 300);
+  // The object must only change when a value does, or the timer would restart on every render.
+  const typing = useMemo(
+    () => ({ q: form.q, country: form.country, year: form.year, skill: form.skill }),
+    [form.q, form.country, form.year, form.skill],
+  );
+  const typed = useDebounced(typing, 300);
   const filters = useMemo<DirectoryFilters>(
     () => ({ ...typed, schoolId: form.schoolId, verifiedOnly: form.verifiedOnly }),
     [typed, form.schoolId, form.verifiedOnly],

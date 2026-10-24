@@ -5,12 +5,8 @@ export const SUSPENDED = "Your account is suspended. Contact support.";
 export const SESSION_EXPIRED = "Your session expired.";
 const GENERIC = "Something went wrong. Please try again.";
 
-/**
- * The API answers 401 both for a wrong password and for a suspended account, and tells them
- * apart only by this sentence. If the API ever gives suspension its own error code, match on
- * that instead.
- */
-const INACTIVE_ACCOUNT = "This account is not active.";
+/** The API's error code for a correct password on a suspended account. */
+const ACCOUNT_SUSPENDED = "account_suspended";
 
 /** Plain wording for anything that can go wrong in a request. */
 export function friendlyError(err: unknown): string {
@@ -20,6 +16,6 @@ export function friendlyError(err: unknown): string {
 }
 
 export function loginErrorMessage(err: unknown): string {
-  if (err instanceof ApiError && err.status === 401 && err.message === INACTIVE_ACCOUNT) return SUSPENDED;
+  if (err instanceof ApiError && err.status === 401 && err.code === ACCOUNT_SUSPENDED) return SUSPENDED;
   return friendlyError(err);
 }
