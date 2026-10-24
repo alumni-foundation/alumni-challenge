@@ -123,7 +123,9 @@ async def issue_tickets(db: AsyncSession, booking: Booking) -> list[Ticket]:
     return made
 
 
-async def announce_confirmed(db: AsyncSession, booking: Booking) -> None:
+async def announce_confirmed(
+    db: AsyncSession, booking: Booking, *, late_payment: bool = False
+) -> None:
     """
     A booking became confirmed: make its tickets and queue the emails, one queued event per
     recipient, each with its own dedupe key. A repeat of this call (a retried request, a repeated
@@ -134,7 +136,10 @@ async def announce_confirmed(db: AsyncSession, booking: Booking) -> None:
     await publish_event(
         db,
         event_type="booking.confirmed",
-        payload={"booking_id": str(booking.id)},
+        payload={
+            "booking_id": str(booking.id),
+            **({"late_payment": True} if late_payment else {}),
+        },
         dedupe_key=f"booking.confirmed:{booking.id}",
     )
     people = (
