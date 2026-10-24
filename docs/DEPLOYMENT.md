@@ -81,7 +81,7 @@ characters and not a placeholder, `STORAGE_BACKEND=r2` with all four storage set
 |---|---|---|---|---|
 | `ENVIRONMENT` | no | yes | `development` | `production` (or `staging`). Switches on the checks above and turns off the API docs page. |
 | `SECRET_KEY` | **yes** | yes | none | Signs login tokens. Changing it signs everyone out. 32+ random characters. |
-| `TICKET_SIGNING_KEY` | **yes** | yes in production | derived from `SECRET_KEY` in development | Signs the QR codes on event tickets. 32+ random characters, different from `SECRET_KEY`. Changing it makes every printed or emailed ticket QR stop working (organizers can re-issue them). |
+| `TICKET_SIGNING_KEY` | **yes** | yes in production | derived from `SECRET_KEY` in development | Signs the QR codes on event tickets. Needs **32+ random characters** and must be **different from `SECRET_KEY`**. **Changing or losing it invalidates every ticket already issued** (printed or emailed QR codes stop working; an organizer can re-issue them one at a time). Keep a copy in the secret store. |
 | `DATABASE_URL` | **yes** | yes | none | `postgresql+asyncpg://user:password@host:5432/dbname`. The password is in it. |
 | `REDIS_URL` | **yes** | yes | none | `redis://host:6379/0`. If Redis has a password it is in the URL. |
 | `FRONTEND_URL` | no | yes | `http://localhost:3000` | The web app's address, no trailing slash. Email links are built from it: `<FRONTEND_URL>/verify-email?token=...` and `<FRONTEND_URL>/reset-password?token=...`. Must be `https://` in production. |

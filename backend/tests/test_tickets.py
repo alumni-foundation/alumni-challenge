@@ -1,6 +1,10 @@
 """Slice 5.4: tickets, QR codes, claiming, check-in, roster, CSV, tee sheet and messages."""
 
+import csv
+import io
+import re
 import uuid
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -8,16 +12,20 @@ from httpx import AsyncClient
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import app.modules.domain_events.handlers as handlers_module
 from app.core.config import Settings
 from app.core.permissions.roles import Role
 from app.modules.audit.models import AuditLogEntry
+from app.modules.bookings import seats
 from app.modules.bookings import tickets as tickets_module
-from app.modules.bookings.models import Ticket
+from app.modules.bookings.models import Booking, Ticket
+from app.modules.domain_events.models import DomainEvent
 from app.modules.domain_events.service import drain_pending
+from app.modules.domain_events.service import publish as publish_event
 from tests.conftest import Mailbox
 from tests.test_alumni_privacy import Actor, _make_actor
-from tests.test_bookings import _book, _event
-from tests.test_events_core import API, _run_school
+from tests.test_bookings import _add_question, _book, _event
+from tests.test_events_core import API, _create, _publish, _run_school
 
 pytestmark = pytest.mark.asyncio
 
@@ -55,7 +63,22 @@ async def test_a_confirmed_booking_has_one_ticket_per_person(
     _, _, _member, booking, tickets = await _booked_pair(client, db_session)
     assert [t["position"] for t in tickets] == [1, 2]
     assert [t["holder_name"] for t in tickets] == ["Ann Alum", "Ben Friend"]
-    assert all(len(t["code"]) == 64 and t["status"] == "valid" for t in tickets)
+    assert all(t["status"] == "valid" for t in tickets)
+    rows = (
+        await db_session.scalars(
+            select(Ticket).where(Ticket.booking_id == uuid.UUID(booking["id"]))
+        )
+    ).all()
+    by_id = {t.id.hex: t for t in rows}
+    assert tickets_module.CODE_LENGTH == 64
+    for t in tickets:
+        code = t["code"]
+        # 64 hex characters: 32 of ticket id (128 bits) then 32 of signature (128 bits).
+        assert len(code) == 64 and re.fullmatch(r"[0-9a-f]{64}", code)
+        ticket = by_id[code[:32]]
+        assert len(code[32:]) == tickets_module._SIG_BYTES * 2 == 32
+        assert code == tickets_module.make_code(ticket)
+        assert code[32:] == tickets_module._sign(ticket.id, ticket.qr_version)
     assert len({t["code"] for t in tickets}) == 2
     assert tickets[0]["booking_reference"] == booking["reference"]
     stranger = await _make_actor(client)
@@ -536,3 +559,156 @@ async def test_tickets_exist_in_the_database_with_the_right_shape(
             text("SELECT count(*) FROM domain_events WHERE event_type = 'booking.confirmed'")
         )
     ) == 1
+
+
+# ------------------------------------------------- CSV: every user-supplied column is defused
+
+
+async def test_no_csv_cell_can_start_a_spreadsheet_formula_whatever_the_column(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    school, admin = await _run_school(client, db_session, Role.SCHOOL_ADMIN)
+    draft = await _create(client, admin, school, capacity=10, max_party_size=2)
+    await _add_question(
+        client, admin, draft, key="note", label="Note", kind="text", asked_of="each_participant"
+    )
+    event = (await _publish(client, admin, draft["id"])).json()
+    member = await _make_actor(client)
+    evil = ['=HYPERLINK("http://evil","x")', "@SUM(1+1)", "+cmd|' /C calc'!A0", "-2+3"]
+    r = await _book(
+        client,
+        member,
+        event,
+        participants=[
+            {"full_name": evil[0], "phone": "+254700000001"},
+            {"full_name": evil[1], "email": "p@example.com"},
+        ],
+        others_consent_confirmed=True,
+        answers=[
+            {"question_key": "note", "position": 1, "value": evil[2]},
+            {"question_key": "note", "position": 2, "value": evil[3]},
+        ],
+    )
+    assert r.status_code == 201, r.text
+
+    res = await client.get(f"{API}/events/{event['id']}/registrations.csv", headers=admin.headers)
+    assert res.status_code == 200, res.text
+    cells = [c for row in csv.reader(io.StringIO(res.text)) for c in row]
+    assert cells
+    assert [c for c in cells if c[:1] in ("=", "+", "-", "@", "\t", "\r")] == []
+    for value in evil:  # nothing is lost, just made safe
+        assert "'" + value in cells
+
+
+# ------------------------------------------------------ emails: one queued event per recipient
+
+
+class _FlakyMailer:
+    """Fails the first send to one address, then behaves."""
+
+    def __init__(self, fail_once_to: str) -> None:
+        self.fail_once_to = fail_once_to
+        self.sent: list[dict[str, str | None]] = []
+        self.failures = 0
+
+    async def send(self, *, to: str, subject: str, body: str, html: str | None = None) -> None:
+        if to == self.fail_once_to and self.failures == 0:
+            self.failures += 1
+            raise RuntimeError("mail provider down")
+        self.sent.append({"to": to, "subject": subject, "body": body})
+
+
+async def test_a_failed_second_email_is_retried_alone_and_never_resends_the_first(
+    client: AsyncClient, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, event = await _event(client, db_session)
+    member = await _make_actor(client)
+    flaky = _FlakyMailer(fail_once_to="ben@example.com")
+    monkeypatch.setattr(handlers_module, "get_mailer", lambda: flaky)
+    r = await _book(
+        client,
+        member,
+        event,
+        participants=[{"full_name": "Ann"}, {"full_name": "Ben", "email": "ben@example.com"}],
+        others_consent_confirmed=True,
+    )
+    assert r.status_code == 201, r.text
+
+    await drain_pending(db_session)  # the booker's email goes; Ben's send fails
+    assert flaky.failures == 1
+    assert len([m for m in flaky.sent if "Booking confirmed" in (m["subject"] or "")]) == 1
+    assert [m for m in flaky.sent if m["to"] == "ben@example.com"] == []
+
+    await db_session.execute(
+        text("UPDATE domain_events SET next_attempt_at = NULL WHERE status = 'pending'")
+    )
+    await drain_pending(db_session)  # the retry
+    assert len([m for m in flaky.sent if "Booking confirmed" in (m["subject"] or "")]) == 1
+    to_ben = [m for m in flaky.sent if m["to"] == "ben@example.com"]
+    assert len(to_ben) == 1 and "Your ticket" in (to_ben[0]["subject"] or "")
+
+
+async def test_confirming_twice_queues_each_email_once(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    _, event = await _event(client, db_session)
+    member = await _make_actor(client)
+    r = await _book(
+        client,
+        member,
+        event,
+        participants=[{"full_name": "Ann"}, {"full_name": "Ben", "email": "ben@example.com"}],
+        others_consent_confirmed=True,
+    )
+    booking = await db_session.get(Booking, uuid.UUID(r.json()["id"]))
+    assert booking is not None
+    await tickets_module.announce_confirmed(db_session, booking)
+    await tickets_module.announce_confirmed(db_session, booking)
+    for kind in ("booking.confirmed", "booking.ticket_issued"):
+        rows = (
+            await db_session.scalars(select(DomainEvent).where(DomainEvent.event_type == kind))
+        ).all()
+        assert len(rows) == 1, kind
+
+
+async def test_publishing_the_same_dedupe_key_twice_queues_one_event(
+    db_session: AsyncSession,
+) -> None:
+    one = await publish_event(db_session, event_type="x.y", payload={"a": 1}, dedupe_key="k-1")
+    two = await publish_event(db_session, event_type="x.y", payload={"a": 2}, dedupe_key="k-1")
+    other = await publish_event(db_session, event_type="x.y", payload={"a": 3}, dedupe_key="k-2")
+    assert one is not None and two is None and other is not None
+    plain_1 = await publish_event(db_session, event_type="x.y", payload={})
+    plain_2 = await publish_event(db_session, event_type="x.y", payload={})
+    assert plain_1 is not None and plain_2 is not None  # no key: always queued
+
+
+# -------------------------------------------------------------- the ticket page's rate limit
+
+
+async def test_the_ticket_page_is_rate_limited_per_ip_but_generously(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    _, _, _, _, tickets = await _booked_pair(client, db_session)
+    url = f"{API}/tickets/{tickets[0]['code']}"
+    first = await client.get(url)
+    assert first.status_code == 200 and first.headers["Cache-Control"] == "no-store"
+    statuses = {(await client.get(url)).status_code for _ in range(599)}  # 600 in all
+    assert statuses == {200}
+    assert (await client.get(url)).status_code == 429  # the 601st
+
+
+# ------------------------------------------------------- the test seams cannot act in production
+
+
+def test_the_test_seams_are_off_by_default_and_nothing_in_the_app_turns_them_on() -> None:
+    assert tickets_module.check_in_hook is None
+    assert seats.capacity_check_hook is None
+    app_dir = Path(__file__).resolve().parents[1] / "app"
+    assigned = [
+        f"{path.relative_to(app_dir)}:{n}"
+        for path in app_dir.rglob("*.py")
+        for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1)
+        if re.search(r"\b(check_in_hook|capacity_check_hook)\s*=", line)
+    ]
+    assert assigned == []

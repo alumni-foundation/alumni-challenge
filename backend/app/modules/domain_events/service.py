@@ -11,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, or_, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.domain_events.models import DomainEvent, DomainEventStatus
@@ -41,13 +42,35 @@ def retry_delay(attempts: int) -> timedelta:
     return RETRY_DELAYS[min(attempts, len(RETRY_DELAYS)) - 1]
 
 
-async def publish(db: AsyncSession, *, event_type: str, payload: dict[str, Any]) -> DomainEvent:
+async def publish(
+    db: AsyncSession,
+    *,
+    event_type: str,
+    payload: dict[str, Any],
+    dedupe_key: str | None = None,
+) -> DomainEvent | None:
     """
     Writes the row and flushes — does NOT commit. Callers publish inside
     the same request/transaction as the action the event describes, and
     the router's normal `db.commit()` covers both at once. A rolled-back
     action correctly takes its event with it.
+
+    With a `dedupe_key`, a second publish of the same key does nothing and returns None: one
+    queued event (so one email) per key, however often the trigger repeats.
     """
+    if dedupe_key is not None:
+        new_id = await db.scalar(
+            pg_insert(DomainEvent)
+            .values(event_type=event_type, payload=payload, dedupe_key=dedupe_key)
+            .on_conflict_do_nothing(
+                index_elements=[DomainEvent.dedupe_key],
+                index_where=DomainEvent.dedupe_key.is_not(None),
+            )
+            .returning(DomainEvent.id)
+        )
+        if new_id is None:
+            return None
+        return await db.get(DomainEvent, new_id)
     event = DomainEvent(event_type=event_type, payload=payload)
     db.add(event)
     await db.flush()

@@ -65,11 +65,12 @@ async def get_ticket(
     code: str,
     response: Response,
     db: AsyncSession = Depends(get_db_session),
-    _limit: None = Depends(rate_limit("ticket_view", limit=120, window_seconds=3600)),
+    _limit: None = Depends(rate_limit("ticket_view", limit=600, window_seconds=900)),
 ) -> TicketOut:
     """
     The ticket page behind a QR code or an emailed link. No sign-in: the code is the
     credential, so a player without an account can use it. A wrong or revoked code is a 404.
+    Per IP, 600 requests per 15 minutes: generous enough for a whole venue on one wifi network.
     """
     ticket = await tickets.find_by_code(db, code)
     out = tickets.ticket_out(await tickets.load_view(db, ticket))

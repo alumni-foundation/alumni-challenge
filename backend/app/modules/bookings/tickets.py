@@ -1,11 +1,17 @@
 """
 Tickets: one per person in a confirmed booking.
 
-A ticket's QR code is `ticket_id` plus a 128-bit HMAC of (ticket_id, qr_version) under the
-TICKET_SIGNING_KEY secret, written as 64 hex characters. Nothing secret is stored, so a lost QR
-is simply drawn again, and raising `qr_version` kills a leaked one. The code is also the only
-credential for the ticket page: a player with no account can open it from the emailed link.
-A ticket whose booking is not `confirmed` is void whatever the ticket row says.
+A ticket code is 64 hex characters = 32 bytes, in two halves:
+
+* the first 32 hex characters (128 bits) are the ticket's id, a random UUID;
+* the last 32 hex characters (128 bits) are a signature: HMAC-SHA256 of the ticket id and its
+  `qr_version` under the TICKET_SIGNING_KEY secret, cut to its first 16 bytes.
+
+So the signature is 128 bits, and the whole code is 256 bits long. Forging a code for a ticket
+means guessing a 128-bit signature, and nothing secret is stored: a lost QR is simply drawn
+again, and raising `qr_version` kills a leaked one. The code is also the only credential for the
+ticket page, so a player with no account can open it from the emailed link. A ticket whose
+booking is not `confirmed` is void whatever the ticket row says.
 """
 
 import hashlib
@@ -28,10 +34,13 @@ from app.modules.bookings.models import (
     TicketStatus,
 )
 from app.modules.bookings.schemas import BookingSlotInfo, TicketEventInfo, TicketOut
+from app.modules.domain_events.service import publish as publish_event
 from app.modules.events.models import Event, EventSlot
 from app.modules.identity.models import User
 
-_SIG_BYTES = 16  # 128 bits
+_ID_HEX = 32  # the ticket id: 16 bytes
+_SIG_BYTES = 16  # the signature: 128 bits
+CODE_LENGTH = _ID_HEX + _SIG_BYTES * 2  # 64 hex characters in all
 
 # Test-only seam: awaited after a scan has found its ticket valid and before it writes, so a
 # test can hold two scans in exactly that gap. None in production.
@@ -63,7 +72,7 @@ def parse_code(code: str) -> uuid.UUID | None:
     """The ticket id if the code is well formed. The signature is checked against the row's
     current `qr_version` by `find_by_code`."""
     code = code.strip().lower()
-    if len(code) != 32 + _SIG_BYTES * 2:
+    if len(code) != CODE_LENGTH:
         return None
     try:
         int(code, 16)
@@ -112,6 +121,37 @@ async def issue_tickets(db: AsyncSession, booking: Booking) -> list[Ticket]:
         made.append(ticket)
     await db.flush()
     return made
+
+
+async def announce_confirmed(db: AsyncSession, booking: Booking) -> None:
+    """
+    A booking became confirmed: make its tickets and queue the emails, one queued event per
+    recipient, each with its own dedupe key. A repeat of this call (a retried request, a repeated
+    payment callback) therefore queues nothing new, and a failed send retries only that one
+    person's email, never anyone else's.
+    """
+    await issue_tickets(db, booking)
+    await publish_event(
+        db,
+        event_type="booking.confirmed",
+        payload={"booking_id": str(booking.id)},
+        dedupe_key=f"booking.confirmed:{booking.id}",
+    )
+    people = (
+        await db.scalars(
+            select(BookingParticipant)
+            .where(BookingParticipant.booking_id == booking.id, BookingParticipant.position > 1)
+            .order_by(BookingParticipant.position)
+        )
+    ).all()
+    for person in people:
+        if person.email:
+            await publish_event(
+                db,
+                event_type="booking.ticket_issued",
+                payload={"booking_id": str(booking.id), "participant_id": str(person.id)},
+                dedupe_key=f"booking.ticket_issued:{person.id}",
+            )
 
 
 def effective_status(ticket: Ticket, booking: Booking) -> str:

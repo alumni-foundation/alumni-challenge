@@ -20,6 +20,7 @@ Two rules for everything in this file:
 import uuid
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -137,10 +138,8 @@ def _ticket_link(code: str) -> str:
 
 @on("booking.confirmed")
 async def send_booking_confirmed(db: AsyncSession, payload: dict[str, Any]) -> None:
-    """The booker gets the booking and every ticket link. A named player whose email the booker
-    gave gets their own ticket link too. Codes are made now from the signing key, never stored."""
-    from sqlalchemy import select
-
+    """The booker gets the booking and every ticket link. Codes are made now from the signing
+    key, never stored. (Named players are emailed by their own event, see send_player_ticket.)"""
     from app.modules.bookings.models import BookingParticipant, Ticket
     from app.modules.bookings.tickets import make_code
 
@@ -168,17 +167,35 @@ async def send_booking_confirmed(db: AsyncSession, payload: dict[str, Any]) -> N
     await get_mailer().send(
         to=user.email, subject=content.subject, body=content.text, html=content.html
     )
-    for person, ticket in rows:
-        if person.position == 1 or not person.email or person.email == user.email:
-            continue
-        own = templates.ticket_email(
-            event_title=event.title,
-            when=when,
-            holder_name=person.full_name,
-            reference=booking.reference,
-            link=_ticket_link(make_code(ticket)),
-        )
-        await get_mailer().send(to=person.email, subject=own.subject, body=own.text, html=own.html)
+
+
+@on("booking.ticket_issued")
+async def send_player_ticket(db: AsyncSession, payload: dict[str, Any]) -> None:
+    """A named player whose email the booker gave gets their own ticket link. One queued event
+    per player, so a failure here is retried alone and never re-sends anyone else's email."""
+    from app.modules.bookings.models import BookingParticipant, Ticket
+    from app.modules.bookings.tickets import make_code
+
+    ctx = await _booking_context(db, payload)
+    person = await db.get(BookingParticipant, uuid.UUID(payload["participant_id"]))
+    if ctx is None or person is None or not person.email or person.booking_id != ctx[0].id:
+        return
+    booking, event, booker = ctx
+    if person.email == booker.email:
+        return
+    ticket = await db.scalar(select(Ticket).where(Ticket.participant_id == person.id))
+    if ticket is None:
+        return
+    content = templates.ticket_email(
+        event_title=event.title,
+        when=event.starts_at.strftime("%A %d %B %Y, %H:%M UTC"),
+        holder_name=person.full_name,
+        reference=booking.reference,
+        link=_ticket_link(make_code(ticket)),
+    )
+    await get_mailer().send(
+        to=person.email, subject=content.subject, body=content.text, html=content.html
+    )
 
 
 @on("event.message")

@@ -90,12 +90,12 @@ booking for an event that has not ended. Other open bookings are cancelled. The 
 
 ### Tickets (one per person in a confirmed booking)
 A booking gets its tickets the moment it is `confirmed` (free events: at booking time). Unpaid
-bookings have none yet. `code` is 64 hex characters: **draw the QR from it in the app**; the QR
-holds only the code. The code is also the credential for the ticket page.
+bookings have none yet. `code` is 64 hex characters (a 128-bit ticket id followed by a 128-bit
+signature, 256 bits in all): **draw the QR from it in the app**; the QR holds only the code. The code is also the credential for the ticket page.
 
 | Method and path | Who | Notes |
 |---|---|---|
-| `GET /tickets/{code}` | **anyone, no sign-in** | The ticket page behind the QR/email link: `holder_name`, `status` (`valid`, `checked_in`, `void`), event, slot, `booking_reference`. No email or phone. Wrong or revoked code: `404`. `Cache-Control: no-store`. |
+| `GET /tickets/{code}` | **anyone, no sign-in** | The ticket page behind the QR/email link: `holder_name`, `status` (`valid`, `checked_in`, `void`), event, slot, `booking_reference`. No email or phone. Wrong or revoked code: `404`. `Cache-Control: no-store`. Limited to 600 requests per 15 minutes per IP. |
 | `POST /tickets/claim` `{code}` | signed in | Attach the ticket from the emailed link to my account (`409 already_claimed` if someone else has it; repeating is fine). |
 | `GET /tickets/mine` | signed in | Tickets for events that have not ended: all in bookings I made, plus ones I claimed. |
 | `GET /bookings/{id}/tickets` | booker, organizers | All tickets of a booking. |
@@ -104,7 +104,7 @@ holds only the code. The code is also the credential for the ticket page.
 A ticket is `void` whenever its booking is not `confirmed` (cancelled, refunded).
 
 Emails: the booker's confirmation lists every ticket link; a named player whose email the booker
-gave also gets their own link.
+gave also gets their own link, as a separate queued email (a failed send retries only that one).
 
 ### Organizer tools (event managers and above; others get `403`, signed-out `401`)
 

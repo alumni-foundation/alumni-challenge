@@ -333,6 +333,7 @@ async def send_message(
             db,
             event_type="event.message",
             payload={"message_id": str(message.id), "booking_id": str(booking_id)},
+            dedupe_key=f"event.message:{message.id}:{booking_id}",
         )
     await record_audit(
         db,
