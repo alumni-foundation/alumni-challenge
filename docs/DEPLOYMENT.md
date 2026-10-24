@@ -329,6 +329,11 @@ image already runs this check every 30 seconds.
   proxy does not send it and terminates TLS, cookies will not be marked Secure: tell the developer.
 * **HSTS is left to Cloudflare.** Turn on "HTTP Strict Transport Security" in Cloudflare
   (SSL/TLS, Edge Certificates) once https works everywhere; the web app does not send it itself.
+* **Content-Security-Policy** is sent by the web app on every page, with a new random nonce per
+  request (so pages are never cached by Cloudflare, and a "Cache Everything" rule on HTML would break
+  scripts: do not add one). Scripts, styles, images, fonts and connections are limited to the app's own
+  address. If you add a third-party script (analytics, a chat widget), it will be blocked until the
+  developer allows it in `web/src/lib/csp.ts`. Browser console messages starting "Refused to ..." are this policy.
 * Pictures are fetched at `https://<web address>/api/v1/files/<id>/content`, which the web app
   forwards to the API. Public ones (logos) are sent with a one-year cache header. Cloudflare does not
   cache an address with no file extension by default; a cache rule for that path is optional and
