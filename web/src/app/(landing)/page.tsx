@@ -21,13 +21,13 @@ export default async function Home() {
       <Hero signedIn={signedIn} stats={stats} />
       <Points />
       <div className="mx-auto max-w-6xl space-y-20 px-4 pb-4 sm:px-6 lg:px-10">
-        <section aria-labelledby="schools-title" id="schools" className="scroll-mt-6">
+        <section aria-labelledby="schools-title" id="schools" className="scroll-mt-8">
           <SectionHead eyebrow="Schools" id="schools-title" href="/schools">
             Find the school you <em className="accent-serif">belong</em> to.
           </SectionHead>
           <OrgGrid orgs={schools?.slice(0, 6) ?? null} base="/schools" noun="schools" reveal />
         </section>
-        <section aria-labelledby="partners-title" id="partners" className="scroll-mt-6">
+        <section aria-labelledby="partners-title" id="partners" className="scroll-mt-8">
           <SectionHead eyebrow="Partners" id="partners-title" href="/partners">
             Organisations that back the <em className="accent-serif">community</em>.
           </SectionHead>

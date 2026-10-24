@@ -20,7 +20,7 @@ export function SectionHead({ eyebrow, id, children, href, linkLabel }: {
     <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
       <div>
         <p className="text-caption font-semibold uppercase tracking-widest text-brand-ink">{eyebrow}</p>
-        <h2 id={id} className="mt-2 text-display sm:text-[2.5rem] sm:leading-[1.1]">{children}</h2>
+        <h2 id={id} tabIndex={-1} className="mt-2 text-display outline-none sm:text-[2.5rem] sm:leading-[1.1]">{children}</h2>
       </div>
       {href && (
         <Link href={href} className="inline-flex min-h-11 items-center text-small font-medium text-brand-ink hover:underline">

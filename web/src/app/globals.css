@@ -289,3 +289,57 @@ button.icon3d { cursor: pointer; border: 0; padding: 0; }
     mask-composite: intersect;
   }
 }
+
+/* ---- Header links: a thin line grows from the left on hover and focus ---------------------- */
+/* 1.5px, in the link's own text colour, scaleX only: nothing moves and nothing shifts. The current
+   page or section keeps it. */
+.nav-link { position: relative; border-radius: 0.375rem; }
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 0.5rem;
+  height: 1.5px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 250ms ease-out;
+}
+.nav-link:hover::after,
+.nav-link:focus-visible::after,
+.nav-link[aria-current="page"]::after,
+.nav-link[aria-current="location"]::after { transform: scaleX(1); }
+.nav-link:focus-visible { outline: 2px solid currentColor; outline-offset: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .nav-link::after { transition: none; }
+}
+
+/* ---- Sign-in entrance: the card slides in, the rest follows ----------------------------------- */
+/* CSS keyframes, transform and opacity only. fill-mode "backwards" means that if the animation never runs
+   the content is simply there. The class is removed after a second (see template.tsx), so an error message
+   or a typed character never replays it. */
+@keyframes auth-card-x { from { opacity: 0; transform: translateX(32px); } }
+@keyframes auth-card-y { from { opacity: 0; transform: translateY(48px); } }
+@keyframes auth-rise { from { opacity: 0; transform: translateY(12px); } }
+@keyframes auth-rise-sm { from { opacity: 0; transform: translateY(8px); } }
+@keyframes auth-photo { from { transform: scale(1.03); } }
+.auth-photo-in { animation: auth-photo 700ms var(--ease-calm) backwards; }
+.auth-enter .auth-card-in { animation: auth-card-x 500ms var(--ease-calm) backwards; }
+.auth-enter .auth-back-in { animation: auth-rise 450ms var(--ease-calm) 80ms backwards; }
+.auth-enter .auth-caption-in { animation: auth-rise 450ms var(--ease-calm) 160ms backwards; }
+.auth-enter .auth-stagger > * > * {
+  animation: auth-rise-sm 420ms var(--ease-calm) backwards;
+  animation-delay: calc(140ms + var(--step, 5) * 40ms);
+}
+.auth-enter .auth-stagger > * > :nth-child(1) { --step: 0; }
+.auth-enter .auth-stagger > * > :nth-child(2) { --step: 1; }
+.auth-enter .auth-stagger > * > :nth-child(3) { --step: 2; }
+.auth-enter .auth-stagger > * > :nth-child(4) { --step: 3; }
+.auth-enter .auth-stagger > * > :nth-child(5) { --step: 4; }
+@media (max-width: 1023px) {
+  .auth-enter .auth-card-in { animation-name: auth-card-y; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-photo-in, .auth-enter .auth-card-in, .auth-enter .auth-back-in, .auth-enter .auth-caption-in, .auth-enter .auth-stagger > * > * { animation: none; }
+}

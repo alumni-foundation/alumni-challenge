@@ -46,7 +46,7 @@ export function Hero({ signedIn, stats }: { signedIn: boolean; stats: HeroStat[]
             <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-caption font-medium text-white backdrop-blur-md">
               <span className="size-1.5 rounded-full bg-[#e8c48a]" aria-hidden /> For alumni of Kenyan schools
             </p>
-            <h1 className="mt-6 text-hero font-medium text-white">
+            <h1 tabIndex={-1} className="mt-6 text-hero font-medium text-white outline-none">
               Where alumni<br />
               <em className="accent-serif text-[#ecc98f]">connect</em><br />
               and belong.
