@@ -53,7 +53,9 @@ class Settings(BaseSettings):
     # Which header carries the real visitor address when the API sits behind a proxy. Behind
     # Cloudflare use "cf-connecting-ip". Leave as "none" anywhere visitors reach the API
     # directly: those headers can be forged, and trusting them would let anyone dodge rate limits.
-    trusted_client_ip_header: Literal["none", "cf-connecting-ip", "x-forwarded-for"] = "none"
+    trusted_client_ip_header: Literal[
+        "none", "cf-connecting-ip", "x-forwarded-for", "x-visitor-ip"
+    ] = "none"
 
     # Observability
     sentry_dsn: str | None = None

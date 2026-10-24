@@ -103,7 +103,7 @@ characters and not a placeholder, `STORAGE_BACKEND=r2` with all four storage set
 | `SENTRY_DSN` | **yes** | recommended | none | Empty means Sentry is off. Treat the DSN as a secret. |
 | `SENTRY_TRACES_SAMPLE_RATE` | no | no | `0.1` | Share of requests traced for performance (0 to 1). |
 | `SENTRY_RELEASE` | no | recommended | none | The image version, so errors show which deploy caused them. |
-| `TRUSTED_CLIENT_IP_HEADER` | no | yes behind Cloudflare | `none` | Set `cf-connecting-ip` when the API is behind Cloudflare. Otherwise every visitor shares the proxy's address and rate limits lock everyone out together. Leave `none` if visitors reach the API directly (the header could be forged). |
+| `TRUSTED_CLIENT_IP_HEADER` | no | yes behind a proxy | `none` | Which request header carries the visitor's real address: `none`, `cf-connecting-ip` (API behind Cloudflare), `x-visitor-ip` (the web app sends it on every server-side call; API on the private network) or `x-forwarded-for`. Only the one named header is read; all others are ignored. Without it every visitor shares the proxy's address and rate limits lock everyone out together. **When this is set to anything but `none`, the API must not be publicly reachable** (no public address, or the origin locked to Cloudflare's ranges): anyone who can reach it directly can send that header and pick their own address, and so dodge every rate limit. Leave `none` if visitors reach the API directly. |
 | `DATABASE_POOL_SIZE` | no | no | `10` | Connections kept open per process. See sizing below. |
 | `DATABASE_MAX_OVERFLOW` | no | no | `5` | Extra connections allowed per process in a burst. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | no | no | `15` | Life of a login token. |
