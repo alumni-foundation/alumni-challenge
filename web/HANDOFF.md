@@ -154,7 +154,36 @@ and videos), `screen2-home`, `screen2b` (Home v2, sidebar, bell, design-check), 
 bookings, tickets; `holdtest` has the one-seat sold-out / already-booked / hold-expiry run).
 The reference images the user gave are in the same parent folder (`landing page.png`).
 
-## 8. Next
+## 8. Where I stopped (end of Screen 6, the admin UI) and next steps
 
-The next job is the **admin dashboard** (staff shells: `/admin`, `/school/[id]`, `/partner/[id]`, restyle to the new
-look). They already sit inside the new sidebar. Start from `origin/development`, follow section 3.
+**Done and on branch `screen-6-admin-dashboard`** (stacked on `screen-4-events-on-development`; merge Screens 2, 2b and 4 first):
+
+- **Dashboard** (`components/admin/dashboard/*`, data in `lib/admin-overview.ts`) from `GET /admin/overview` (`docs/admin-api.md` on the backend branch).
+  Shown at `/admin` (platform admin, moderator), `/school/[id]`, `/partner/[id]` and `/organizer/[id]` (event manager). A section the API
+  returns as `null` is not drawn. Sample numbers live only in `components/admin/dashboard/fixtures.ts`, used by tests and `/design-check`.
+  The member journey is "everyone today" (the API says so); the 30 days / 90 days / Year toggle drives the tiles and the sign-ups chart.
+  The verified-members change is labelled "Earlier count is a minimum" (the API cannot know when someone was verified).
+- **Staff shells for every role**: platform admin, moderator (Dashboard + Reports), school admin, partner admin, event manager
+  (`organizer` view: Dashboard, Events), sports manager (`sports` view: Events only; the overview API refuses them). `viewsFor`,
+  `landingFor` and `currentViewKey` in `lib/roles.ts` know all of them; the expandable sidebar and the bell work in each.
+- **Staff pages in the new look**: lists are bar rows (`components/staff/rows.tsx`), cards use `<Card large>`, filters are pill tabs
+  (`<Tabs pills>`), primary buttons are dark pills, wording is plain (no raw ids). There are no tables in the staff area.
+  Member list and user lookup live in the Team page, the verification queue is the roster's "Waiting for verification" tab.
+
+**Not done / needs a decision or the backend:**
+
+- **Phase 2 (attendee payment steps)** and **Phase 3 (organizer event screens)** come next. Event managers' dashboard links to the shared
+  `/events` list for now; there are no organizer event screens (create, edit, registrations, check-in, confirm payments, refunds).
+  The dashboard rows "Payments to confirm", "Refunds due" and "Events still in draft" open `/events` until those screens exist.
+- The activity log and Recent activity say "Someone" / "a staff member": the API gives actor ids only and staff have no profile to look up.
+  Reports show "Reported by a member" for the same reason. A backend name field (or a staff lookup) would fix both.
+- `schema.d.ts` does not yet contain the overview types; they are written by hand in `lib/admin-overview.ts`. After the backend merges,
+  run `npm run api:types` and replace them with aliases in `types.ts`.
+- A platform admin's selector offers schools and partners; partners show no member cards (members belong to schools).
+- Event managers cannot open the activity log or the roster (the API refuses), so their dashboard has no links there.
+
+**Preview recipe (throwaway database, never the dev one):** create database `overview_preview` in the compose postgres, run
+`alembic upgrade head` and `python -m app.cli seed-demo` from the backend branch image with a copy of `backend/` mounted read-write
+(seed writes `var/`), set the demo accounts' password hash to the shared password, run uvicorn on 8001, build the web app
+(`npm run build`, copy `.next/static` and `public` into `.next/standalone`), then `API_URL=http://localhost:8001 PORT=3200 node server.js`.
+

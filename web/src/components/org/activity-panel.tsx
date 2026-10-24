@@ -37,7 +37,7 @@ export function ActivityPanel() {
   const partners = useOrgs("partner");
 
   const orgName = (id: string) => [...(schools.data ?? []), ...(partners.data ?? [])].find((o) => o.id === id)?.name;
-  const personName = (id: string) => members.byUser.get(id)?.full_name ?? `User ${id.slice(0, 8)}`;
+  const personName = (id: string) => members.byUser.get(id)?.full_name ?? "a staff member";
 
   function detail(e: AuditLogEntry): string {
     const c = e.context;
