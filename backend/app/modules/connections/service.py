@@ -41,7 +41,11 @@ async def send_request(
         if existing.status == ConnectionStatus.PENDING:
             raise ConflictError("A connection request is already pending.")
         if existing.status == ConnectionStatus.BLOCKED:
-            raise ForbiddenError("Unable to send a connection request.")
+            if existing.blocked_by != requester_id:
+                # The person was blocked: they get exactly what they would for someone who
+                # does not exist, so they cannot tell they were blocked.
+                raise NotFoundError("User not found.")
+            raise ForbiddenError("You have blocked this person. Unblock them first.")
         # DECLINED or REMOVED: allow a fresh request by resetting this row.
         existing.requester_id = requester_id
         existing.addressee_id = addressee_id

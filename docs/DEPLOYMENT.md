@@ -268,6 +268,16 @@ they can read.
 * Uploads are not virus-scanned and have no thumbnails yet.
 * After a password change, another device's already-issued login token works for up to 15
   minutes (its refresh token is revoked at once).
+* **Registration reveals whether an email already has an account.** Registering with an
+  address that exists answers 409, a new one 201. Left as is for launch on purpose: making
+  both look the same means the sign-up screen could no longer sign the person in straight
+  away (they would have to click the email link first), which costs real sign-ups. It is
+  limited to 10 attempts an hour per address. Revisit if people report being targeted.
+* **Failed sign-ins lock an account, not just the attacker.** After 5 wrong passwords for one
+  email within 15 minutes that account refuses sign-in for 15 minutes, even with the right
+  password. Anyone who knows an email can therefore lock that person out for short periods.
+  Kept on purpose: it is the standard trade against unlimited password guessing, and the
+  same wait applies to the real owner, who can also reset the password by email.
 * Events, bookings and payments are not built yet.
 
 ---

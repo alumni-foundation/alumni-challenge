@@ -291,7 +291,17 @@ async def test_block_flow_end_to_end(client: AsyncClient, db_session: AsyncSessi
     again = await client.post(
         f"{API}/connections", json={"addressee_id": str(a.user_id)}, headers=b.headers
     )
-    assert again.status_code == 403, again.text
+    assert again.status_code == 404, again.text
+    missing = await client.post(
+        f"{API}/connections", json={"addressee_id": str(uuid.uuid4())}, headers=b.headers
+    )
+    assert (again.status_code, again.json()) == (missing.status_code, missing.json())
+
+    # the blocker is told plainly if they try to connect with someone they blocked
+    mine = await client.post(
+        f"{API}/connections", json={"addressee_id": str(b.user_id)}, headers=a.headers
+    )
+    assert mine.status_code == 403, mine.text
 
     # only the blocker can unblock
     other = await client.post(f"{API}/connections/{pending['id']}/unblock", headers=b.headers)
