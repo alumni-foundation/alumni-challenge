@@ -225,9 +225,118 @@ async def test_the_seed_makes_a_meetup_a_paid_evening_a_four_slot_golf_day_and_a
             select(EventSlot).where(EventSlot.event_id == events[demo_events.GOLF].id)
         )
     )
-    assert len(golf_slots) == 4 and {s.capacity for s in golf_slots} == {40}
+    assert len(golf_slots) == 4 and {s.capacity for s in golf_slots} == {24}
 
     # a second run adds nothing
     await demo.seed_demo(db_session, password=PASSWORD)
     again = list(await db_session.scalars(select(Event).where(Event.title.like("Demo %"))))
     assert len(again) == len(events)
+
+
+async def test_the_two_demo_events_are_complete_published_and_in_the_future(
+    db_session: AsyncSession,
+) -> None:
+    from datetime import UTC, datetime
+
+    from app.modules.events.models import Event, EventConsent, EventQuestion, EventSlot, EventStatus
+    from app.modules.payments.models import PaymentAccount
+    from app.seed import demo_events
+
+    await demo.seed_demo(db_session, password=PASSWORD)
+    events = {
+        e.title: e
+        for e in await db_session.scalars(
+            select(Event).where(Event.title.in_([demo_events.MEETUP, demo_events.GOLF]))
+        )
+    }
+    meetup, golf = events[demo_events.MEETUP], events[demo_events.GOLF]
+    now = datetime.now(UTC)
+    for event in (meetup, golf):
+        assert event.status == EventStatus.PUBLISHED
+        assert event.poster_file_id is not None
+        assert event.venue_name
+        assert event.starts_at > now
+
+    async def slots(event: Event) -> list[EventSlot]:
+        return list(
+            await db_session.scalars(select(EventSlot).where(EventSlot.event_id == event.id))
+        )
+
+    async def question_keys(event: Event) -> dict[str, EventQuestion]:
+        return {
+            q.key: q
+            for q in await db_session.scalars(
+                select(EventQuestion).where(EventQuestion.event_id == event.id)
+            )
+        }
+
+    meetup_slots = await slots(meetup)
+    assert meetup.price_minor == 0
+    assert [s.capacity for s in meetup_slots] == [40]
+    questions = await question_keys(meetup)
+    assert len(questions) == 1 and not next(iter(questions.values())).required
+    consents = list(
+        await db_session.scalars(select(EventConsent).where(EventConsent.event_id == meetup.id))
+    )
+    assert {c.key for c in consents} == {"terms", "filming_photography"}
+
+    golf_slots = await slots(golf)
+    assert golf.price_minor == 500_000 and golf.currency == "KES"
+    assert golf.max_party_size == 4
+    assert [s.capacity for s in golf_slots] == [24, 24, 24, 24]
+    keys = await question_keys(golf)
+    assert set(keys) == {"golf_handicap_index", "golf_team", "shirt_size", "meal_choice"}
+    assert keys["shirt_size"].required and keys["meal_choice"].required
+    payee = await db_session.get(PaymentAccount, golf.payment_account_id)
+    assert payee is not None and payee.organization_id == golf.organization_id
+
+
+async def test_an_older_unbooked_demo_event_is_replaced_but_a_booked_one_is_left_alone(
+    db_session: AsyncSession,
+) -> None:
+    from app.modules.events.models import Event
+    from app.seed import demo_events
+
+    await demo.seed_demo(db_session, password=PASSWORD)
+    meetup = await db_session.scalar(select(Event).where(Event.title == demo_events.MEETUP))
+    assert meetup is not None
+    old_id = meetup.id
+    meetup.poster_file_id = None  # what an event from the older seed looks like
+    await db_session.flush()
+
+    await demo.seed_demo(db_session, password=PASSWORD)
+
+    again = list(await db_session.scalars(select(Event).where(Event.title == demo_events.MEETUP)))
+    assert len(again) == 1 and again[0].id != old_id and again[0].poster_file_id is not None
+
+
+async def test_an_older_demo_event_that_people_booked_is_not_pulled_out_from_under_them(
+    db_session: AsyncSession,
+) -> None:
+    from sqlalchemy import text
+
+    from app.modules.events.models import Event, EventSlot
+    from app.seed import demo_events
+
+    await demo.seed_demo(db_session, password=PASSWORD)
+    golf = await db_session.scalar(select(Event).where(Event.title == demo_events.GOLF))
+    assert golf is not None
+    slot = await db_session.scalar(select(EventSlot).where(EventSlot.event_id == golf.id))
+    assert slot is not None
+    booker = await db_session.scalar(select(User).limit(1))
+    assert booker is not None
+    await db_session.execute(
+        text(
+            "INSERT INTO bookings (id, event_id, slot_id, booker_user_id, party_size, status,"
+            " unit_price_minor, amount_minor, currency, reference, idempotency_key,"
+            " request_sha256, from_waitlist) VALUES (gen_random_uuid(), :e, :s, :u, 1,"
+            " 'cancelled', 0, 0, 'KES', 'AC-SEEDTEST1', 'k', 'x', false)"
+        ),
+        {"e": golf.id, "s": slot.id, "u": booker.id},
+    )
+    golf.poster_file_id = None  # looks like the older seed, but someone has booked it
+
+    await demo.seed_demo(db_session, password=PASSWORD)
+
+    still = list(await db_session.scalars(select(Event).where(Event.title == demo_events.GOLF)))
+    assert [e.id for e in still] == [golf.id]
