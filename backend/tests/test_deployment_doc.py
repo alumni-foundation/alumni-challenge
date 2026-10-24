@@ -40,7 +40,9 @@ def _doc() -> str:
 
 def _table_rows() -> dict[str, list[str]]:
     rows: dict[str, list[str]] = {}
-    for line in _doc().splitlines():
+    # The web app's own variables (part 2) are not backend settings.
+    backend_part = _doc().split("# Part 2: the web app", 1)[0]
+    for line in backend_part.splitlines():
         match = re.match(r"\|\s*`([A-Z][A-Z0-9_]+)`\s*\|(.*)\|\s*$", line)
         if match:
             rows[match.group(1)] = [cell.strip() for cell in match.group(2).split("|")]
