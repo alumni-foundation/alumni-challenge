@@ -43,7 +43,10 @@ function ConnectionsView() {
   const me = useMe();
   const connections = useConnections();
   const blocked = useBlocked();
-  const [tab, setTab] = useState<Tab>(params.get("tab") === "blocked" ? "blocked" : "connected");
+  const [tab, setTab] = useState<Tab>(() => {
+    const t = params.get("tab");
+    return t === "blocked" || t === "received" || t === "sent" ? t : "connected";
+  });
   const [removing, setRemoving] = useState<Connection | null>(null);
 
   const refresh = [["connections"], ["blocked"], ["directory"]];

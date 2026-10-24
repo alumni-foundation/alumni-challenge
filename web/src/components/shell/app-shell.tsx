@@ -2,11 +2,11 @@
 
 import {
   Building2, Check, ChevronDown, FileText, Globe, GraduationCap, Home, LayoutDashboard, LogOut, Pencil, Repeat, ScrollText,
-  Settings, ShieldCheck, User, UserPlus, Users,
+  Search, Settings, ShieldCheck, User, UserPlus, Users,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { authCall } from "@/lib/api/client";
 import { useConnections, useMe, useOrgs, useRoles } from "@/lib/api/hooks";
@@ -14,6 +14,7 @@ import type { Organization, Profile } from "@/lib/api/types";
 import { currentViewKey, roleLabel, viewsFor, type StaffView } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui";
+import { Icon3D } from "@/components/ui/icon3d";
 import { Logo } from "./logo";
 
 type NavItem = {
@@ -144,7 +145,11 @@ function useViews() {
   return { views, orgs, current };
 }
 
-function SwitchView() {
+type Placement = "down" | "rail";
+const menuPlace = (p: Placement, w: string) =>
+  p === "rail" ? `absolute bottom-0 left-full z-40 ml-3 ${w}` : `absolute right-0 top-full z-40 mt-2 ${w}`;
+
+function SwitchView({ placement = "down" }: { placement?: Placement }) {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
   const router = useRouter();
@@ -159,14 +164,18 @@ function SwitchView() {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full border border-line-strong bg-surface px-3.5 text-small font-medium hover:bg-sunken"
+        className={
+          placement === "rail"
+            ? "grid size-11 place-items-center rounded-2xl bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white"
+            : "inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full border border-line-strong bg-surface px-3.5 text-small font-medium hover:bg-sunken"
+        }
       >
-        <Repeat className="size-4 text-muted" aria-hidden />
-        <span aria-hidden className="hidden sm:inline lg:hidden xl:inline">Switch view</span>
-        <ChevronDown className={cn("size-3.5 text-muted transition-transform", open && "rotate-180")} aria-hidden />
+        <Repeat className={cn("size-4", placement === "rail" ? "text-white" : "text-muted")} aria-hidden />
+        {placement === "down" && <span aria-hidden className="hidden sm:inline">Switch view</span>}
+        {placement === "down" && <ChevronDown className={cn("size-3.5 text-muted transition-transform", open && "rotate-180")} aria-hidden />}
       </button>
       {open && (
-        <div role="menu" aria-label="Switch view" className="absolute right-0 top-full z-40 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-surface p-2 shadow-lifted motion-rise">
+        <div role="menu" aria-label="Switch view" className={cn(menuPlace(placement, "w-72 max-w-[calc(100vw-2rem)]"), "rounded-xl border border-line bg-surface p-2 shadow-lifted motion-rise")}>
           <p className="px-3 pb-1 pt-2 text-caption font-medium uppercase tracking-wide text-muted">View as</p>
           {views.map((v) => (
             <button
@@ -189,7 +198,7 @@ function SwitchView() {
   );
 }
 
-function ProfileMenu({ profile }: { profile: Profile | null }) {
+function ProfileMenu({ profile, placement = "down" }: { profile: Profile | null; placement?: Placement }) {
   const me = useMe();
   const [open, setOpen] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
@@ -206,13 +215,16 @@ function ProfileMenu({ profile }: { profile: Profile | null }) {
         aria-expanded={open}
         aria-label="Account menu"
         onClick={() => setOpen((v) => !v)}
-        className="flex min-h-11 items-center gap-2 rounded-full py-1 pl-1 pr-2 hover:bg-sunken"
+        className={cn(
+          "flex min-h-11 items-center gap-2 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2",
+          placement === "rail" ? "p-0.5 ring-2 ring-white/25 hover:ring-white/50 focus-visible:outline-white" : "py-1 pl-1 pr-2 hover:bg-sunken focus-visible:outline-ink",
+        )}
       >
-        <Avatar name={profile?.full_name ?? me.data?.email ?? "Account"} id={profile?.id ?? me.data?.id ?? "me"} size={36} src={profile?.avatar_url} />
-        <ChevronDown className={cn("hidden size-3.5 text-muted transition-transform sm:block", open && "rotate-180")} aria-hidden />
+        <Avatar name={profile?.full_name ?? me.data?.email ?? "Account"} id={profile?.id ?? me.data?.id ?? "me"} size={placement === "rail" ? 40 : 36} src={profile?.avatar_url} />
+        {placement === "down" && <ChevronDown className={cn("hidden size-3.5 text-muted transition-transform sm:block", open && "rotate-180")} aria-hidden />}
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-full z-40 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-surface p-2 shadow-lifted motion-rise">
+        <div role="menu" className={cn(menuPlace(placement, "w-64 max-w-[calc(100vw-2rem)]"), "rounded-xl border border-line bg-surface p-2 shadow-lifted motion-rise")}>
           <div className="border-b border-line px-3 py-2">
             <p className="truncate text-small font-semibold">{profile?.full_name ?? me.data?.email}</p>
             <p className="truncate text-caption text-muted">{roleName}</p>
@@ -232,120 +244,155 @@ function ProfileMenu({ profile }: { profile: Profile | null }) {
   );
 }
 
-function Brand({ compact = false }: { compact?: boolean }) {
+function Brand({ compact = false, light = false }: { compact?: boolean; light?: boolean }) {
   return (
-    <Link href="/start" className="flex min-h-11 shrink-0 items-center gap-2.5" aria-label="Alumni Challenge home">
-      <Logo size={compact ? 32 : 40} tone="dark" />
-      <span className={cn("font-bold tracking-wide text-ink", compact ? "hidden min-[400px]:inline" : "hidden text-lead xl:inline")}>ALUMNI CHALLENGE</span>
+    <Link href="/start" className="flex min-h-11 shrink-0 items-center gap-2.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink" aria-label="Alumni Challenge home">
+      <Logo size={compact ? 32 : 36} tone={light ? "light" : "dark"} />
     </Link>
   );
 }
 
-/** Desktop: logo, this view's links, then the view switcher and account menu. */
-function TopNav({ profile }: { profile: Profile | null }) {
+/** The search in the top bar: Enter opens the directory with what was typed. */
+function SearchForm({ className, id }: { className?: string; id: string }) {
+  const router = useRouter();
+  const params = useSearchParams();
+  const pathname = usePathname();
+  const [value, setValue] = useState(pathname === "/directory" ? (params.get("q") ?? "") : "");
+  return (
+    <form
+      role="search"
+      className={cn("relative", className)}
+      onSubmit={(e) => {
+        e.preventDefault();
+        const q = value.trim();
+        router.push(q ? `/directory?q=${encodeURIComponent(q)}` : "/directory");
+      }}
+    >
+      <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
+      <input
+        id={id}
+        type="search"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        aria-label="Search alumni"
+        placeholder="Search alumni"
+        className="h-11 w-full rounded-full border border-line-strong bg-surface pl-11 pr-4 text-body text-ink placeholder:text-faint transition-colors focus:border-brand-ink focus:outline-none focus:ring-2 focus:ring-brand-ink/20 sm:text-small"
+      />
+    </form>
+  );
+}
+
+const SearchBox = ({ className, id }: { className?: string; id: string }) => (
+  <Suspense fallback={null}><SearchForm className={className} id={id} /></Suspense>
+);
+
+/** One item in the desktop rail: a tile with a label that appears on hover and focus. */
+function RailItem({ item, active, badge }: { item: NavItem; active: boolean; badge?: number }) {
+  return (
+    <Link
+      href={item.href}
+      aria-label={badge ? `${item.label}, ${badge} waiting` : item.label}
+      aria-current={active ? "page" : undefined}
+      className="rail-item group relative grid size-12 place-items-center rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+    >
+      <Icon3D icon={item.icon} tone={active ? "ember" : "ink"} size="sm" className="transition-transform duration-200 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5" />
+      {badge ? (
+        <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold leading-4 text-brand-ink" aria-hidden>{badge}</span>
+      ) : null}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-full z-50 ml-4 translate-x-1 whitespace-nowrap rounded-full bg-ink px-3.5 py-1.5 text-small font-medium text-white opacity-0 shadow-lifted transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+      >
+        {item.label}
+      </span>
+    </Link>
+  );
+}
+
+/** Desktop: a slim dark rail with this view's items, the view switcher and the account menu at the bottom. */
+function Rail({ profile }: { profile: Profile | null }) {
   const incoming = useIncomingCount();
   const isActive = useIsActive();
   const { current } = useViews();
-  // Settings and My profile live in the account menu on desktop; the top bar stays short.
-  const items = navFor(current).filter((i) => !(current.kind === "member" && (i.href === "/settings" || i.href === "/profile")));
-
+  const items = navFor(current);
   return (
-    <header className="sticky top-0 z-30 hidden border-b border-line bg-surface lg:block">
-      <div className="mx-auto flex h-20 max-w-[1680px] items-center gap-4 px-6 xl:gap-6 xl:px-10 2xl:gap-8 2xl:px-14">
-        <Brand />
-        <nav aria-label="Main" className="flex flex-1 items-center gap-1">
-          {items.map((item) => {
-            const active = isActive(item);
-            return (
-              <Link
-                key={item.href + item.label}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "relative flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-body font-medium transition-colors xl:px-3 2xl:px-4",
-                  active ? "text-ink" : "text-muted hover:text-ink",
-                )}
-              >
-                {item.label}
-                {item.href === "/connections" && incoming > 0 && (
-                  <span className="rounded-full bg-brand px-1.5 text-caption font-semibold text-white" aria-label={`${incoming} waiting`}>{incoming}</span>
-                )}
-                {active && <span className="absolute inset-x-2.5 -bottom-[17px] xl:inset-x-3 2xl:inset-x-4 h-0.5 rounded-full bg-brand-ink" aria-hidden />}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="flex items-center gap-3">
-          <SwitchView />
-          <ProfileMenu profile={profile} />
-        </div>
+    <aside className="fixed bottom-3 left-3 top-3 z-30 hidden w-[4.75rem] flex-col items-center rounded-[28px] bg-side py-4 shadow-lifted lg:flex">
+      <Brand light />
+      <nav aria-label="Main" className="mt-5 flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto overflow-x-visible py-1">
+        {items.map((item) => (
+          <RailItem key={item.href + item.label} item={item} active={isActive(item)} badge={item.href === "/connections" ? incoming : undefined} />
+        ))}
+      </nav>
+      <div className="mt-3 flex flex-col items-center gap-3">
+        <SwitchView placement="rail" />
+        <ProfileMenu profile={profile} placement="rail" />
+      </div>
+    </aside>
+  );
+}
+
+/** The quiet bar over the page: its title and the search. On phones it also holds the logo, view switcher and account menu. */
+function TopBar({ profile }: { profile: Profile | null }) {
+  const isActive = useIsActive();
+  const { current } = useViews();
+  const title = navFor(current).find(isActive)?.label ?? "";
+  const member = current.kind === "member";
+  return (
+    <header className="bg-canvas lg:sticky lg:top-0 lg:z-20 lg:bg-canvas/85 lg:backdrop-blur">
+      <div className="flex items-center gap-2 px-4 pt-3 sm:px-6 lg:hidden">
+        <Brand compact />
+        <p className="min-w-0 flex-1 truncate pl-1 text-lead font-semibold">{title}</p>
+        <SwitchView />
+        <ProfileMenu profile={profile} />
+      </div>
+      {member && <div className="px-4 pb-1 pt-2 sm:px-6 lg:hidden"><SearchBox id="top-search-phone" className="w-full" /></div>}
+      <div className="mx-auto hidden h-20 max-w-[1680px] items-center gap-6 px-10 xl:px-14 lg:flex">
+        <p className="min-w-0 flex-1 truncate text-heading font-semibold">{title}</p>
+        {member && <SearchBox id="top-search" className="w-full max-w-sm" />}
       </div>
     </header>
   );
 }
 
-/** Phone: a slim header with the view switcher and account menu, plus tabs along the bottom. */
-function PhoneChrome({ profile }: { profile: Profile | null }) {
+/** Phone: the same items as tabs along the bottom, big enough to tap, clear of the home indicator. */
+function PhoneTabs() {
   const incoming = useIncomingCount();
   const isActive = useIsActive();
-  const { views, current } = useViews();
-
-  // Members get four tabs, and staff get one more that opens their highest staff view.
-  const tabs: NavItem[] =
-    current.kind === "member"
-      ? [...MEMBER_NAV.slice(0, 3), { label: "Profile", href: "/profile", icon: User }]
-      : navFor(current).filter((i) => !i.desktopOnly);
-  const staffView = views.find((v) => v.kind !== "member");
-  const withAdmin: NavItem[] =
-    current.kind === "member" && staffView
-      ? [...tabs, { label: "Admin", href: staffView.href, icon: ShieldCheck }]
-      : tabs;
-
+  const { current } = useViews();
+  const tabs = navFor(current).filter((i) => !i.desktopOnly);
   return (
-    <>
-      <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-surface/95 px-4 backdrop-blur lg:hidden">
-        <Brand compact />
-        <div className="ml-auto flex items-center gap-1">
-          <SwitchView />
-          <ProfileMenu profile={profile} />
-        </div>
-      </header>
-      <nav
-        aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-30 flex items-stretch justify-around border-t border-line bg-surface pb-[env(safe-area-inset-bottom,0px)] lg:hidden"
-      >
-        {withAdmin.map((item) => {
-          const active = isActive(item);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href + item.label}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className="relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-caption"
-            >
-              <Icon className={cn("size-5", active ? "text-brand-ink" : "text-muted")} aria-hidden />
-              <span className={cn("max-w-full truncate", active ? "font-semibold text-ink" : "text-muted")}>{item.label}</span>
-              {item.href === "/connections" && incoming > 0 && (
-                <span className="absolute right-[calc(50%-22px)] top-1.5 flex size-4 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white" aria-label={`${incoming} waiting`}>
-                  {incoming}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-    </>
+    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 flex items-stretch justify-around border-t border-line bg-surface pb-[env(safe-area-inset-bottom,0px)] lg:hidden">
+      {tabs.map((item) => {
+        const active = isActive(item);
+        const badge = item.href === "/connections" ? incoming : 0;
+        return (
+          <Link
+            key={item.href + item.label}
+            href={item.href}
+            aria-current={active ? "page" : undefined}
+            aria-label={badge ? `${item.label}, ${badge} waiting` : undefined}
+            className="relative flex min-h-[4.25rem] flex-1 flex-col items-center justify-center gap-1 px-0.5 pb-1 pt-1.5 text-[11px] leading-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ink"
+          >
+            <Icon3D icon={item.icon} tone={active ? "ember" : "paper"} size="sm" />
+            <span className={cn("max-w-full truncate", active ? "font-semibold text-ink" : "text-muted")}>{item.label === "My profile" ? "Profile" : item.label}</span>
+            {badge > 0 && (
+              <span className="absolute right-[calc(50%-26px)] top-1 flex size-4 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white" aria-hidden>{badge}</span>
+            )}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 
 export function AppShell({ profile, children }: { profile: Profile | null; children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh bg-canvas">
-      <TopNav profile={profile} />
-      <PhoneChrome profile={profile} />
+    <div className="min-h-dvh bg-canvas lg:pl-[6.25rem]">
+      <Rail profile={profile} />
+      <TopBar profile={profile} />
+      <PhoneTabs />
       <main id="main">
-        <div className="mx-auto max-w-[1680px] px-4 pb-28 pt-5 sm:px-6 sm:pt-6 lg:px-10 lg:pb-10 lg:pt-8 xl:px-14">{children}</div>
+        <div className="mx-auto max-w-[1680px] px-4 pb-32 pt-4 sm:px-6 sm:pt-5 lg:px-10 lg:pb-10 lg:pt-2 xl:px-14">{children}</div>
       </main>
     </div>
   );

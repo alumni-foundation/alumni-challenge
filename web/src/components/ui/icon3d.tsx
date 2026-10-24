@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export type Icon3DTone = "ember" | "gold" | "moss" | "sky" | "ink";
+export type Icon3DTone = "ember" | "gold" | "moss" | "sky" | "ink" | "paper";
 export type Icon3DSize = "sm" | "md" | "lg";
 
 // Tile size in px and the icon's share of it. The look itself lives in globals.css (.icon3d).
