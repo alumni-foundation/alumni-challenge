@@ -1,5 +1,5 @@
 import { OrgGrid } from "@/components/public/org";
-import { Hero, PARTNER_STAT, SCHOOL_STAT, countLabel, type HeroStat } from "@/components/landing/hero";
+import { Hero, MIN_STAT, PARTNER_STAT, SCHOOL_STAT, countLabel, type HeroStat } from "@/components/landing/hero";
 import { Points, SectionHead } from "@/components/landing/sections";
 import { hasSession } from "@/lib/server/auth";
 import { fetchOrgs } from "@/lib/server/public-api";
@@ -9,10 +9,12 @@ const PAGE_LIMIT = 100; // what fetchOrgs asks for
 export default async function Home() {
   const [schools, partners, signedIn] = await Promise.all([fetchOrgs("school"), fetchOrgs("partner"), hasSession()]);
 
-  // Real counts from the public API. A count we don't have (the call failed, or it is zero) is left out.
+  // Real counts from the public API, shown only when both are big enough to mean something.
   const stats: HeroStat[] = [];
-  if (schools && schools.length > 0) stats.push({ ...SCHOOL_STAT, value: countLabel(schools.length, PAGE_LIMIT), label: schools.length === 1 ? "School" : "Schools" });
-  if (partners && partners.length > 0) stats.push({ ...PARTNER_STAT, value: countLabel(partners.length, PAGE_LIMIT), label: partners.length === 1 ? "Partner" : "Partners" });
+  if (schools && partners && schools.length >= MIN_STAT && partners.length >= MIN_STAT) {
+    stats.push({ ...SCHOOL_STAT, value: countLabel(schools.length, PAGE_LIMIT), label: "Schools" });
+    stats.push({ ...PARTNER_STAT, value: countLabel(partners.length, PAGE_LIMIT), label: "Partners" });
+  }
 
   return (
     <>

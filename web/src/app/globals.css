@@ -7,9 +7,9 @@
  *
  * Principles: warm and calm, light first. An ivory canvas, deep warm ink, and ONE accent (the
  * school-crest red). Pill buttons, soft layered shadows, large touch targets, 16px text in form
- * fields so phones don't zoom, and motion that never gets in the way. Dark is the secondary
- * theme and follows the device setting. Put data-theme="light" or "dark" on an element to force
- * a theme for that part of the page (the design-check page does this to show both at once).
+ * fields so phones don't zoom, and motion that never gets in the way. The site is light only and
+ * ignores the device's dark setting. A dark palette exists for an element that opts in with
+ * data-theme="dark" (the design-check page shows it); nothing else uses it.
  *
  * Spacing: Tailwind's 4px grid. Use 4/8/12/16/24/32/48 (p-1, p-2, p-3, p-4, p-6, p-8, p-12).
  * Page gutters: 16px on phones, 24px from 640px, 40px from 1024px.
@@ -55,43 +55,8 @@
   --shadow-color: 60 40 18; /* warm brown, so shadows never look grey on ivory */
 }
 
-/* ---- Raw palette: dark (secondary) ---------------------------------------------------- */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-
-    --brand: #d12f3c;
-    --brand-dark: #e0434f;
-    --brand-soft: #3a1a1c;
-    --brand-ink: #ff8791;
-
-    --gold: #e3b448;
-    --gold-soft: #35290e;
-
-    --ink: #f4efe6;
-    --muted: #b8b1a4;
-    --faint: #9d968a;
-    --line: #2e2a24;
-    --line-strong: #453f36;
-
-    --canvas: #14110e;
-    --surface: #1c1814;
-    --sunken: #26211b;
-
-    --side: #100e0b;
-    --side-deep: #0a0907;
-
-    --verified: #8fb0ff;
-    --verified-soft: #172544;
-    --ok: #6fd391;
-    --ok-soft: #12301d;
-    --warn: #f0b266;
-    --warn-soft: #36230c;
-
-    --scrim: rgb(0 0 0 / 0.65);
-    --shadow-color: 0 0 0;
-  }
-}
+/* ---- Raw palette: dark ---------------------------------------------------------------- */
+/* Not used by the app: the site is light only. Kept for an element that opts in with data-theme="dark". */
 [data-theme="dark"] {
   color-scheme: dark;
 
@@ -176,7 +141,7 @@
   --text-display: 2.25rem;
   --text-display--line-height: 2.5rem;
   /* The landing headline. Serif accent words get .accent-serif. */
-  --text-hero: clamp(2.5rem, 1.5rem + 4vw, 4.5rem);
+  --text-hero: clamp(2.25rem, 1.2rem + 3.2vw, 4.25rem);
   --text-hero--line-height: 1.04;
   --text-hero--letter-spacing: -0.025em;
 
@@ -314,3 +279,11 @@ button.icon3d { cursor: pointer; border: 0; padding: 0; }
 .icon3d[data-tone="moss"] { --t-hi: #5fbf86; --t-mid: #2a8a55; --t-lo: #14603a; --t-glow: 30 120 70; }
 .icon3d[data-tone="sky"] { --t-hi: #6aa0f2; --t-mid: #2f66d6; --t-lo: #1a419c; --t-glow: 40 90 210; }
 .icon3d[data-tone="ink"] { --t-hi: #6a655d; --t-mid: #3b3732; --t-lo: #1d1a17; --t-glow: 30 26 22; }
+
+/* ---- Landing hero photo ------------------------------------------------------------------- */
+/* The photo's white studio backdrop is multiplied into the page ivory (the file has its backdrop
+   levelled to pure white for this), and the photo fades out at the top and bottom, so no edge is drawn. */
+.hero-photo {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 84%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 84%, transparent 100%);
+}
