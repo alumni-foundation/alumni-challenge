@@ -132,6 +132,13 @@ Builder: solo. Status key: `[ ]` not done, `[x]` done.
 
 **Gate:** the concurrency test passes repeatedly. Sports and golf reuse this exact pattern.
 
+**Gate result (GitHub Actions run 40100899799, `.github/workflows/load-gate.yml`, 2 API workers, Postgres 17, Redis 7):**
+- Concurrency test with `CONCURRENCY_ROUNDS=20`: 10 passed, 0 failed, 89.5 s.
+- Load script, 10 runs in a row, about 3,300 requests each (3,000 people plus about 10% repeat sends with the same idempotency key), 200 in flight, 6 slots, 450 seats, 60% of people aiming at the 100-seat slot: **10 of 10 runs clean. No run where seats did not add up.** Every run ended with all 450 seats booked, no slot over capacity, every counter equal to a recount of the real bookings, accepted bookings equal to database rows, nobody holding two active bookings, no server error.
+- Speed: 79 to 102 requests/s; p50 1.3 to 2.2 s, p95 3.2 to 6.4 s, p99 4.4 to 8.8 s, slowest single request 11.4 s (200 at once on a shared 2-core runner).
+- Not a pass/fail item but recorded: 3 of the 10 runs (4, 6, 8) had one client-side `ReadError` each (a connection dropped on the load script's side; that one request has no answer). The checks above still held in those runs.
+- Not yet covered: slot-level waitlist promotion and the nightly counter check (slice 5.6), and payments (slice 5.5 and Phase 6). Re-run this gate after each.
+
 ---
 
 ## PHASE 6: Payments (provider-agnostic, no M-Pesa yet)
