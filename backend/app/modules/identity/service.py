@@ -1,3 +1,4 @@
+import functools
 import uuid
 import uuid as uuid_module
 from datetime import UTC, datetime, timedelta
@@ -61,6 +62,11 @@ def _lockout_key(email: str) -> str:
     return f"login_lockout:{email.lower()}"
 
 
+@functools.cache
+def _dummy_password_hash() -> str:
+    return hash_password("not-anyone's-password")
+
+
 async def authenticate_user(db: AsyncSession, *, email: str, password: str) -> User:
     redis = get_redis_client()
     if await redis.exists(_lockout_key(email)):
@@ -70,8 +76,13 @@ async def authenticate_user(db: AsyncSession, *, email: str, password: str) -> U
 
     user = await db.scalar(select(User).where(User.email == email))
     # Same generic message whether the email doesn't exist or the
-    # password is wrong — do not let a client distinguish the two.
-    if user is None or not verify_password(password, user.password_hash):
+    # password is wrong — do not let a client distinguish the two. Hashing takes tens of
+    # milliseconds, so an unknown email gets the same work done, or the time taken would
+    # give it away.
+    password_ok = verify_password(
+        password, user.password_hash if user is not None else _dummy_password_hash()
+    )
+    if user is None or not password_ok:
         fail_key = _fail_key(email)
         count = await redis.incr(fail_key)
         if count == 1:
@@ -166,10 +177,14 @@ async def revoke_session(db: AsyncSession, *, user_id: uuid.UUID, session_id: uu
     await db.flush()
 
 
-async def revoke_session_by_token(db: AsyncSession, *, refresh_token: str) -> None:
-    """Used by logout — revokes by the token itself, no user_id ownership check needed."""
+async def revoke_session_by_token(
+    db: AsyncSession, *, user_id: uuid.UUID, refresh_token: str
+) -> None:
+    """Used by logout. Only ever ends one of the caller's own sessions."""
     token_hash = hash_refresh_token(refresh_token)
-    session = await db.scalar(select(Session).where(Session.refresh_token_hash == token_hash))
+    session = await db.scalar(
+        select(Session).where(Session.refresh_token_hash == token_hash, Session.user_id == user_id)
+    )
     if session is not None:
         session.revoked_at = datetime.now(UTC)
         await db.flush()

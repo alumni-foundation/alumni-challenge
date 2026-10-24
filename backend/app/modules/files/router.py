@@ -100,6 +100,8 @@ async def delete_file(
 ) -> Response:
     """Delete one of your own files. Anything that was using it (an avatar, a logo) loses it."""
     row = await _owned_file(db, current_user, file_id)
+    if not await service.may_delete(db, user=current_user, row=row):
+        raise NotFoundError("File not found.")
     key = await service.remove_file_row(db, row=row)
     await db.commit()
     await storage.delete(key)

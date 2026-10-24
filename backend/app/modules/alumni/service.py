@@ -465,13 +465,17 @@ async def vouch_for_profile(
 async def verify_profile(
     db: AsyncSession, *, profile_id: uuid.UUID, verifier_user_id: uuid.UUID, verified: bool
 ) -> AlumniProfile:
-    profile = await _get_profile_by_id(db, profile_id=profile_id)
-
-    if profile.school_id is None:
-        raise ForbiddenError("This profile has no school affiliation to verify against.")
+    # Seen like any other viewer first: someone who may not even see this profile gets the
+    # plain "not found", not a refusal that confirms it exists or says anything about it.
+    profile = await get_profile_for_viewer(
+        db, profile_id=profile_id, viewer_user_id=verifier_user_id
+    )
 
     if not await _has_full_access_override(db, viewer_user_id=verifier_user_id, profile=profile):
         raise ForbiddenError("You do not have permission to verify this profile.")
+
+    if profile.school_id is None:
+        raise ForbiddenError("This profile has no school affiliation to verify against.")
 
     profile.verification_status = (
         VerificationStatus.VERIFIED if verified else VerificationStatus.UNVERIFIED

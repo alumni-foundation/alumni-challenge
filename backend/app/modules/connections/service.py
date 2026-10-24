@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.modules.alumni.models import AlumniProfile
 from app.modules.connections.models import Connection, ConnectionStatus
-from app.modules.identity.models import User
+from app.modules.identity.models import User, UserStatus
 
 
 async def _find_existing_pair(
@@ -30,6 +30,9 @@ async def send_request(
 ) -> Connection:
     if requester_id == addressee_id:
         raise ValidationError("You cannot connect with yourself.")
+    addressee = await db.get(User, addressee_id)
+    if addressee is None or addressee.status != UserStatus.ACTIVE:
+        raise NotFoundError("User not found.")
 
     existing = await _find_existing_pair(db, user_a=requester_id, user_b=addressee_id)
     if existing is not None:

@@ -79,9 +79,11 @@ async def refresh(
 async def logout(
     body: schemas.RefreshRequest,
     db: AsyncSession = Depends(get_db_session),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> None:
-    await service.revoke_session_by_token(db, refresh_token=body.refresh_token)
+    await service.revoke_session_by_token(
+        db, user_id=current_user.id, refresh_token=body.refresh_token
+    )
     await db.commit()
 
 

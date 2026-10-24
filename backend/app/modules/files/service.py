@@ -45,10 +45,29 @@ async def _authorize_upload(
         # Same answer as for an organization the caller has no rights in, so the response
         # does not tell an outsider which organizations exist.
         raise ForbiddenError("You do not have permission to upload this.")
-    allowed = _LOGO_UPLOADERS if purpose == FilePurpose.ORGANIZATION_LOGO else _POSTER_UPLOADERS
     roles = await get_user_roles(db, user_id=user.id, organization_id=organization_id)
-    if not roles & allowed:
+    if not roles & _uploaders_for(purpose):
         raise ForbiddenError("You do not have permission to upload this.")
+
+
+def _uploaders_for(purpose: FilePurpose) -> set[Role]:
+    return _LOGO_UPLOADERS if purpose == FilePurpose.ORGANIZATION_LOGO else _POSTER_UPLOADERS
+
+
+async def may_delete(db: AsyncSession, *, user: User, row: File) -> bool:
+    """
+    The uploader may delete their own file, but a file that belongs to an organization (its
+    logo, its poster) is the organization's: someone who has since lost their role there
+    must not be able to remove it. Platform admins always may.
+    """
+    roles = await get_user_roles(db, user_id=user.id, organization_id=row.organization_id)
+    if roles & _PLATFORM_ADMINS:
+        return True
+    if row.owner_user_id != user.id:
+        return False
+    if row.organization_id is None:
+        return True
+    return bool(roles & _uploaders_for(row.purpose))
 
 
 async def upload_image(
