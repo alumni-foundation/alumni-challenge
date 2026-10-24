@@ -245,6 +245,79 @@ async def send_booking_expired(db: AsyncSession, payload: dict[str, Any]) -> Non
     )
 
 
+async def _send_to_booker(db: AsyncSession, payload: dict[str, Any], build: Any) -> None:
+    """One email to the booker of the booking in the payload. `build(booking, event, link)`
+    returns the content. Never to anyone else: payment details are the booker's own."""
+    ctx = await _booking_context(db, payload)
+    if ctx is None:
+        return
+    booking, event, user = ctx
+    content = build(booking, event, _booking_link(booking.id))
+    await get_mailer().send(
+        to=user.email, subject=content.subject, body=content.text, html=content.html
+    )
+
+
+@on("booking.payment_submitted")
+async def send_payment_submitted(db: AsyncSession, payload: dict[str, Any]) -> None:
+    await _send_to_booker(
+        db,
+        payload,
+        lambda b, e, link: templates.payment_submitted_email(
+            event_title=e.title, reference=b.reference, link=link
+        ),
+    )
+
+
+@on("booking.payment_rejected")
+async def send_payment_rejected(db: AsyncSession, payload: dict[str, Any]) -> None:
+    await _send_to_booker(
+        db,
+        payload,
+        lambda b, e, link: templates.payment_rejected_email(
+            event_title=e.title,
+            reference=b.reference,
+            reason=b.payment_note or "No reason was given.",
+            link=link,
+        ),
+    )
+
+
+@on("booking.payment_unallocated")
+async def send_payment_unallocated(db: AsyncSession, payload: dict[str, Any]) -> None:
+    await _send_to_booker(
+        db,
+        payload,
+        lambda b, e, link: templates.payment_unallocated_email(
+            event_title=e.title, reference=b.reference, link=link
+        ),
+    )
+
+
+@on("booking.refund_owed")
+async def send_refund_owed(db: AsyncSession, payload: dict[str, Any]) -> None:
+    await _send_to_booker(
+        db,
+        payload,
+        lambda b, e, link: templates.refund_owed_email(event_title=e.title, reference=b.reference),
+    )
+
+
+@on("booking.refunded")
+async def send_refunded(db: AsyncSession, payload: dict[str, Any]) -> None:
+    await _send_to_booker(
+        db,
+        payload,
+        lambda b, e, link: templates.refunded_email(event_title=e.title, reference=b.reference),
+    )
+
+
+@on("booking.payment_confirmed")
+async def payment_confirmed_needs_no_extra_email(db: AsyncSession, payload: dict[str, Any]) -> None:
+    """The booking-confirmed email (with the tickets) is the booker's confirmation. This event
+    exists so other consumers, such as notifications, can react to the payment itself."""
+
+
 @on("booking.event_cancelled")
 async def send_booking_event_cancelled(db: AsyncSession, payload: dict[str, Any]) -> None:
     ctx = await _booking_context(db, payload)

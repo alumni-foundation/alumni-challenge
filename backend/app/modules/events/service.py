@@ -32,6 +32,8 @@ from app.modules.identity.models import User
 from app.modules.memberships.models import Membership, MembershipStatus
 from app.modules.organizations.models import Organization
 from app.modules.organizations.service import get_active_organization
+from app.modules.payments.models import PaymentAccount, PaymentProvider
+from app.modules.payments.schemas import PayeeInfo
 
 # Longer holds are for events paid for outside the app (manual M-Pesa); see slice 5.5.
 MAX_HOLD_MINUTES_WITHOUT_MANUAL_PAYMENT = 60
@@ -270,10 +272,26 @@ async def build_detail(db: AsyncSession, event: Event, *, can_manage: bool) -> s
         show_attendee_list=event.show_attendee_list,
         reminder_hours_before=event.reminder_hours_before,
         hold_minutes=event.hold_minutes,
+        payment=await payee_info(db, event),
         slots=[slot_out(s) for s in slots],
         questions=[schemas.QuestionOut.model_validate(q) for q in questions],
         consents=[schemas.ConsentOut.model_validate(c) for c in consents],
         can_manage=can_manage,
+    )
+
+
+async def payee_info(db: AsyncSession, event: Event) -> PayeeInfo | None:
+    if event.payment_account_id is None:
+        return None
+    account = await db.get(PaymentAccount, event.payment_account_id)
+    if account is None:  # pragma: no cover - RESTRICT FK keeps it
+        return None
+    return PayeeInfo(
+        method=account.provider,
+        kind=account.mpesa_kind,
+        number=account.shortcode_or_till,
+        payee_name=account.label,
+        currency=account.currency,
     )
 
 
@@ -406,11 +424,39 @@ def _check_slot_times(starts_at: datetime, ends_at: datetime) -> None:
         raise ValidationError("A slot must end after it starts.", code="invalid_times")
 
 
-def _check_hold(hold_minutes: int) -> None:
-    if hold_minutes > MAX_HOLD_MINUTES_WITHOUT_MANUAL_PAYMENT:
+def _check_hold(hold_minutes: int, payee: PaymentAccount | None) -> None:
+    """Long holds (up to 48 hours) are for events paid by hand to a manual payee."""
+    manual = payee is not None and payee.provider == PaymentProvider.MANUAL_MPESA
+    if hold_minutes > MAX_HOLD_MINUTES_WITHOUT_MANUAL_PAYMENT and not manual:
         raise ValidationError(
-            "Reservations can be held for 60 minutes at most.", code="hold_too_long"
+            "Reservations can be held for 60 minutes at most, unless the event is paid by "
+            "M-Pesa paybill or till and has that payment account set.",
+            code="hold_too_long",
         )
+
+
+async def load_payee(
+    db: AsyncSession,
+    *,
+    account_id: uuid.UUID | None,
+    organization_id: uuid.UUID | None,
+    currency: str,
+) -> PaymentAccount | None:
+    """The payment account an event wants to use, if it may use it: its own organization's
+    (or the platform's, for a platform event), switched on, in the event's currency."""
+    if account_id is None:
+        return None
+    account = await db.get(PaymentAccount, account_id)
+    if account is None or account.organization_id != organization_id:
+        # Another organization's account looks exactly like one that does not exist.
+        raise ValidationError("That payment account cannot be used here.", code="invalid_payee")
+    if not account.active:
+        raise ValidationError("That payment account is switched off.", code="payee_inactive")
+    if account.currency != currency:
+        raise ValidationError(
+            "That payment account is for a different currency.", code="payee_currency"
+        )
+    return account
 
 
 async def create_event(db: AsyncSession, *, actor: User, body: schemas.EventCreate) -> Event:
@@ -424,7 +470,13 @@ async def create_event(db: AsyncSession, *, actor: User, body: schemas.EventCrea
         opens_at=body.registration_opens_at,
         closes_at=body.registration_closes_at,
     )
-    _check_hold(body.hold_minutes)
+    payee = await load_payee(
+        db,
+        account_id=body.payment_account_id,
+        organization_id=body.organization_id,
+        currency=body.currency,
+    )
+    _check_hold(body.hold_minutes, payee)
     await _check_series(
         db,
         series_id=body.series_id,
@@ -482,15 +534,27 @@ async def update_event(
     for key in changes:
         if changes[key] is None and key in _NOT_NULL_EVENT_FIELDS:
             raise ValidationError(f"{key} cannot be empty.", code="field_required")
-    if "hold_minutes" in changes:
-        _check_hold(changes["hold_minutes"])
-    frozen = {"price_minor", "currency", "max_party_size"} & {
+    if "payment_account_id" in changes or "currency" in changes:
+        payee = await load_payee(
+            db,
+            account_id=changes.get("payment_account_id", event.payment_account_id),
+            organization_id=event.organization_id,
+            currency=changes.get("currency", event.currency),
+        )
+    else:  # Not changing the payee: an account switched off since must not block other edits.
+        payee = (
+            await db.get(PaymentAccount, event.payment_account_id)
+            if event.payment_account_id
+            else None
+        )
+    _check_hold(changes.get("hold_minutes", event.hold_minutes), payee)
+    frozen = {"price_minor", "currency", "max_party_size", "payment_account_id"} & {
         k for k, v in changes.items() if v != getattr(event, k)
     }
     if frozen and await _has_bookings(db, event):
         raise ConflictError(
-            "People have already booked, so the price, currency and group size can no longer "
-            "change.",
+            "People have already booked, so the price, currency, group size and payment account "
+            "can no longer change.",
             code="event_has_bookings",
         )
 

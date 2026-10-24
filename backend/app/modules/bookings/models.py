@@ -37,6 +37,16 @@ class BookingStatus(enum.StrEnum):
     REFUNDED = "refunded"
 
 
+class ManualPaymentState(enum.StrEnum):
+    """Where a hand-made M-Pesa payment stands. Null on a booking nobody pays for by hand."""
+
+    AWAITING_CONFIRMATION = "awaiting_confirmation"  # the booker sent the M-Pesa code
+    CONFIRMED = "confirmed"  # the organizer matched it to a payment
+    REJECTED = "rejected"  # the organizer could not; the booker may send another code
+    NEEDS_REFUND = "needs_refund"  # paid, but the places are gone: the organizer must refund
+    REFUNDED = "refunded"  # the organizer has returned the money
+
+
 # A booking in one of these states counts towards "one active booking per person per event".
 ACTIVE_STATUSES = (
     BookingStatus.PENDING_PAYMENT,
@@ -74,6 +84,29 @@ class Booking(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "booker_user_id", "idempotency_key", name="uq_bookings_booker_idempotency_key"
         ),
         UniqueConstraint("reference", name="uq_bookings_reference"),
+        CheckConstraint(
+            "payment_reference_code IS NULL OR payment_reference_code ~ '^[A-Z0-9]{8,12}$'",
+            name="ck_bookings_payment_code_format",
+        ),
+        # A payment that is waiting, done or owed back has a code; a rejected one gave it up.
+        CheckConstraint(
+            "payment_state IS NULL OR (payment_state = 'rejected') = "
+            "(payment_reference_code IS NULL)",
+            name="ck_bookings_payment_code_matches_state",
+        ),
+        # One M-Pesa code pays for one booking, ever, across all events.
+        Index(
+            "uq_bookings_payment_reference_code",
+            "payment_reference_code",
+            unique=True,
+            postgresql_where=text("payment_reference_code IS NOT NULL"),
+        ),
+        Index(
+            "ix_bookings_event_payment_state",
+            "event_id",
+            "payment_state",
+            postgresql_where=text("payment_state IS NOT NULL"),
+        ),
         # Nobody holds two places on one event: stops hold hoarding.
         Index(
             "uq_bookings_one_active_per_person_per_event",
@@ -131,6 +164,24 @@ class Booking(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     reminder_sent_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Manual M-Pesa: the code the booker pasted (upper case, trimmed) and what became of it.
+    payment_reference_code: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    payment_state: Mapped[ManualPaymentState | None] = mapped_column(
+        str_enum(ManualPaymentState, name="manual_payment_state"), nullable=True
+    )
+    payment_submitted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    payment_decided_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    payment_decided_by: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id", name="fk_bookings_payment_decided_by", ondelete="SET NULL"),
+        nullable=True,
+    )
+    # The organizer's reason for a rejection, or their note on a refund.
+    payment_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
 class BookingParticipant(UUIDPrimaryKeyMixin, TimestampMixin, Base):

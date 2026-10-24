@@ -25,7 +25,7 @@ from app.core.errors.exceptions import (
 )
 from app.core.rate_limit.limiter import hit
 from app.modules.audit.service import record as record_audit
-from app.modules.bookings import seats
+from app.modules.bookings import payment_view, seats
 from app.modules.bookings.answers import validate_answers
 from app.modules.bookings.models import (
     ACTIVE_STATUSES,
@@ -34,6 +34,7 @@ from app.modules.bookings.models import (
     BookingConsent,
     BookingParticipant,
     BookingStatus,
+    ManualPaymentState,
 )
 from app.modules.bookings.schemas import (
     AnswerOut,
@@ -379,6 +380,7 @@ async def build_out(db: AsyncSession, booking: Booking) -> BookingOut:
             .order_by(EventConsent.key)
         )
     ).all()
+    now = await db_now(db)
     return BookingOut(
         id=booking.id,
         reference=booking.reference,
@@ -404,7 +406,10 @@ async def build_out(db: AsyncSession, booking: Booking) -> BookingOut:
         confirmed_at=booking.confirmed_at,
         cancelled_at=booking.cancelled_at,
         cancel_reason=booking.cancel_reason,
-        can_cancel=_can_cancel(booking, event, await db_now(db)),
+        can_cancel=_can_cancel(booking, event, now),
+        payment=payment_view.booking_payment(
+            booking, event, await payment_view.manual_payee(db, event), now
+        ),
         participants=[
             ParticipantOut(
                 position=p.position,
@@ -622,6 +627,8 @@ async def cancel_all_for_event(db: AsyncSession, *, actor: User, event: Event, r
             booking.cancelled_at = now
             booking.cancelled_by = actor.id
             booking.cancel_reason = f"Event cancelled: {reason}"[:500]
+            if booking.payment_state == ManualPaymentState.CONFIRMED:
+                booking.payment_state = ManualPaymentState.NEEDS_REFUND  # into the refund queue
             await publish_event(
                 db,
                 event_type="booking.event_cancelled",
