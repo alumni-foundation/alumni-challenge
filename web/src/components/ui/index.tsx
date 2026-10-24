@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, BadgeCheck, CheckCircle2, Info, Loader2 } from "lucide-react";
+import { AlertCircle, BadgeCheck, CheckCircle2, Eye, EyeOff, Info, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { cloneElement, isValidElement, useState } from "react";
 import { cn, initials, toneFor } from "@/lib/utils";
@@ -15,12 +15,14 @@ export type { Icon3DSize, Icon3DTone } from "./icon3d";
 
 type ButtonSize = "sm" | "md";
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "danger";
+  variant?: "primary" | "dark" | "secondary" | "ghost" | "danger";
   size?: ButtonSize;
   loading?: boolean;
 };
 const VARIANTS = {
   primary: "bg-brand text-white shadow-raised hover:bg-brand-dark",
+  // The sign-in pages' button: the ink pill from the landing page.
+  dark: "bg-ink text-white shadow-raised hover:bg-black",
   // Quiet: no fill to compete with the primary, just a fine line.
   secondary: "border border-line-strong bg-transparent text-ink hover:bg-sunken",
   ghost: "text-muted hover:bg-sunken hover:text-ink",
@@ -64,9 +66,28 @@ export function LinkButton({ href, variant = "primary", size = "md", className, 
 // 16px text on phones stops iOS from zooming into the field when it is focused.
 const fieldClass =
   "w-full rounded-control border border-line-strong bg-surface px-3.5 text-body text-ink placeholder:text-faint transition-colors focus:border-brand-ink focus:outline-none focus:ring-2 focus:ring-brand-ink/20 disabled:bg-sunken disabled:text-faint aria-[invalid=true]:border-brand-ink sm:text-small";
-export const Input = (p: React.InputHTMLAttributes<HTMLInputElement>) => (
+export const Input = (p: React.ComponentProps<"input">) => (
   <input {...p} className={cn(fieldClass, "h-11", p.className)} />
 );
+
+/** A password field with a show/hide button. The button is a real button: Tab reaches it, Space or Enter toggles it, and a screen reader hears its state. */
+export function PasswordInput(p: React.ComponentProps<"input">) {
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="relative">
+      <Input {...p} type={shown ? "text" : "password"} className={cn("pr-12", p.className)} />
+      <button
+        type="button"
+        onClick={() => setShown((v) => !v)}
+        aria-label={shown ? "Hide password" : "Show password"}
+        aria-pressed={shown}
+        className="absolute right-1 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full text-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-brand-ink"
+      >
+        {shown ? <EyeOff className="size-[18px]" aria-hidden /> : <Eye className="size-[18px]" aria-hidden />}
+      </button>
+    </div>
+  );
+}
 export const Textarea = (p: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
   <textarea {...p} className={cn(fieldClass, "min-h-28 py-2.5", p.className)} />
 );

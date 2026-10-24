@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { Alert, Button, Field, Input } from "@/components/ui";
+import { Alert, Button, Field, PasswordInput } from "@/components/ui";
 import { authCall } from "@/lib/api/client";
 import { friendlyError } from "@/lib/api/messages";
 
@@ -51,7 +51,7 @@ function ResetForm() {
     <form onSubmit={submit} className="space-y-5" noValidate>
       <div>
         <h1 className="text-title">Choose a new password</h1>
-        <p className="mt-1 text-small text-muted">Use at least {MIN_PASSWORD} characters.</p>
+        <p className="mt-2 text-body text-ink">Use at least {MIN_PASSWORD} characters.</p>
       </div>
       {error && (
         <Alert>
@@ -60,12 +60,12 @@ function ResetForm() {
         </Alert>
       )}
       <Field label="New password" htmlFor="password" error={fieldErrors.password}>
-        <Input id="password" type="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+        <PasswordInput id="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
       </Field>
       <Field label="New password again" htmlFor="again" error={fieldErrors.again}>
-        <Input id="again" type="password" autoComplete="new-password" required value={again} onChange={(e) => setAgain(e.target.value)} />
+        <PasswordInput id="again" autoComplete="new-password" required value={again} onChange={(e) => setAgain(e.target.value)} />
       </Field>
-      <Button type="submit" className="w-full" loading={busy} disabled={!password || !again}>Set new password</Button>
+      <Button type="submit" variant="dark" className="w-full" loading={busy} disabled={!password || !again}>Set new password</Button>
     </form>
   );
 }

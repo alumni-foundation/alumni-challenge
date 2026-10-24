@@ -54,8 +54,8 @@ function VerifyEmail() {
       <div className="space-y-5 text-center">
         <CheckCircle2 className="mx-auto size-12 text-ok" aria-hidden />
         <h1 className="text-title">Email verified</h1>
-        <p className="text-small text-muted">Thank you. Your email address is confirmed.</p>
-        <LinkButton href="/start" className="w-full">Continue</LinkButton>
+        <p className="text-small text-ink">Thank you. Your email address is confirmed.</p>
+        <LinkButton href="/start" variant="dark" className="w-full">Continue</LinkButton>
       </div>
     );
   }
@@ -67,9 +67,9 @@ function VerifyEmail() {
       </div>
       <Alert>{state.message}</Alert>
       {state.signedIn ? (
-        <Button className="w-full" onClick={resend} loading={resending}>Send me a new link</Button>
+        <Button variant="dark" className="w-full" onClick={resend} loading={resending}>Send me a new link</Button>
       ) : (
-        <p className="text-center text-small text-muted">
+        <p className="text-center text-small text-ink">
           <Link href="/login" className="font-medium text-brand-ink hover:underline">Log in</Link> to ask for a new link.
         </p>
       )}

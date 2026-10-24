@@ -259,3 +259,33 @@ button.icon3d { cursor: pointer; border: 0; padding: 0; }
   [data-reveal="left"], [data-reveal="right"] { transform: translateY(36px); }
   [data-reveal][data-shown] { transform: none; }
 }
+
+/* ---- Sign-in pages: the frosted card ------------------------------------------------------- */
+/* About 90% ivory with a light blur: never see-through enough to show the picture behind the text.
+   Solid ivory where blur is unsupported, where the visitor asked for less transparency, and below lg,
+   where the card is a full-width sheet. */
+.auth-card {
+  background: rgb(250 246 238 / 0.9);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .auth-card { background: #faf6ee; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .auth-card { background: #faf6ee; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (max-width: 1023px) {
+  .auth-card { background: #faf6ee; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+/* Field outlines must be seen against the card (3:1); the app-wide hairline is too faint for that. */
+.auth-card input:not([type="checkbox"]):not([type="radio"]) { border-color: #857b6d; }
+/* The photo melts into its fog-coloured ground at the top, bottom and right edges. */
+@media (min-width: 1024px) {
+  .auth-photo {
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent), linear-gradient(to right, #000 76%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 84%, transparent), linear-gradient(to right, #000 76%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+}
