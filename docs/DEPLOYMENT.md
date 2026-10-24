@@ -22,16 +22,32 @@ yet tested**. If a step surprises you, the step is wrong: tell the developer.
 
 One image runs all three roles. Only the command differs.
 
-## 2. Build
+## 2. The image
 
-From the repository root:
+CI builds and publishes the production image to GitHub Container Registry on every push to
+`main` that passes the tests. You do not build it yourself. It is named after the repository,
+with `-api` on the end, and tagged with the git commit:
 
 ```
-docker build --target production -t alumni-api:<version> backend
+ghcr.io/<github-owner>/<repository>-api:<commit>
 ```
 
-Use the git commit as `<version>` so a running container can always be traced to its code
-(for example `alumni-api:bd98b29`). Keep the last few images so a rollback is one redeploy.
+`<commit>` is either the full 40-character commit hash or its first 7 characters (for example
+`ghcr.io/example-org/alumni-challenge-api:3d6bc54`). There is **no `latest` tag**: always
+deploy a specific commit, so a running container can be traced to its code. Keep the last few
+tags in use so a rollback is one redeploy.
+
+The package is private by default. To pull it, create a GitHub token (a "personal access
+token (classic)" with only `read:packages`) and enter your GitHub username and that token as the registry
+login in your platform. In the repository's package settings, "Manage
+Actions access" must list this repository with write access (it does by default for a package
+CI creates).
+
+Building by hand, only if you must (for example from a fork):
+
+```
+docker build --target production -t alumni-api:<commit> backend
+```
 
 The image runs as a normal user (not root), contains no tests and no `.env`, and has its own
 health check on `GET /health/live`.
@@ -148,7 +164,8 @@ Run it as a one-off command in the api container. `seed-demo` exists for develop
 ## 6. Order of a deploy
 
 1. Back up the database (section 8) if this deploy has a migration.
-2. Build and push the image `alumni-api:<version>`.
+2. Wait for CI to publish the image for the commit you are deploying (section 2); a deploy
+   of a commit whose CI run failed has no image.
 3. Run the migration command with the new image. Wait for it to finish successfully.
 4. Start the new api containers; wait until `/health/ready` is OK; then stop the old ones.
 5. Restart the worker on the new image (it must run the same code as the api).
@@ -241,8 +258,11 @@ they can read.
 
 ## 10. What is not done
 
-* No automatic deploy pipeline: CI builds and tests the image on every push, but does not
-  publish or deploy it. A container registry and Coolify's git/webhook deploy are yours to set up.
+* No automatic deploy: CI publishes the image to GitHub Container Registry on every push to
+  `main` (section 2), but nothing deploys it. Pointing Coolify (or whatever runs the
+  containers) at the registry, and any webhook that triggers a redeploy, is yours to set up.
+* The published image has not yet been pulled by a real server: the first push to `main` after
+  this change is the first real test of the workflow. **Not yet tested.**
 * No staging environment has been created; the same steps apply with `ENVIRONMENT=staging`.
 * No metrics dashboard or alerting beyond Sentry errors and the platform's health checks.
 * Uploads are not virus-scanned and have no thumbnails yet.

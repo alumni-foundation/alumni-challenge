@@ -96,7 +96,9 @@ jobs:
       - name: Run tests
         run: uv run pytest -v
 
+  # Pull requests: prove the production image builds. Nothing is pushed.
   docker-build:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     needs: lint-and-test
     steps:
@@ -105,11 +107,57 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build image (no push yet — Phase 1 just proves it builds)
+      - name: Build the production image
         uses: docker/build-push-action@v6
         with:
           context: ./backend
+          target: production
           push: false
           tags: alumni-challenge-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Every push to main that passes the tests: publish the production image to GitHub
+  # Container Registry, tagged with the commit. There is no "latest" tag on purpose: a
+  # deploy always names the exact commit it runs. Uses the workflow's own GITHUB_TOKEN.
+  publish-image:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The image name must be lowercase; the metadata action takes care of that.
+      - name: Image name and tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}-api
+          flavor: latest=false
+          tags: |
+            type=sha,format=long,prefix=
+            type=sha,format=short,prefix=
+
+      - name: Build and push the production image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
