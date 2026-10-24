@@ -70,7 +70,7 @@ function Delta({ change }: { change: NonNullable<ReturnType<typeof changeOf>> })
 
 export function KpiTiles({ kpis, goldKey, loading }: { kpis: Kpi[]; goldKey: KpiKey; loading?: boolean }) {
   return (
-    <ul className="grid grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] gap-3" aria-label="Key numbers">
+    <ul className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3" aria-label="Key numbers">
       {kpis.map((k) => {
         const gold = k.key === goldKey;
         const body = (
@@ -293,7 +293,7 @@ export function SignupsCard({ days, period }: { days: NonNullable<Overview["sign
 export function DashboardSkeleton() {
   return (
     <div role="status" aria-label="Loading the dashboard" className="space-y-4">
-      <ul className="grid grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] gap-3">
+      <ul className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
         {Array.from({ length: 5 }, (_, i) => (
           <li key={i}><Skeleton className="h-[7.25rem] rounded-[1.5rem]" /></li>
         ))}

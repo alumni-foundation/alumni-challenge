@@ -79,7 +79,7 @@ export default function ReportsPage() {
   const [status, setStatus] = useState<ReportStatus>("open");
   const [page, setPage] = useState(0);
   const [working, setWorking] = useState<{ id: string; status: ReportStatus } | null>(null);
-  const reports = useReports(status, page);
+  const reports = useReports(status, page, canModerate(roles.data));
   const update = useWrite(
     ({ id, status: next }: { id: string; status: ReportStatus }) => api(`reports/${id}`, { method: "PATCH", body: { status: next } }),
     [["reports"]],
