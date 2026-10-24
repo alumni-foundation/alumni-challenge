@@ -30,6 +30,8 @@ from app.modules.bookings.models import (  # noqa: F401
     BookingAnswer,
     BookingConsent,
     BookingParticipant,
+    EventMessage,
+    Ticket,
 )
 from app.modules.connections.models import Connection  # noqa: F401
 from app.modules.domain_events.models import DomainEvent  # noqa: F401

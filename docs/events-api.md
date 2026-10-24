@@ -85,3 +85,33 @@ cancels an event, one cancellation email per booking.
 `POST /auth/me/delete` is refused (`409 paid_booking_open`) while the person has a paid, confirmed
 booking for an event that has not ended. Other open bookings are cancelled. The data export
 (`GET /auth/me/export`) includes `event_bookings`.
+
+## Slice 5.4: tickets and the organizer's day
+
+### Tickets (one per person in a confirmed booking)
+A booking gets its tickets the moment it is `confirmed` (free events: at booking time). Unpaid
+bookings have none yet. `code` is 64 hex characters: **draw the QR from it in the app**; the QR
+holds only the code. The code is also the credential for the ticket page.
+
+| Method and path | Who | Notes |
+|---|---|---|
+| `GET /tickets/{code}` | **anyone, no sign-in** | The ticket page behind the QR/email link: `holder_name`, `status` (`valid`, `checked_in`, `void`), event, slot, `booking_reference`. No email or phone. Wrong or revoked code: `404`. `Cache-Control: no-store`. |
+| `POST /tickets/claim` `{code}` | signed in | Attach the ticket from the emailed link to my account (`409 already_claimed` if someone else has it; repeating is fine). |
+| `GET /tickets/mine` | signed in | Tickets for events that have not ended: all in bookings I made, plus ones I claimed. |
+| `GET /bookings/{id}/tickets` | booker, organizers | All tickets of a booking. |
+| `POST /bookings/{id}/tickets/{position}/reissue` | booker, organizers | New code for one person; the old QR stops working. Refused once checked in. |
+
+A ticket is `void` whenever its booking is not `confirmed` (cancelled, refunded).
+
+Emails: the booker's confirmation lists every ticket link; a named player whose email the booker
+gave also gets their own link.
+
+### Organizer tools (event managers and above; others get `403`, signed-out `401`)
+
+| Method and path | Notes |
+|---|---|
+| `GET /events/{id}/registrations?status=&slot_id=&q=&limit=&offset=` | Everyone booked, with contact details, answers, and each person's ticket status. `X-Total-Count`. |
+| `GET /events/{id}/registrations.csv` | One row per person plus a column per question. Audited, **5 an hour**, `no-store`. |
+| `GET /events/{id}/tee-sheet` | Active bookings grouped by slot (capacity, taken, people, answers). |
+| `POST /events/{id}/check-in` `{code}` | Scan a ticket. `result` is `checked_in` or `already_checked_in` (not an error; same `checked_in_at`). `404` not one of ours; `409 wrong_event` / `void`. |
+| `POST /events/{id}/messages` `{subject, body, slot_id?}` | Emails everyone with a confirmed booking (or one slot). Returns `recipient_count`, never addresses. **5 an hour.** One-line subject. |

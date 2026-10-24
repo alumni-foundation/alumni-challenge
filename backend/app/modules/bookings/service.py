@@ -46,6 +46,7 @@ from app.modules.bookings.schemas import (
     ParticipantOut,
     ParticipantUpdate,
 )
+from app.modules.bookings.tickets import issue_tickets
 from app.modules.domain_events.service import publish as publish_event
 from app.modules.events import access
 from app.modules.events.models import (
@@ -316,6 +317,7 @@ async def create_booking(
         },
     )
     if booking.status == BookingStatus.CONFIRMED:
+        await issue_tickets(db, booking)
         await publish_event(
             db, event_type="booking.confirmed", payload={"booking_id": str(booking.id)}
         )

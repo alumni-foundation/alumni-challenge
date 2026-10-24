@@ -131,17 +131,67 @@ def _booking_link(booking_id: uuid.UUID) -> str:
     return f"{get_settings().frontend_url}/bookings/{booking_id}"
 
 
+def _ticket_link(code: str) -> str:
+    return f"{get_settings().frontend_url}/tickets/{code}"
+
+
 @on("booking.confirmed")
 async def send_booking_confirmed(db: AsyncSession, payload: dict[str, Any]) -> None:
+    """The booker gets the booking and every ticket link. A named player whose email the booker
+    gave gets their own ticket link too. Codes are made now from the signing key, never stored."""
+    from sqlalchemy import select
+
+    from app.modules.bookings.models import BookingParticipant, Ticket
+    from app.modules.bookings.tickets import make_code
+
     ctx = await _booking_context(db, payload)
     if ctx is None:
         return
     booking, event, user = ctx
+    when = event.starts_at.strftime("%A %d %B %Y, %H:%M UTC")
+    rows = (
+        await db.execute(
+            select(BookingParticipant, Ticket)
+            .join(Ticket, Ticket.participant_id == BookingParticipant.id)
+            .where(BookingParticipant.booking_id == booking.id)
+            .order_by(BookingParticipant.position)
+        )
+    ).all()
+    links = [(p.full_name, _ticket_link(make_code(t))) for p, t in rows]
     content = templates.booking_confirmed_email(
         event_title=event.title,
-        when=event.starts_at.strftime("%A %d %B %Y, %H:%M UTC"),
+        when=when,
         reference=booking.reference,
         link=_booking_link(booking.id),
+        tickets=links,
+    )
+    await get_mailer().send(
+        to=user.email, subject=content.subject, body=content.text, html=content.html
+    )
+    for person, ticket in rows:
+        if person.position == 1 or not person.email or person.email == user.email:
+            continue
+        own = templates.ticket_email(
+            event_title=event.title,
+            when=when,
+            holder_name=person.full_name,
+            reference=booking.reference,
+            link=_ticket_link(make_code(ticket)),
+        )
+        await get_mailer().send(to=person.email, subject=own.subject, body=own.text, html=own.html)
+
+
+@on("event.message")
+async def send_event_message(db: AsyncSession, payload: dict[str, Any]) -> None:
+    from app.modules.bookings.models import EventMessage
+
+    ctx = await _booking_context(db, payload)
+    message = await db.get(EventMessage, uuid.UUID(payload["message_id"]))
+    if ctx is None or message is None:
+        return
+    _booking, event, user = ctx
+    content = templates.event_message_email(
+        event_title=event.title, subject=message.subject, body=message.body
     )
     await get_mailer().send(
         to=user.email, subject=content.subject, body=content.text, html=content.html

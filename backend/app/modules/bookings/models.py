@@ -13,6 +13,7 @@ from sqlalchemy import (
     ForeignKey,
     ForeignKeyConstraint,
     Index,
+    Integer,
     SmallInteger,
     String,
     UniqueConstraint,
@@ -222,3 +223,75 @@ class BookingConsent(UUIDPrimaryKeyMixin, Base):
     version: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     text_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class TicketStatus(enum.StrEnum):
+    VALID = "valid"
+    CHECKED_IN = "checked_in"
+    VOID = "void"
+
+
+class Ticket(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """
+    One per person in a confirmed booking. The QR code is derived from `id` and `qr_version`
+    and a secret key, so nothing secret is stored (see bookings/tickets.py). Whether a ticket
+    is usable also depends on its booking: only a confirmed booking has live tickets.
+    """
+
+    __tablename__ = "tickets"
+    __table_args__ = (
+        UniqueConstraint("participant_id", name="uq_tickets_participant"),
+        CheckConstraint("qr_version >= 1", name="ck_tickets_qr_version"),
+        CheckConstraint(
+            "(status = 'checked_in') = (checked_in_at IS NOT NULL)",
+            name="ck_tickets_checked_in_time",
+        ),
+        Index("ix_tickets_booking", "booking_id"),
+    )
+
+    booking_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("bookings.id", name="fk_tickets_booking_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    participant_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("booking_participants.id", name="fk_tickets_participant_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    qr_version: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=1)
+    status: Mapped[TicketStatus] = mapped_column(
+        str_enum(TicketStatus, name="ticket_status"), nullable=False, default=TicketStatus.VALID
+    )
+    checked_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    checked_in_by: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id", name="fk_tickets_checked_in_by", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+
+class EventMessage(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """A note an organizer sent to the people booked on an event (kept as a record)."""
+
+    __tablename__ = "event_messages"
+    __table_args__ = (Index("ix_event_messages_event", "event_id", "created_at"),)
+
+    event_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("events.id", name="fk_event_messages_event_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    slot_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("event_slots.id", name="fk_event_messages_slot_id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    sent_by: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id", name="fk_event_messages_sent_by", ondelete="SET NULL"),
+        nullable=True,
+    )
+    subject: Mapped[str] = mapped_column(String(200), nullable=False)
+    body: Mapped[str] = mapped_column(String(5000), nullable=False)
+    recipient_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
