@@ -66,6 +66,8 @@ async def export_my_data(db: AsyncSession, *, user: User) -> dict[str, Any]:
     people's names, emails or profiles; only their anonymous ids appear, so connections can be
     listed).
     """
+    from app.modules.bookings.service import export_bookings
+
     await hit(f"ratelimit:data_export:{user.id}", limit=EXPORT_LIMIT_PER_HOUR, window_seconds=3600)
 
     profile = await db.scalar(select(AlumniProfile).where(AlumniProfile.user_id == user.id))
@@ -197,6 +199,7 @@ async def export_my_data(db: AsyncSession, *, user: User) -> dict[str, Any]:
             }
             for c in connections
         ],
+        "event_bookings": await export_bookings(db, user=user),
         "signed_in_devices": [
             {
                 "device": s.device_label,
@@ -257,6 +260,11 @@ async def delete_account(db: AsyncSession, *, user: User, password: str) -> list
             raise ConflictError(
                 "You are the only super admin. Appoint another one before deleting your account."
             ) from None
+
+    # Local import: bookings depends on events, which depend on identity.
+    from app.modules.bookings.service import settle_bookings_for_deletion
+
+    await settle_bookings_for_deletion(db, user=user)
 
     uid = user.id
     old_email = user.email

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.database.session import get_db_session
 from app.infrastructure.storage import Storage, get_storage
+from app.modules.bookings import service as bookings_service
 from app.modules.events import access, schemas, service
 from app.modules.events.models import Event, EventCategory
 from app.modules.files import attach
@@ -18,7 +19,9 @@ series_router = APIRouter(prefix="/event-series", tags=["events"])
 
 async def _detail(db: AsyncSession, event: Event, user: User | None) -> schemas.EventDetail:
     roles = await access.event_roles(db, user=user, organization_id=event.organization_id)
-    return await service.build_detail(db, event, can_manage=bool(roles & access.MANAGER_ROLES))
+    detail = await service.build_detail(db, event, can_manage=bool(roles & access.MANAGER_ROLES))
+    detail.my_booking = await bookings_service.my_booking_brief(db, event_id=event.id, user=user)
+    return detail
 
 
 # --------------------------------------------------------------------------- discovery
@@ -71,8 +74,8 @@ async def get_event(
     db: AsyncSession = Depends(get_db_session),
     viewer: User | None = Depends(get_current_user_optional),
 ) -> schemas.EventDetail:
-    event, roles = await access.get_event_for_viewer(db, event_id=event_id, viewer=viewer)
-    return await service.build_detail(db, event, can_manage=bool(roles & access.MANAGER_ROLES))
+    event, _roles = await access.get_event_for_viewer(db, event_id=event_id, viewer=viewer)
+    return await _detail(db, event, viewer)
 
 
 # ---------------------------------------------------------------------------- organize

@@ -465,6 +465,14 @@ async def create_event(db: AsyncSession, *, actor: User, body: schemas.EventCrea
     return event
 
 
+async def _has_bookings(db: AsyncSession, event: Event) -> bool:
+    from app.modules.bookings.models import Booking
+
+    return (
+        await db.scalar(select(Booking.id).where(Booking.event_id == event.id).limit(1))
+    ) is not None
+
+
 async def update_event(
     db: AsyncSession, *, actor: User, event: Event, body: schemas.EventUpdate
 ) -> Event:
@@ -476,6 +484,15 @@ async def update_event(
             raise ValidationError(f"{key} cannot be empty.", code="field_required")
     if "hold_minutes" in changes:
         _check_hold(changes["hold_minutes"])
+    frozen = {"price_minor", "currency", "max_party_size"} & {
+        k for k, v in changes.items() if v != getattr(event, k)
+    }
+    if frozen and await _has_bookings(db, event):
+        raise ConflictError(
+            "People have already booked, so the price, currency and group size can no longer "
+            "change.",
+            code="event_has_bookings",
+        )
 
     merged = {
         "starts_at": changes.get("starts_at", event.starts_at),
@@ -579,10 +596,15 @@ async def complete(db: AsyncSession, *, actor: User, event: Event) -> Event:
 async def cancel(db: AsyncSession, *, actor: User, event: Event, reason: str) -> Event:
     if event.status not in (EventStatus.PUBLISHED, EventStatus.CLOSED):
         raise ConflictError("Only a published event can be cancelled.", code="not_published")
+    from app.modules.bookings.service import cancel_all_for_event
+
     event.status = EventStatus.CANCELLED
     event.updated_by = actor.id
     await db.flush()
-    await _audit(db, actor=actor, action="event.cancel", event=event, reason=reason)
+    cancelled = await cancel_all_for_event(db, actor=actor, event=event, reason=reason)
+    await _audit(
+        db, actor=actor, action="event.cancel", event=event, reason=reason, bookings=cancelled
+    )
     return event
 
 
@@ -662,7 +684,11 @@ async def update_slot(
 async def delete_slot(db: AsyncSession, *, actor: User, event: Event, slot_id: uuid.UUID) -> None:
     _editable(event)
     slot = await _locked_slot(db, event=event, slot_id=slot_id)
+    from app.modules.bookings.models import Booking
+
     if slot.seats_confirmed or slot.seats_held:
+        raise ConflictError("This slot has bookings.", code="slot_has_bookings")
+    if (await db.scalar(select(Booking.id).where(Booking.slot_id == slot.id).limit(1))) is not None:
         raise ConflictError("This slot has bookings.", code="slot_has_bookings")
     remaining = await db.scalar(
         select(func.count()).select_from(EventSlot).where(EventSlot.event_id == event.id)
@@ -778,7 +804,13 @@ async def delete_question(
     db: AsyncSession, *, actor: User, event: Event, question_id: uuid.UUID
 ) -> None:
     _editable(event)
+    from app.modules.bookings.models import BookingAnswer
+
     q = await _question(db, event=event, question_id=question_id)
+    if (
+        await db.scalar(select(BookingAnswer.id).where(BookingAnswer.question_id == q.id).limit(1))
+    ) is not None:
+        raise ConflictError("People have already answered this question.", code="question_answered")
     await _audit(
         db,
         actor=actor,
@@ -863,7 +895,13 @@ async def delete_consent(
     db: AsyncSession, *, actor: User, event: Event, consent_id: uuid.UUID
 ) -> None:
     _editable(event)
+    from app.modules.bookings.models import BookingConsent
+
     c = await _consent(db, event=event, consent_id=consent_id)
+    if (
+        await db.scalar(select(BookingConsent.id).where(BookingConsent.consent_id == c.id).limit(1))
+    ) is not None:
+        raise ConflictError("People have already accepted this.", code="consent_accepted")
     await _audit(
         db,
         actor=actor,

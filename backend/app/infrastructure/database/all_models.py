@@ -25,6 +25,12 @@ from app.modules.alumni.models import (  # noqa: F401
     Skill,
 )
 from app.modules.audit.models import AuditLogEntry  # noqa: F401
+from app.modules.bookings.models import (  # noqa: F401
+    Booking,
+    BookingAnswer,
+    BookingConsent,
+    BookingParticipant,
+)
 from app.modules.connections.models import Connection  # noqa: F401
 from app.modules.domain_events.models import DomainEvent  # noqa: F401
 from app.modules.events.models import (  # noqa: F401

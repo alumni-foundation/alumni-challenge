@@ -105,3 +105,90 @@ async def send_account_deleted_notice(db: AsyncSession, payload: dict[str, Any])
     await get_mailer().send(
         to=payload["email"], subject=content.subject, body=content.text, html=content.html
     )
+
+
+# ------------------------------------------------------------------------------ bookings
+
+
+async def _booking_context(
+    db: AsyncSession, payload: dict[str, Any]
+) -> tuple[Any, Any, User] | None:
+    """(booking, event, booker) for a booking event, or None if the booker is not active."""
+    from app.modules.bookings.models import Booking
+    from app.modules.events.models import Event
+
+    booking = await db.get(Booking, uuid.UUID(payload["booking_id"]))
+    if booking is None:
+        return None
+    user = await db.get(User, booking.booker_user_id)
+    event = await db.get(Event, booking.event_id)
+    if user is None or event is None or user.status != UserStatus.ACTIVE:
+        return None
+    return booking, event, user
+
+
+def _booking_link(booking_id: uuid.UUID) -> str:
+    return f"{get_settings().frontend_url}/bookings/{booking_id}"
+
+
+@on("booking.confirmed")
+async def send_booking_confirmed(db: AsyncSession, payload: dict[str, Any]) -> None:
+    ctx = await _booking_context(db, payload)
+    if ctx is None:
+        return
+    booking, event, user = ctx
+    content = templates.booking_confirmed_email(
+        event_title=event.title,
+        when=event.starts_at.strftime("%A %d %B %Y, %H:%M UTC"),
+        reference=booking.reference,
+        link=_booking_link(booking.id),
+    )
+    await get_mailer().send(
+        to=user.email, subject=content.subject, body=content.text, html=content.html
+    )
+
+
+@on("booking.cancelled")
+async def send_booking_cancelled(db: AsyncSession, payload: dict[str, Any]) -> None:
+    ctx = await _booking_context(db, payload)
+    if ctx is None:
+        return
+    booking, event, user = ctx
+    content = templates.booking_cancelled_email(
+        event_title=event.title, reference=booking.reference
+    )
+    await get_mailer().send(
+        to=user.email, subject=content.subject, body=content.text, html=content.html
+    )
+
+
+@on("booking.expired")
+async def send_booking_expired(db: AsyncSession, payload: dict[str, Any]) -> None:
+    ctx = await _booking_context(db, payload)
+    if ctx is None:
+        return
+    booking, event, user = ctx
+    content = templates.booking_expired_email(
+        event_title=event.title,
+        reference=booking.reference,
+        link=f"{get_settings().frontend_url}/events/{event.id}",
+    )
+    await get_mailer().send(
+        to=user.email, subject=content.subject, body=content.text, html=content.html
+    )
+
+
+@on("booking.event_cancelled")
+async def send_booking_event_cancelled(db: AsyncSession, payload: dict[str, Any]) -> None:
+    ctx = await _booking_context(db, payload)
+    if ctx is None:
+        return
+    booking, event, user = ctx
+    content = templates.event_cancelled_email(
+        event_title=event.title,
+        reference=booking.reference,
+        reason=(booking.cancel_reason or "").removeprefix("Event cancelled: "),
+    )
+    await get_mailer().send(
+        to=user.email, subject=content.subject, body=content.text, html=content.html
+    )

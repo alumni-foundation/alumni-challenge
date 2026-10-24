@@ -47,6 +47,18 @@ async def drain_domain_events(ctx: dict[str, Any]) -> int:
         return count
 
 
+async def expire_booking_holds(ctx: dict[str, Any]) -> int:
+    """Every minute: release seats whose payment hold has run out."""
+    from app.modules.bookings.service import expire_due_holds
+
+    async with async_session_factory() as db:
+        count = await expire_due_holds(db)
+        await db.commit()
+        if count:
+            logger.info("booking_holds_expired", extra={"count": count})
+        return count
+
+
 async def on_startup(ctx: dict[str, Any]) -> None:
     logger.info("worker_started")
 
@@ -56,8 +68,11 @@ async def on_shutdown(ctx: dict[str, Any]) -> None:
 
 
 class WorkerSettings:
-    functions = [drain_domain_events]
-    cron_jobs = [cron(drain_domain_events, second=set(range(0, 60, 5)), run_at_startup=True)]
+    functions = [drain_domain_events, expire_booking_holds]
+    cron_jobs = [
+        cron(drain_domain_events, second=set(range(0, 60, 5)), run_at_startup=True),
+        cron(expire_booking_holds, second=0),
+    ]
     redis_settings = RedisSettings.from_dsn(str(settings.redis_url))
     on_startup = on_startup
     on_shutdown = on_shutdown

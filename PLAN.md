@@ -123,8 +123,8 @@ Builder: solo. Status key: `[ ]` not done, `[x]` done.
 
 - [x] Events: categories (homecoming, sports, CEO forums, executive, networking, mentorship, leadership, philanthropy), date/time, location, capacity
 - [ ] School homecomings tied to schools
-- [ ] RSVP and registration in a locked transaction (capacity check, lock, create, update, commit)
-- [ ] Idempotent registration
+- [x] RSVP and registration in a locked transaction (capacity check, lock, create, update, commit)
+- [x] Idempotent registration
 - [ ] Waitlist and cancellation rules
 - [ ] Attendee lists with privacy respected
 - [ ] Reminders and notifications through the queue

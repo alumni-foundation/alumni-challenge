@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.modules.bookings.schemas import BookingBrief
 from app.modules.events.models import (
     MAX_PARTY_SIZE,
     EventCategory,
@@ -286,3 +287,5 @@ class EventDetail(EventSummary):
     consents: list[ConsentOut]
     # True when the caller may run this event (tells the app whether to show organizer tools).
     can_manage: bool
+    # The caller's own current booking for this event (null when signed out or not booked).
+    my_booking: BookingBrief | None = None

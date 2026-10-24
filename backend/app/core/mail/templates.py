@@ -85,3 +85,50 @@ def account_deleted_email() -> EmailContent:
             f"<p>{html_lib.escape(text).replace(chr(10), '<br>')}</p></body></html>"
         ),
     )
+
+
+def _plain_page(text: str) -> str:
+    return (
+        '<!doctype html><html><body style="font-family:Arial,sans-serif">'
+        f"<p>{html_lib.escape(text).replace(chr(10), '<br>')}</p></body></html>"
+    )
+
+
+def booking_confirmed_email(
+    *, event_title: str, when: str, reference: str, link: str
+) -> EmailContent:
+    text = (
+        f"You are booked for {event_title} ({when}).\n\nYour reference is {reference}.\n"
+        f"See your booking: {link}\n"
+    )
+    return EmailContent(
+        subject=f"Booking confirmed: {event_title}", text=text, html=_plain_page(text)
+    )
+
+
+def booking_cancelled_email(*, event_title: str, reference: str) -> EmailContent:
+    text = f"Your booking {reference} for {event_title} was cancelled and your places released.\n"
+    return EmailContent(
+        subject=f"Booking cancelled: {event_title}", text=text, html=_plain_page(text)
+    )
+
+
+def booking_expired_email(*, event_title: str, reference: str, link: str) -> EmailContent:
+    text = (
+        f"The places held for your booking {reference} for {event_title} were released because "
+        f"payment was not completed in time.\n\nYou can book again while places remain: {link}\n"
+    )
+    return EmailContent(
+        subject=f"Your hold expired: {event_title}", text=text, html=_plain_page(text)
+    )
+
+
+def event_cancelled_email(*, event_title: str, reference: str, reason: str) -> EmailContent:
+    text = (
+        f"{event_title} has been cancelled by the organizer. Your booking {reference} is "
+        f"cancelled.\n\nReason given: {reason}\n\nIf you had paid, the organizer will arrange "
+        "your refund.\n"
+    )
+    return EmailContent(
+        subject=f"Event cancelled: {event_title}", text=text, html=_plain_page(text)
+    )

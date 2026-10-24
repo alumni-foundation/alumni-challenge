@@ -60,3 +60,10 @@ class PayloadTooLargeError(AppError):
 class UnsupportedMediaError(AppError):
     status_code = 415
     code = "unsupported_media_type"
+
+
+class ServiceBusyError(AppError):
+    """Retry shortly: the work could not start because something it needs is locked."""
+
+    status_code = 503
+    code = "busy"
