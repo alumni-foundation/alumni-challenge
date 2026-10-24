@@ -1,6 +1,10 @@
 "use client";
 
 import { Bell, Compass, HeartHandshake, MessageCircle, Search, ShieldCheck, Sparkles, Trophy } from "lucide-react";
+import { useState } from "react";
+import { DashboardBody } from "@/components/admin/dashboard/parts";
+import { EMPTY_FIXTURE, MODERATOR_FIXTURE, PLATFORM_FIXTURE, SCHOOL_FIXTURE } from "@/components/admin/dashboard/fixtures";
+import type { OverviewPeriod } from "@/lib/admin-overview";
 import { Badge, Button, Card, Icon3D, type Icon3DSize, type Icon3DTone } from "@/components/ui";
 import { CountBadge } from "@/components/ui/count-badge";
 
@@ -137,6 +141,28 @@ function Theme({ theme }: { theme: "light" }) {
   );
 }
 
+/** The staff dashboard drawn from typed sample answers (never shown in the real app). */
+function DashboardCheck() {
+  const [period, setPeriod] = useState<OverviewPeriod>("30d");
+  const cases = [
+    { name: "Platform admin", o: PLATFORM_FIXTURE, kind: "platform" as const, org: null },
+    { name: "School admin (no report counts)", o: SCHOOL_FIXTURE, kind: "school" as const, org: "s1" },
+    { name: "Moderator (report counts only)", o: MODERATOR_FIXTURE, kind: "moderator" as const, org: null },
+    { name: "A brand-new platform (zeros, empty states)", o: EMPTY_FIXTURE, kind: "platform" as const, org: null },
+  ];
+  return (
+    <section className="space-y-10">
+      <h2 className="text-title">Admin dashboard (sample data)</h2>
+      {cases.map((c) => (
+        <div key={c.name} className="space-y-4" data-case={c.name}>
+          <h3 className="text-heading">{c.name}</h3>
+          <DashboardBody overview={{ ...c.o, period }} scope={{ kind: c.kind, organizationId: c.org }} period={period} onPeriod={setPeriod} fetching={false} nameOf={() => "Amina"} activityHref="/admin/activity" />
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export default function DesignCheck() {
   return (
     <main id="main" className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
@@ -145,6 +171,7 @@ export default function DesignCheck() {
       <div className="grid gap-6 xl:grid-cols-2">
         <Theme theme="light" />
       </div>
+      <DashboardCheck />
     </main>
   );
 }

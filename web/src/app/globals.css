@@ -28,6 +28,7 @@
 
   --gold: #84600a;
   --gold-soft: #f8eed7;
+  --gold-fill: #f1d28f; /* the highlight tile on dashboards; ink and muted text reach 4.5:1 on it */
 
   --ink: #1b1713;
   --muted: #5a5248;
@@ -65,6 +66,7 @@
   --color-brand-ink: var(--brand-ink);
   --color-gold: var(--gold);
   --color-gold-soft: var(--gold-soft);
+  --color-gold-fill: var(--gold-fill);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
