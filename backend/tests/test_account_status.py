@@ -354,3 +354,37 @@ async def test_a_malformed_user_id_is_a_422_not_a_crash(
         f"{API}/users/not-a-uuid/{path}", json={"reason": "x"}, headers=admin.headers
     )
     assert r.status_code == 422
+
+
+# ------------------------------------------- login says "suspended" only to the owner
+
+
+async def test_a_suspended_person_with_the_right_password_is_told_the_account_is_suspended(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    moderator = await _with_role(client, db_session, Role.MODERATOR)
+    member, _, email = await _member_with_refresh_token(client)
+    await _suspend(client, moderator, member.user_id)
+
+    r = await client.post(f"{API}/auth/login", json={"email": email, "password": PASSWORD})
+    assert r.status_code == 401
+    assert r.json()["error"]["code"] == "account_suspended"
+
+
+async def test_a_wrong_password_looks_the_same_for_suspended_active_and_unknown_accounts(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    moderator = await _with_role(client, db_session, Role.MODERATOR)
+    suspended, _, suspended_email = await _member_with_refresh_token(client)
+    _, _, active_email = await _member_with_refresh_token(client)
+    await _suspend(client, moderator, suspended.user_id)
+
+    responses = []
+    for email in (suspended_email, active_email, f"nobody-{uuid.uuid4().hex[:8]}@example.com"):
+        r = await client.post(
+            f"{API}/auth/login", json={"email": email, "password": "Wrong-pass-1!"}
+        )
+        responses.append((r.status_code, r.json()))
+
+    assert responses[0] == responses[1] == responses[2]
+    assert responses[0][1]["error"]["code"] != "account_suspended"

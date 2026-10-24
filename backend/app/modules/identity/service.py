@@ -80,6 +80,13 @@ async def authenticate_user(db: AsyncSession, *, email: str, password: str) -> U
             await redis.set(_lockout_key(email), "1", ex=_LOCKOUT_WINDOW_SECONDS)
         raise UnauthorizedError("Invalid email or password.")
 
+    # Only reached with the right password, so saying "suspended" tells nobody
+    # anything they could not already do by owning the account.
+    if user.status == UserStatus.SUSPENDED:
+        raise UnauthorizedError(
+            "This account has been suspended. Contact support if you think this is a mistake.",
+            code="account_suspended",
+        )
     if user.status != UserStatus.ACTIVE:
         raise UnauthorizedError("This account is not active.")
 
