@@ -7,7 +7,7 @@ describe("isPublicPath", () => {
     (p) => expect(isPublicPath(p)).toBe(true),
   );
 
-  it.each(["/home", "/directory", "/alumni/abc", "/connections", "/profile", "/settings", "/onboarding", "/admin", "/admin/reports", "/school/abc", "/partner/abc", "/start", "/bookings", "/bookings/abc", "/tickets"])(
+  it.each(["/home", "/directory", "/alumni/abc", "/connections", "/profile", "/settings", "/onboarding", "/admin", "/admin/reports", "/school/abc", "/partner/abc", "/organizer/abc", "/start", "/bookings", "/bookings/abc", "/tickets"])(
     "asks for a sign-in before %s",
     (p) => expect(isPublicPath(p)).toBe(false),
   );

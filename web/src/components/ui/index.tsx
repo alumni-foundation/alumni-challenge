@@ -131,13 +131,15 @@ export function Card({
   className,
   elevation = "resting",
   interactive = false,
+  large = false,
   ...p
-}: React.HTMLAttributes<HTMLDivElement> & { elevation?: Elevation; interactive?: boolean }) {
+}: React.HTMLAttributes<HTMLDivElement> & { elevation?: Elevation; interactive?: boolean; large?: boolean }) {
   return (
     <div
       {...p}
       className={cn(
-        "rounded-card border border-line bg-surface p-5 sm:p-6",
+        "border border-line bg-surface p-5 sm:p-6",
+        large ? "rounded-[1.75rem]" : "rounded-card",
         ELEVATION[elevation],
         interactive && "transition-[box-shadow,border-color] duration-200 hover:border-line-strong hover:shadow-lifted",
         className,
@@ -258,7 +260,7 @@ export function Alert({ children, tone = "error" }: { children: React.ReactNode;
 
 export function EmptyState({ title, body, action }: { title: string; body?: string; action?: React.ReactNode }) {
   return (
-    <Card className="py-12 text-center">
+    <Card large className="py-12 text-center">
       <p className="text-lead font-semibold">{title}</p>
       {body && <p className="mx-auto mt-1 max-w-sm text-small text-muted">{body}</p>}
       {action && <div className="mt-4 flex justify-center">{action}</div>}
@@ -269,7 +271,7 @@ export function EmptyState({ title, body, action }: { title: string; body?: stri
 /** What a list shows when its request failed: say so plainly and offer another go. */
 export function ErrorState({ message, onRetry }: { message?: string; onRetry?: () => void }) {
   return (
-    <Card className="space-y-3 py-8 text-center">
+    <Card large className="space-y-3 py-8 text-center">
       <p className="font-semibold">We couldn’t load this.</p>
       <p className="mx-auto max-w-sm text-small text-muted">{message ?? "Check your connection and try again."}</p>
       {onRetry && (

@@ -50,7 +50,7 @@ export default function PlatformRolesPage() {
     <div className="max-w-2xl">
       <PageHeader title="Platform roles" subtitle="Who can moderate and administer the whole platform." />
 
-      <Card className="space-y-5">
+      <Card large className="space-y-5">
         <Field label="Person" htmlFor="role-person">
           <MemberPicker id="role-person" value={person} onChange={(v) => { setPerson(v); setProblem(null); }} />
         </Field>

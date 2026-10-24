@@ -74,6 +74,7 @@ const NEXT_PAGE: Record<DashboardScope["kind"], (id: string | null) => { href: s
   moderator: () => ({ href: "/admin/reports", label: "Reports" }),
   school: (id) => ({ href: `/school/${id}/roster`, label: "Alumni roster" }),
   partner: (id) => ({ href: `/partner/${id}/team`, label: "Team" }),
+  organizer: () => ({ href: "/events", label: "Events" }),
 };
 
 /**
@@ -90,7 +91,7 @@ export function Dashboard({ scope, org }: { scope: DashboardScope; org?: Organiz
   const partnerPicked = Boolean(picked) && (partners.data ?? []).some((p) => p.id === picked);
   const organizationId = scope.organizationId ?? (picked || null);
   const overview = useAdminOverview(period, organizationId);
-  const isPartner = scope.kind === "partner" || partnerPicked;
+  const isPartner = scope.kind === "partner" || org?.type === "partner" || partnerPicked;
   // Members belong to schools. A partner has none, so its member numbers would only ever read 0.
   const o = overview.data && isPartner ? { ...overview.data, totals: null, funnel: null, signups_per_day: null } : overview.data;
   const members = useMemberIndex(Boolean(o?.recent_audit?.length));
@@ -98,7 +99,9 @@ export function Dashboard({ scope, org }: { scope: DashboardScope; org?: Organiz
   const effective: DashboardScope = organizationId && scope.kind === "platform" ? { kind: "platform", organizationId } : scope;
 
   const status = overview.error instanceof ApiError ? overview.error.status : undefined;
-  const activityHref = scope.kind === "platform" ? "/admin/activity" : scope.kind === "moderator" ? "/admin/reports" : `/${scope.kind}/${scope.organizationId}/activity`;
+  // Event managers cannot open the activity log, so their card has no link to it.
+  const activityHref =
+    scope.kind === "platform" ? "/admin/activity" : scope.kind === "school" || scope.kind === "partner" ? `/${scope.kind}/${scope.organizationId}/activity` : undefined;
 
   return (
     <div className="page-enter mx-auto max-w-[1280px] space-y-4">
@@ -115,7 +118,7 @@ export function Dashboard({ scope, org }: { scope: DashboardScope; org?: Organiz
         </div>
         <SearchField />
         {scope.kind === "platform" && <ScopeSelect value={picked} onChange={setPicked} />}
-        <NotificationBell />
+        <NotificationBell className="hidden lg:block" />
         <LinkButton href={next.href} variant="dark">
           {next.label} <ArrowRight className="size-4" aria-hidden />
         </LinkButton>

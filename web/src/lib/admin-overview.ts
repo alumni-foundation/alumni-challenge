@@ -187,7 +187,7 @@ export function auditSentence(action: string, actorName?: string | null, targetT
 }
 
 export type AttentionRow = { key: string; label: string; count: number; href: string };
-export type DashboardScope = { kind: "platform" | "moderator" | "school" | "partner"; organizationId: string | null };
+export type DashboardScope = { kind: "platform" | "moderator" | "school" | "partner" | "organizer"; organizationId: string | null };
 
 /**
  * What needs a person, one row per kind, only for numbers the API gave (null means this role cannot see it).
@@ -196,11 +196,11 @@ export type DashboardScope = { kind: "platform" | "moderator" | "school" | "part
 export function attentionRows(a: OverviewAttention, scope: DashboardScope): AttentionRow[] {
   const rows: (AttentionRow | null)[] = [
     a.reports_open === null ? null : { key: "reports", label: "Reports to review", count: a.reports_open, href: "/admin/reports" },
-    a.verification_requests_waiting === null
+    a.verification_requests_waiting === null || scope.kind === "organizer"
       ? null
       : {
           key: "verification",
-          label: "Verification requests",
+          label: "Awaiting verification",
           count: a.verification_requests_waiting,
           href: scope.kind === "school" ? `/school/${scope.organizationId}/roster` : "/admin/organizations",
         },

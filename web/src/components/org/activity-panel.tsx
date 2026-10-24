@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, EmptyState, ErrorState, Skeleton } from "@/components/ui";
+import { Row, RowList } from "@/components/staff/rows";
+import { Button, EmptyState, ErrorState, Skeleton } from "@/components/ui";
 import { ApiError } from "@/lib/api/client";
 import { AUDIT_PAGE_SIZE, useAuditLog, useMemberIndex, useOrgs } from "@/lib/api/hooks";
 import type { AuditLogEntry, Role } from "@/lib/api/types";
@@ -67,22 +68,20 @@ export function ActivityPanel() {
       {entries.length === 0 ? (
         <EmptyState title={page === 0 ? "Nothing recorded yet" : "No more entries"} body={page === 0 ? "Admin actions will show up here." : undefined} />
       ) : (
-        <Card className="py-0">
-          <ul className="divide-y divide-line">
-            {entries.map((e) => (
-              <li key={e.id} className="py-4">
-                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <p className="font-medium">{cap(ACTIONS[e.action] ?? auditWords(e.action, e.target_type))}</p>
-                  <time dateTime={e.created_at} className="text-small text-muted">{formatDate(e.created_at)}</time>
-                </div>
+        <RowList label="Activity">
+          {entries.map((e) => (
+            <Row key={e.id} stack className="items-start sm:items-center">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{cap(ACTIONS[e.action] ?? auditWords(e.action, e.target_type))}</p>
                 <p className="mt-0.5 break-words text-small text-muted">
                   By {e.actor_user_id ? personName(e.actor_user_id) : "the system"}
                   {detail(e) && <> · {detail(e)}</>}
                 </p>
-              </li>
-            ))}
-          </ul>
-        </Card>
+              </div>
+              <time dateTime={e.created_at} className="shrink-0 text-small text-muted">{formatDate(e.created_at)}</time>
+            </Row>
+          ))}
+        </RowList>
       )}
       {(page > 0 || entries.length === AUDIT_PAGE_SIZE) && (
         <nav aria-label="Pages" className="flex items-center justify-between gap-3">

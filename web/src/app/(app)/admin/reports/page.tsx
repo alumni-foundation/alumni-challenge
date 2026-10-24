@@ -29,30 +29,27 @@ const EMPTY: Record<ReportStatus, string> = {
   dismissed: "No dismissed reports yet.",
 };
 
-/** The list gives ids, not names, so show a short, stable tag instead of a bare UUID. */
-const shortId = (id: string | null) => (id ? `${id.slice(0, 8)}…` : "—");
-
 function ReportCard({ report, onChange, busy }: { report: Report; onChange: (status: ReportStatus) => void; busy: ReportStatus | null }) {
   const isProfile = report.target_type === "profile";
   const active = report.status === "open" || report.status === "reviewing";
   return (
-    <Card className="space-y-3">
+    <Card large className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={TONE[report.status]}>{TABS.find((t) => t.value === report.status)?.label}</Badge>
         <span className="text-small font-medium capitalize">{report.target_type}</span>
         <span className="text-caption text-muted">{formatDate(report.created_at)}</span>
       </div>
       <p className="whitespace-pre-line break-words text-body">{report.reason}</p>
-      <dl className="grid gap-x-6 gap-y-1 text-small text-muted sm:grid-cols-2">
-        <div className="flex gap-2"><dt>Reported by</dt><dd className="font-mono text-ink" title={report.reporter_user_id}>{shortId(report.reporter_user_id)}</dd></div>
-        <div className="flex gap-2"><dt>Reviewed by</dt><dd className="font-mono text-ink" title={report.reviewed_by ?? undefined}>{shortId(report.reviewed_by)}</dd></div>
-        {report.resolved_at && <div className="flex gap-2"><dt>Closed</dt><dd className="text-ink">{formatDate(report.resolved_at)}</dd></div>}
-      </dl>
+      <p className="text-small text-muted" title={`Reporter ${report.reporter_user_id}`}>
+        Reported by a member
+        {report.reviewed_by ? " · taken on by a moderator" : " · not reviewed yet"}
+        {report.resolved_at && <> · closed {formatDate(report.resolved_at)}</>}
+      </p>
       <div className="flex flex-col gap-2 border-t border-line pt-3 sm:flex-row sm:flex-wrap">
         {isProfile && active ? (
           <Link
             href={`/alumni/${report.target_id}?report=${report.id}`}
-            className="inline-flex h-11 items-center justify-center rounded-control border border-line-strong bg-surface px-5 text-small font-medium hover:bg-sunken sm:h-9 sm:px-3"
+            className="inline-flex h-11 items-center justify-center rounded-full border border-line-strong bg-transparent px-5 text-small font-medium hover:bg-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:h-9 sm:px-4"
           >
             Open profile
           </Link>
@@ -113,7 +110,7 @@ export default function ReportsPage() {
           You can open a reported profile only while its report is Open or Reviewing. Once you resolve or dismiss the report, the profile is hidden from you again.
         </Alert>
       </div>
-      <Tabs<ReportStatus> label="Report status" tabs={TABS} value={status} onChange={(s) => { setStatus(s); setPage(0); }} />
+      <Tabs<ReportStatus> pills label="Report status" tabs={TABS} value={status} onChange={(s) => { setStatus(s); setPage(0); }} />
       <div role="tabpanel" id={`${status}-panel`} aria-labelledby={`${status}-tab`} className="mt-4 space-y-3">
         {reports.isError ? (
           <ErrorState message={reports.error.message} onRetry={() => void reports.refetch()} />

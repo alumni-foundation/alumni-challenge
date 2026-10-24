@@ -44,11 +44,13 @@ export function Switch({ checked, onChange, label, hint }: {
 export type TabItem<T extends string> = { value: T; label: string; count?: number };
 
 /** Tabs with arrow-key movement. The caller renders the panel and gives it id `${value}-panel`. */
-export function Tabs<T extends string>({ tabs, value, onChange, label }: {
+export function Tabs<T extends string>({ tabs, value, onChange, label, pills = false }: {
   tabs: TabItem<T>[];
   value: T;
   onChange: (next: T) => void;
   label: string;
+  /** Staff pages: a capsule with a dark active pill, like the period toggle on the dashboard. */
+  pills?: boolean;
 }) {
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
 
@@ -62,7 +64,11 @@ export function Tabs<T extends string>({ tabs, value, onChange, label }: {
   }
 
   return (
-    <div role="tablist" aria-label={label} className="-mx-4 flex gap-1 overflow-x-auto border-b border-line px-4 sm:mx-0 sm:px-0">
+    <div
+      role="tablist"
+      aria-label={label}
+      className={pills ? "flex max-w-full gap-1 self-start overflow-x-auto rounded-full bg-sunken p-1" : "-mx-4 flex gap-1 overflow-x-auto border-b border-line px-4 sm:mx-0 sm:px-0"}
+    >
       {tabs.map((t, i) => {
         const active = t.value === value;
         return (
@@ -78,15 +84,16 @@ export function Tabs<T extends string>({ tabs, value, onChange, label }: {
             onClick={() => onChange(t.value)}
             onKeyDown={(e) => onKey(e, i)}
             className={cn(
-              "relative inline-flex h-11 shrink-0 items-center gap-2 px-4 text-small font-medium transition-colors",
-              active ? "text-ink" : "text-muted hover:text-ink",
+              "relative inline-flex shrink-0 items-center gap-2 px-4 text-small font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+              pills ? "h-10 rounded-full" : "h-11",
+              pills ? (active ? "bg-ink text-white" : "text-muted hover:text-ink") : active ? "text-ink" : "text-muted hover:text-ink",
             )}
           >
             {t.label}
             {t.count !== undefined && t.count > 0 && (
               <span className="rounded-full bg-brand px-1.5 text-caption font-semibold text-white">{t.count}</span>
             )}
-            {active && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-brand-ink" aria-hidden />}
+            {active && !pills && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-brand-ink" aria-hidden />}
           </button>
         );
       })}

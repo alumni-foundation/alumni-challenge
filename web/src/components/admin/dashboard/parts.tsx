@@ -38,7 +38,7 @@ function CardTitle({ icon, tone, title, hint, aside }: { icon: React.ElementType
 /* ---- Five number tiles --------------------------------------------------------------------------------------------- */
 
 export type KpiKey = "members" | "new_members" | "verified_members" | "reports_open" | "payments";
-type Kpi = { key: KpiKey; label: string; value: number; change: ReturnType<typeof changeOf>; href?: string };
+type Kpi = { key: KpiKey; label: string; value: number; change: ReturnType<typeof changeOf>; href?: string; note?: string };
 
 export function kpisFrom(o: Overview): Kpi[] {
   const words = PERIODS.find((p) => p.value === o.period)?.words ?? "";
@@ -46,7 +46,15 @@ export function kpisFrom(o: Overview): Kpi[] {
   if (o.totals) {
     out.push({ key: "members", label: "Members", value: o.totals.members.value, change: changeOf(o.totals.members, words) });
     out.push({ key: "new_members", label: "New members", value: o.totals.new_members.value, change: changeOf(o.totals.new_members, words) });
-    out.push({ key: "verified_members", label: "Verified members", value: o.totals.verified_members.value, change: changeOf(o.totals.verified_members, words) });
+    out.push({
+      key: "verified_members",
+      label: "Verified members",
+      value: o.totals.verified_members.value,
+      change: changeOf(o.totals.verified_members, words),
+      // The backend cannot know when someone was verified, so the earlier count is a minimum (docs/admin-api.md) and the
+      // real change may be smaller than shown. The tile says so.
+      note: "Earlier count is a minimum",
+    });
   }
   if (o.attention.reports_open !== null) out.push({ key: "reports_open", label: "Open reports", value: o.attention.reports_open, change: null, href: "/admin/reports" });
   if (o.attention.payments_waiting_confirmation !== null) out.push({ key: "payments", label: "Payments to confirm", value: o.attention.payments_waiting_confirmation, change: null, href: "/events" });
@@ -80,6 +88,11 @@ export function KpiTiles({ kpis, goldKey, loading }: { kpis: Kpi[]; goldKey: Kpi
               <span className={cn("font-serif text-display font-semibold leading-none tabular-nums lining-nums", loading && "opacity-60")}>{k.value.toLocaleString("en-KE")}</span>
               {k.change ? <Delta change={k.change} /> : null}
             </div>
+            {k.note && k.change && (
+              <p className="mt-2 text-caption text-muted" title="We don’t record when someone was verified, so the count for the period before is a minimum. The real change may be smaller than shown.">
+                {k.note}
+              </p>
+            )}
           </>
         );
         const cls = cn(
@@ -231,10 +244,10 @@ export function UpcomingCard({ events }: { events: NonNullable<Overview["upcomin
   );
 }
 
-export function ActivityCard({ items, nameOf, allHref }: { items: NonNullable<Overview["recent_audit"]>; nameOf: (userId: string | null) => string | null; allHref: string }) {
+export function ActivityCard({ items, nameOf, allHref }: { items: NonNullable<Overview["recent_audit"]>; nameOf: (userId: string | null) => string | null; allHref?: string }) {
   return (
     <section aria-label="Recent activity" className={card}>
-      <CardTitle icon={ScrollText} tone="sky" title="Recent activity" hint="Latest changes, newest first" aside={<Link href={allHref} className="inline-flex min-h-11 items-center text-small font-medium text-brand-ink hover:underline">Activity log</Link>} />
+      <CardTitle icon={ScrollText} tone="sky" title="Recent activity" hint="Latest changes, newest first" aside={allHref ? <Link href={allHref} className="inline-flex min-h-11 items-center text-small font-medium text-brand-ink hover:underline">Activity log</Link> : undefined} />
       {items.length === 0 ? (
         <EmptyState title="Nothing recorded yet" body="Admin actions will show up here." />
       ) : (
@@ -318,7 +331,7 @@ export function DashboardBody({ overview: o, scope, period, onPeriod, fetching, 
   onPeriod: (p: OverviewPeriod) => void;
   fetching: boolean;
   nameOf: (userId: string | null) => string | null;
-  activityHref: string;
+  activityHref?: string;
 }) {
   return (
     <>

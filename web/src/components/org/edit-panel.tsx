@@ -29,11 +29,11 @@ export function EditPanel({ org }: { org: Organization }) {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card large>
         <h2 className="mb-4 text-heading">Logo</h2>
         <LogoEditor org={org} />
       </Card>
-      <Card>
+      <Card large>
         <h2 className="text-heading">Details</h2>
         <form onSubmit={submit} className="mt-4 space-y-4" noValidate>
           <Field label="Name" htmlFor="d-name" error={nameError ?? server.name}>
