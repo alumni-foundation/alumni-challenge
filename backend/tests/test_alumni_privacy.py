@@ -1,10 +1,16 @@
 import uuid
 from dataclasses import dataclass
 
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.permissions.roles import Role
+from app.infrastructure.database.session import get_db_session
+from app.infrastructure.redis import get_redis_client
+from app.main import app
+from app.modules.identity.models import User
+from app.modules.identity.security import verify_password
 from app.modules.memberships.models import Membership
 from app.modules.organizations.models import Organization, OrganizationType
 
@@ -17,6 +23,31 @@ class Actor:
     headers: dict[str, str]
 
 
+async def _login_failure_evidence(email: str, login: Response, registered_id: uuid.UUID) -> str:
+    """A login straight after a good register has failed once in a full run and left nothing to
+    go on. Say what we can see: the response, whether the user row is visible to the test's
+    session, and the login-failure and lockout state in Redis."""
+    notes = [f"login returned {login.status_code}: {login.text}"]
+    override = app.dependency_overrides.get(get_db_session)
+    if override is not None:
+        async for db in override():
+            user = await db.scalar(select(User).where(User.email == email))
+            notes.append(f"user row visible: {user is not None}")
+            if user is not None:
+                notes.append(f"user status: {user.status}")
+                notes.append(f"registered id matches: {user.id == registered_id}")
+                matches = verify_password(PASSWORD, user.password_hash)
+                notes.append(f"password matches stored hash now: {matches}")
+                notes.append(f"hash head: {user.password_hash[:30]}")
+            same_email = select(func.count()).select_from(User).where(User.email == email)
+            notes.append(f"users with this email: {await db.scalar(same_email)}")
+            break
+    redis = get_redis_client()
+    notes.append(f"login_fail count: {await redis.get(f'login_fail:{email.lower()}')!r}")
+    notes.append(f"login_lockout set: {bool(await redis.exists(f'login_lockout:{email.lower()}'))}")
+    return " | ".join(notes)
+
+
 async def _make_actor(client: AsyncClient) -> Actor:
     email = f"t-{uuid.uuid4().hex[:12]}@example.com"
     reg = await client.post(
@@ -25,7 +56,9 @@ async def _make_actor(client: AsyncClient) -> Actor:
     )
     assert reg.status_code == 201, (reg.status_code, reg.text)
     login = await client.post("/api/v1/auth/login", json={"email": email, "password": PASSWORD})
-    assert login.status_code == 200, (login.status_code, login.text)
+    assert login.status_code == 200, await _login_failure_evidence(
+        email, login, uuid.UUID(reg.json()["id"])
+    )
     token = login.json()["access_token"]
     return Actor(uuid.UUID(reg.json()["id"]), {"Authorization": f"Bearer {token}"})
 

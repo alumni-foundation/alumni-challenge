@@ -256,6 +256,14 @@ they can read.
 14. **Backup:** run `scripts/backup-db.sh` once and restore it to a scratch database (section 8).
 15. **Deletion and export:** as a throwaway account, download "my data", then delete the
     account. Sign-in with it no longer works, and the same address can register again.
+16. **Password hashing:** once, after the first deploy (and after any base-image or library
+    update), run `docker exec -i <api-container> python - 200 < scripts/check_password_hashing.py`.
+    It needs no database, takes under a minute, and must end with `OK` and exit 0. Any
+    "FAIL" means the host gives wrong Argon2 answers (a right password refused): do not go live;
+    run a memory test on the host and tell the developers. Background: on one development
+    machine the library's default four lanes gave a wrong answer about 2.5% of the time, so the
+    app hashes with one lane (`app/modules/identity/security.py`). Whether that machine or the
+    library was at fault is not confirmed.
 
 ## 10. What is not done
 
