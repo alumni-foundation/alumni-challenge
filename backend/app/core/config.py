@@ -82,6 +82,10 @@ class Settings(BaseSettings):
     smtp_starttls: bool = False
     resend_api_key: SecretStr | None = None
 
+    # Signs the QR codes on event tickets. Optional in development and tests (a key is derived
+    # from SECRET_KEY); production must set its own, different from SECRET_KEY.
+    ticket_signing_key: SecretStr | None = None
+
     @model_validator(mode="after")
     def _check_mail_settings(self) -> "Settings":
         if self.mail_backend == "resend" and not self.resend_api_key:
@@ -95,6 +99,21 @@ class Settings(BaseSettings):
             if not self.frontend_url.startswith("https://"):
                 # Links in emails are built from this. A reset link must never be plain HTTP.
                 raise ValueError("Production FRONTEND_URL must start with https://.")
+        return self
+
+    @model_validator(mode="after")
+    def _check_ticket_signing_key(self) -> "Settings":
+        if self.environment == "production":
+            key = self.ticket_signing_key.get_secret_value() if self.ticket_signing_key else ""
+            if (
+                len(key) < MIN_DEPLOYED_SECRET_KEY_LENGTH
+                or key == self.secret_key.get_secret_value()
+            ):
+                raise ValueError(
+                    "Production needs TICKET_SIGNING_KEY: at least "
+                    f"{MIN_DEPLOYED_SECRET_KEY_LENGTH} random characters, "
+                    "different from SECRET_KEY."
+                )
         return self
 
     @model_validator(mode="after")

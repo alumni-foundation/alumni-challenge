@@ -1,18 +1,20 @@
 import localFont from "next/font/local";
 
 // Both faces come from npm packages (no network at build time) and are served from our own origin.
+
+/** Jost: a clean, Futura-like sans with a quiet, elegant rhythm. Body text, forms, buttons. */
 export const sans = localFont({
-  src: "../../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2",
-  variable: "--font-inter",
+  src: "../../node_modules/@fontsource-variable/jost/files/jost-latin-wght-normal.woff2",
+  variable: "--font-jost",
   weight: "100 900",
   display: "swap",
 });
 
-/** A refined serif for one or two accent words in a headline. Never for body text. */
+/** Cormorant Garamond: a high-contrast display serif. Headlines (h1, h2) and their accent words. */
 export const serif = localFont({
   src: [
-    { path: "../../node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2", weight: "400", style: "normal" },
-    { path: "../../node_modules/@fontsource/instrument-serif/files/instrument-serif-latin-400-italic.woff2", weight: "400", style: "italic" },
+    { path: "../../node_modules/@fontsource-variable/cormorant-garamond/files/cormorant-garamond-latin-wght-normal.woff2", weight: "300 700", style: "normal" },
+    { path: "../../node_modules/@fontsource-variable/cormorant-garamond/files/cormorant-garamond-latin-wght-italic.woff2", weight: "300 700", style: "italic" },
   ],
   variable: "--font-serif-face",
   display: "swap",

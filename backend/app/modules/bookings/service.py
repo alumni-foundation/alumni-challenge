@@ -46,6 +46,7 @@ from app.modules.bookings.schemas import (
     ParticipantOut,
     ParticipantUpdate,
 )
+from app.modules.bookings.tickets import announce_confirmed
 from app.modules.domain_events.service import publish as publish_event
 from app.modules.events import access
 from app.modules.events.models import (
@@ -114,7 +115,10 @@ async def _expire(db: AsyncSession, slot: EventSlot) -> int:
     expired = await seats.release_expired_holds(db, slot)
     for booking in expired:
         await publish_event(
-            db, event_type="booking.expired", payload={"booking_id": str(booking.id)}
+            db,
+            event_type="booking.expired",
+            payload={"booking_id": str(booking.id)},
+            dedupe_key=f"booking.expired:{booking.id}",
         )
     return len(expired)
 
@@ -316,9 +320,7 @@ async def create_booking(
         },
     )
     if booking.status == BookingStatus.CONFIRMED:
-        await publish_event(
-            db, event_type="booking.confirmed", payload={"booking_id": str(booking.id)}
-        )
+        await announce_confirmed(db, booking)
     return booking
 
 
@@ -544,7 +546,12 @@ async def cancel_booking(
             "by_organizer": not is_booker,
         },
     )
-    await publish_event(db, event_type="booking.cancelled", payload={"booking_id": str(booking.id)})
+    await publish_event(
+        db,
+        event_type="booking.cancelled",
+        payload={"booking_id": str(booking.id)},
+        dedupe_key=f"booking.cancelled:{booking.id}",
+    )
     return booking
 
 
@@ -619,6 +626,7 @@ async def cancel_all_for_event(db: AsyncSession, *, actor: User, event: Event, r
                 db,
                 event_type="booking.event_cancelled",
                 payload={"booking_id": str(booking.id)},
+                dedupe_key=f"booking.event_cancelled:{booking.id}",
             )
             count += 1
     await db.flush()

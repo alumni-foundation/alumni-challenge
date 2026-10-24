@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Alert, Button, Field, Input } from "@/components/ui";
+import { Alert, Button, Field, Input, PasswordInput } from "@/components/ui";
 import { ApiError, authCall } from "@/lib/api/client";
 import { friendlyError } from "@/lib/api/messages";
 
@@ -46,14 +46,14 @@ export default function RegisterPage() {
     <form onSubmit={submit} className="space-y-5" noValidate>
       <div>
         <h1 className="text-title">Create your account</h1>
-        <p className="mt-1 text-small text-muted">Join the alumni community. It takes a minute.</p>
+        <p className="mt-2 text-body text-ink">Join the alumni community. It takes a minute.</p>
       </div>
       {error && <Alert>{error}</Alert>}
       <Field label="Email" htmlFor="email" error={fields.email}>
         <Input id="email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
       </Field>
       <Field label="Password" htmlFor="password" error={fields.password} hint={`At least ${MIN_PASSWORD} characters.`}>
-        <Input id="password" type="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+        <PasswordInput id="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
       </Field>
       <label className="flex min-h-11 items-center gap-3 text-small">
         <input
@@ -64,13 +64,13 @@ export default function RegisterPage() {
         />
         <span>I am 18 or older.</span>
       </label>
-      <Button type="submit" className="w-full" loading={busy} disabled={!email || !password || !adult}>Create account</Button>
+      <Button type="submit" variant="dark" className="w-full" loading={busy} disabled={!email || !password || !adult}>Create account</Button>
       <p className="text-center text-caption text-muted">
         By creating an account you agree to our{" "}
         <Link href="/terms" className="font-medium text-brand-ink hover:underline">Terms</Link> and{" "}
         <Link href="/privacy" className="font-medium text-brand-ink hover:underline">Privacy Policy</Link>.
       </p>
-      <p className="text-center text-small text-muted">
+      <p className="text-center text-small text-ink">
         Already registered? <Link href="/login" className="font-medium text-brand-ink hover:underline">Log in</Link>
       </p>
     </form>

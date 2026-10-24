@@ -24,6 +24,7 @@ def _settings(**overrides: Any) -> Settings:
         # What any production deployment also needs, so these tests are only about storage.
         "mail_backend": "resend",
         "resend_api_key": "re_test",
+        "ticket_signing_key": "a-ticket-key-that-is-long-enough-0123456789",
         "frontend_url": "https://alumni.example",
         **overrides,
     }

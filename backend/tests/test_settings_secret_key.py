@@ -25,6 +25,7 @@ def _settings(environment: str, secret_key: str) -> Settings:
         storage_bucket_name="bucket",
         mail_backend="resend",  # type: ignore[arg-type]
         resend_api_key="re_test",  # type: ignore[arg-type]
+        ticket_signing_key="a-ticket-key-that-is-long-enough-0123456789",  # type: ignore[arg-type]
         frontend_url="https://alumni.example",
     )
 

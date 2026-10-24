@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { apiBase } from "@/lib/server/auth";
+import { visitorHeaders } from "@/lib/server/visitor";
 
 // The API gives out picture links relative to itself (/api/v1/files/<id>/content). A browser asks
 // the web origin for them, so this forwards that one path. No login cookie is needed or sent:
@@ -24,7 +25,10 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   try {
     upstream = await fetch(`${apiBase()}/files/${id}/content${qs}`, {
       cache: "no-store",
-      headers: req.headers.get("if-none-match") ? { "if-none-match": req.headers.get("if-none-match")! } : undefined,
+      headers: {
+        ...visitorHeaders(req.headers),
+        ...(req.headers.get("if-none-match") ? { "if-none-match": req.headers.get("if-none-match")! } : {}),
+      },
     });
   } catch {
     return new Response("Unavailable", { status: 503, headers: { "cache-control": "no-store" } });

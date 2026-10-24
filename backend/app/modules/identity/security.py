@@ -10,7 +10,13 @@ from argon2.exceptions import VerifyMismatchError
 from app.core.config import get_settings
 
 settings = get_settings()
-_hasher = PasswordHasher()
+# One lane (parallelism=1), not the library default of 4. With four lanes the Argon2 library
+# was seen to return a wrong answer about 2.5% of the time in our Linux container (20 of 800
+# hash-then-verify rounds: some verifies failed on a good hash, some hashes never verified),
+# which shows up as "Invalid email or password" for the right password. One lane: 0 of 800.
+# Memory (64 MiB) and time cost (3) are unchanged, so it is as costly to guess; hashes made
+# earlier carry their own parameters and still verify (they are not re-hashed automatically).
+_hasher = PasswordHasher(parallelism=1)
 
 # Tolerance for ordinary clock drift between the machines that issue and check tokens.
 # Deliberately small and a constant, not a setting: a wide leeway keeps expired and
