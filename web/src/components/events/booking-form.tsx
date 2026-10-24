@@ -4,8 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
-import { Alert, Button, Card, Input, Select, Textarea } from "@/components/ui";
-import { api } from "@/lib/api/client";
+import { Alert, Button, Card, Input, Select, Textarea, useToast } from "@/components/ui";
+import { ApiError, api } from "@/lib/api/client";
 import { useOrgs } from "@/lib/api/hooks";
 import type { AnswerInput, Booking, BookingCreate, EventDetail, EventQuestion, ParticipantInput } from "@/lib/api/types";
 import { bookingProblem, type BookingProblem } from "@/lib/booking-problem";
@@ -52,6 +52,7 @@ function FieldBlock({ id, label, hint, error, children }: { id: string; label: R
 export function BookingForm({ event, defaultName, email }: { event: EventDetail; defaultName: string; email: string }) {
   const router = useRouter();
   const qc = useQueryClient();
+  const toast = useToast();
   const schools = useOrgs("school");
   const free = event.price_minor <= 0;
   const open = event.slots.filter((s) => s.availability !== "full" && (s.spots_left === null || s.spots_left > 0));
@@ -161,6 +162,8 @@ export function BookingForm({ event, defaultName, email }: { event: EventDetail;
       const p = bookingProblem(err);
       if (!p.keepKey) attempt.current = null;
       if (p.refresh) void qc.invalidateQueries({ queryKey: ["event", event.id] });
+      // The refresh turns this form into "You have a booking", which would hide the message, so say it in a toast too.
+      if (err instanceof ApiError && err.code === "already_booked") toast(p.message, "info");
       setProblem(p);
       if (p.field) setErrors((cur) => ({ ...cur, [p.field as string]: p.message }));
       setBusy(false);

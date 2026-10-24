@@ -24,7 +24,7 @@ export function HoldCountdown({ until, onExpire }: { until: string; onExpire?: (
     }
   }, [left, onExpire]);
 
-  if (!left) return <p className="text-body font-semibold text-ink">The hold has ended. The places have been released.</p>;
+  if (!left) return <p className="text-body font-semibold text-ink">The hold has ended. The places are released shortly, and this booking will show as expired.</p>;
   const mm = String(left.minutes).padStart(2, "0");
   const ss = String(left.seconds).padStart(2, "0");
   return (
