@@ -137,7 +137,12 @@ async def one_run(args: argparse.Namespace, factory: Any, run_no: int) -> dict[s
         tokens = [create_access_token(u.id) for u in users]
         user_ids = [u.id for u in users]
 
-    limits = httpx.Limits(max_connections=args.concurrency, max_keepalive_connections=args.concurrency)
+    # Shorter than the server's keep-alive, so we never reuse a connection it is closing.
+    limits = httpx.Limits(
+        max_connections=args.concurrency,
+        max_keepalive_connections=args.concurrency,
+        keepalive_expiry=2.0,
+    )
     async with httpx.AsyncClient(base_url=args.api, timeout=60, limits=limits) as http:
         now = datetime.now(UTC)
         start = now + timedelta(days=10)

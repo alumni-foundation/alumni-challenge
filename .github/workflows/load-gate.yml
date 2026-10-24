@@ -17,7 +17,7 @@ on:
         description: "Requests in flight at once"
         default: "200"
   push:
-    branches: [backend/load-run]
+    branches: [backend/load-run, backend/batch-1]
     paths: [.github/workflows/load-gate.yml, scripts/load_bookings.py]
 
 jobs:

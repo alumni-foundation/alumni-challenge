@@ -56,7 +56,7 @@ services:
     command:
       - sh
       - -c
-      - alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $$WEB_CONCURRENCY --no-access-log
+      - alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $$WEB_CONCURRENCY --timeout-keep-alive 75 --no-access-log
     ports:
       - "8000"
     depends_on:
