@@ -7,6 +7,7 @@ import type {
   AuditLogEntry,
   Connection,
   EmailDomain,
+  EventSummary,
   MemberListItem,
   Membership,
   Organization,
@@ -209,5 +210,14 @@ export const useRoster = (orgId: string, filter: RosterFilter, page: number) =>
       return apiPage<RosterItem>(`organizations/${orgId}/roster?${qs.toString()}`);
     },
     placeholderData: (prev) => prev,
+    retry: false,
+  });
+
+/** The next published events the person may see, soonest first (GET /events lists upcoming ones). */
+export const useUpcomingEvents = (limit = 4) =>
+  useQuery({
+    queryKey: ["events", "upcoming", limit],
+    queryFn: () => api<EventSummary[]>(`events?limit=${limit}`),
+    staleTime: 60_000,
     retry: false,
   });
