@@ -287,11 +287,12 @@ they can read.
 
 The web app is a Next.js server (`web/`). It talks to the API **from the server**: the browser only
 ever talks to the web app's own address, which forwards calls to the API. So the API does not need to
-be reachable from visitors' browsers for the app to work (it still needs a public address for
-Cloudflare, health checks and email links to the web app, which are built from the API's `FRONTEND_URL`).
+be reachable from visitors' browsers at all: in production it should stay on the private network and
+only the web app should be public (see W4). Email links to the web app are built from the API's
+`FRONTEND_URL`.
 
 Proven by hand: the image below was built and run locally against the development API (health
-check, sign-in, pictures, cookies). **Not yet tested:** behind a real Cloudflare zone on a real domain.
+check, sign-in, pictures, cookies, and the visitor-address header against unit tests). **Not yet tested:** behind a real Cloudflare zone on a real domain.
 
 ## W1. Build
 
@@ -349,10 +350,26 @@ image already runs this check every 30 seconds.
   forwards to the API. Public ones (logos) are sent with a one-year cache header. Cloudflare does not
   cache an address with no file extension by default; a cache rule for that path is optional and
   **not yet tested**.
-* **Known gap, tell the developer:** the web server calls the API itself, so the API sees the web
-  server's address for sign-in, register and password-reset calls, not the visitor's. Until the web
-  app forwards the visitor's address (`CF-Connecting-IP`) the API's per-address limits (for example 20
-  sign-ins per 15 minutes) are shared by **all** visitors.
+* **The visitor's address.** The API limits sign-ins, sign-ups and resets per address, but every
+  call it gets comes from the web server. So the web app reads `CF-Connecting-IP` (set by Cloudflare,
+  not by the browser) and sends it to the API as `X-Visitor-IP` on **every** server-side call. Any
+  `X-Visitor-IP` a browser sends is ignored (tested: `web/src/lib/server/visitor.test.ts`). A
+  request with no `CF-Connecting-IP` gets no `X-Visitor-IP`, and the API then uses the web server's own
+  address. In development, with no Cloudflare, the connection address is used instead.
+  **API setting that goes with it: `TRUSTED_CLIENT_IP_HEADER=x-visitor-ip`** (not `cf-connecting-ip`,
+  which is only right when Cloudflare sits in front of the API itself, as in Part 1 section 7).
+  Leave it at `none` and the limits stay shared by all visitors.
+* **Network shape.** Only the web app is public. The API stays on the private network: no public
+  address, no Cloudflare record, reachable only from the web container (`API_URL=http://api:8000`).
+  This is what makes `X-Visitor-IP` safe to believe: nobody else can send it to the API. If the API is
+  also reachable from the internet, anyone can forge it and dodge every rate limit.
+  Email links point at the web app (`FRONTEND_URL`), so nothing needs the API to be public.
+* **The web origin accepts traffic only from Cloudflare.** Otherwise someone who finds the origin's
+  address can send their own `CF-Connecting-IP` and be counted as anyone they like. Firewall the web
+  server so ports 80/443 accept only [Cloudflare's address ranges](https://www.cloudflare.com/ips/)
+  (or use Cloudflare Tunnel, which has no open port at all, or authenticated origin pulls). Check:
+  `curl -s -H 'CF-Connecting-IP: 1.2.3.4' https://<origin address directly>/api/health` must time out or
+  be refused, never answer. **Not yet tested on a real server.**
 * Add Cloudflare's managed WAF rules and a rate-limiting rule on `/api/auth/*`. **Not yet tested.**
 
 ## W5. Test after every web deploy
@@ -366,3 +383,9 @@ Replace `WEB` with the web address.
    `HttpOnly` and `Secure`.
 5. Open Profile: your photo shows (if you have one). Copy the photo's address, remove `?token=...`
    and open it: **404**.
+6. **Visitor address:** with `TRUSTED_CLIENT_IP_HEADER=x-visitor-ip` set on the API, sign in wrongly
+   25 times from your own connection (20 are allowed per 15 minutes): the last ones answer "too many
+   attempts". Then try once from a phone on mobile data: it must **not** be blocked. If it is, the
+   address is not reaching the API.
+7. **Origin closed:** `curl -s -H 'CF-Connecting-IP: 1.2.3.4' http://<origin address>/api/health` from
+   outside Cloudflare times out or is refused.

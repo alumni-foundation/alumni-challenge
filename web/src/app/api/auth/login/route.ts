@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { visitorHeaders } from "@/lib/server/visitor";
 import { apiBase, isSameOrigin, jsonError, setAuthCookies, type TokenPair } from "@/lib/server/auth";
 
 export async function POST(req: NextRequest) {
@@ -8,6 +9,7 @@ export async function POST(req: NextRequest) {
     upstream = await fetch(`${apiBase()}/auth/login`, {
       method: "POST",
       headers: {
+        ...visitorHeaders(req.headers),
         "content-type": "application/json",
         "user-agent": req.headers.get("user-agent") ?? "",
       },

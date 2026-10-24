@@ -11,6 +11,7 @@ import {
   setAuthCookies,
   type TokenPair,
 } from "@/lib/server/auth";
+import { visitorHeaders } from "@/lib/server/visitor";
 
 // Login, register, refresh and logout have their own routes. Only these auth paths may pass through.
 const ALLOWED_AUTH = /^auth\/(me|me\/roles|email\/verify\/request|sessions|sessions\/[0-9a-fA-F-]{36})$/;
@@ -25,6 +26,7 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
   const unsafe = !["GET", "HEAD"].includes(req.method);
   if (unsafe && !isSameOrigin(req)) return jsonError(403, "bad_origin", "Cross-site request blocked.");
 
+  const visitor = visitorHeaders(req.headers);
   const jar = await cookies();
   const refresh = jar.get(REFRESH_COOKIE)?.value;
   let access = jar.get(ACCESS_COOKIE)?.value;
@@ -39,7 +41,7 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
 
   let fresh: TokenPair | null = null;
   if (!access) {
-    const r = await refreshTokens(refresh);
+    const r = await refreshTokens(refresh, visitor);
     if (!r.ok) return r.reason === "invalid" ? expired() : unavailable();
     fresh = r.tokens;
     access = fresh.access_token;
@@ -54,6 +56,7 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
     fetch(url, {
       method: req.method,
       headers: {
+        ...visitor,
         authorization: `Bearer ${token}`,
         ...(body ? { "content-type": multipart ? contentType : "application/json" } : {}),
       },
@@ -63,7 +66,7 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
 
   let upstream = await call(access);
   if (upstream && upstream.status === 401 && !fresh) {
-    const r = await refreshTokens(refresh);
+    const r = await refreshTokens(refresh, visitor);
     if (!r.ok) return r.reason === "invalid" ? expired() : unavailable();
     fresh = r.tokens;
     upstream = await call(fresh.access_token);
