@@ -1,6 +1,8 @@
 # Events, booking, waitlist, tickets and payments: design
 
-Status: **PROPOSED, 24 Oct 2026. Not approved. No code has been written for it.**
+Status: **APPROVED by the owner, 24 Oct 2026, with the answers and two changes in section 15.**
+Build order: 5.1, 5.2, 5.4, 5.5, 5.3, 5.6. Where this document and section 15 disagree,
+section 15 wins.
 Covers PLAN Phase 5 (events), the hooks Phase 6 (payments) needs, and the data Phase 7 (golf)
 needs, so that the first two do not have to be redone for the third. Section 14 lists what
 needs the owner's decision. Everything in sections 1 to 13 assumes the recommended answer.
@@ -88,7 +90,7 @@ column exists so a second currency is not a migration.
 | `registration_opens_at`, `registration_closes_at` | both nullable; evaluated with the database clock |
 | `price_minor`, `currency` | `price_minor >= 0` per participant; 0 means free |
 | `max_party_size` | 1 to 4 (CHECK); 1 for a meetup |
-| `hold_minutes` | default 15, CHECK between 5 and 4320 (4320 only for manual-payment events) |
+| `hold_minutes` | default 15, CHECK between 5 and 2880 (more than 60 only for manual-payment events) |
 | `waitlist_enabled` | bool |
 | `show_attendee_list` | bool, default true. **The organizer's switch** |
 | `payment_account_id` | FK `payment_accounts`, nullable; required to publish when `price_minor > 0` (Phase 6) |
@@ -563,3 +565,42 @@ Recommended answer first in each.
     many.
 16. **SMS.** Blocked on an Africa's Talking account. Email only until then; the brief's "email
     and SMS confirmation" is half-met at launch.
+
+## 15. Approved answers and changes (24 Oct 2026)
+
+Decisions 1(a), 2 (count only for signed-out visitors, plus `listed`), 3 yes, 4 as written,
+5 (manual refund queue, same working day), 6 no self-cancel of paid bookings, 7 public by
+default, 8 yes (the owner updates the privacy text), 9 (ticket link with no login, QR drawn by
+the app), 10 (refuse deletion until the event has passed or been refunded; retention length is
+being confirmed with the accountant), 11 as written, 12 deferred, 13 yes but not a blocker,
+14 as written, 15 as written, 16 email only. Requests to private-profile users are **not**
+made 404.
+
+**Change (a): golf details for 7 November are event questions, not the golf tables.**
+Handicap, CDH number, team, school or cohort are configured as ordinary `each_participant`
+questions with these reserved keys, so they can be moved without guessing:
+
+| key | kind | meaning |
+|---|---|---|
+| `golf_has_handicap` | boolean | has a handicap |
+| `golf_cdh_number` | text | CDH number, as typed |
+| `golf_handicap_index` | number | optional |
+| `golf_team` | choice | the team (option values are stable slugs, for example `yengolf_alumni`, `alumni_challenge`) |
+| `golf_school` | school | school represented (a new question kind whose answer is an organization id of type school, validated) |
+| `golf_cohort_number` | number | cohort number |
+
+*Later migration into `golf_entries` (Phase 7):* a one-off, re-runnable script reads
+`booking_answers` for these keys per participant and writes one `golf_entries` row each (a
+`golf_teams` row is created per distinct `golf_team` option; `golf_school` becomes
+`represented_school_id`). It runs in a transaction, reports counts (participants with answers,
+rows written, rows skipped with the reason), refuses to overwrite an existing entry, and
+leaves the answers in place until a person has checked the report. After it, the structured
+tables are the source of truth and the questions are retired for that event type.
+
+**Change (b): manual M-Pesa mode.** The M-Pesa receipt code a booker enters is stored on the
+booking (`payment_reference_code`, normalized to upper case and trimmed) and a **database
+unique index** (`bookings(payment_reference_code) WHERE payment_reference_code IS NOT NULL`)
+means one code can belong to one booking only, ever, even across events. A code entered twice
+is a 409. Manual holds are capped at **48 hours**: `events.hold_minutes` is CHECK between 5 and
+2880 (not 4320), and an event may only use more than 60 minutes if its payee account is a
+manual one.

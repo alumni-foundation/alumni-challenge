@@ -6,8 +6,7 @@ Everything here is invented. Accounts use addresses under example.com, which is 
 for documentation and cannot receive mail. Nothing in this module holds a password: the
 caller supplies one, uses it, and shows it to the developer once.
 
-Running it again changes nothing that already exists. Events are not seeded yet because
-the events feature does not exist yet; they join the seed when it does.
+Running it again changes nothing that already exists. Demo events live in demo_events.py.
 """
 
 import uuid
@@ -31,6 +30,7 @@ from app.modules.identity.security import hash_password
 from app.modules.memberships.models import Membership, MembershipStatus
 from app.modules.moderation.models import Report, ReportStatus, ReportTargetType
 from app.modules.organizations.models import Organization, OrganizationStatus, OrganizationType
+from app.seed.demo_events import ensure_demo_events
 
 DEMO_EMAIL_DOMAIN = "example.com"
 DEMO_EMAIL_PREFIX = "demo."
@@ -279,11 +279,13 @@ async def seed_demo(
     assert moderator is not None
 
     # Organization staff: each one is scoped to exactly one organization.
+    school_admins: list[User] = []
     for school, suffix in zip(schools, "abc", strict=True):
         user = await account(demo_email("school-admin", suffix), f"school_admin ({school.name})")
         await _ensure_membership(
             db, user_id=user.id, role=Role.SCHOOL_ADMIN, organization_id=school.id
         )
+        school_admins.append(user)
     for index, partner in enumerate(partners, start=1):
         user = await account(
             demo_email("partner-admin", str(index)), f"partner_admin ({partner.name})"
@@ -299,6 +301,8 @@ async def seed_demo(
     await _ensure_membership(
         db, user_id=sports.id, role=Role.SPORTS_MANAGER, organization_id=schools[0].id
     )
+
+    await ensure_demo_events(db, school=schools[0], manager=manager, admin=school_admins[0])
 
     # Ordinary alumni, spread across the schools, with every privacy level and a mix of
     # verified and unverified profiles.

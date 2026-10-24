@@ -121,7 +121,7 @@ Builder: solo. Status key: `[ ]` not done, `[x]` done.
 
 ## PHASE 5: Events, homecoming and registration
 
-- [ ] Events: categories (homecoming, sports, CEO forums, executive, networking, mentorship, leadership, philanthropy), date/time, location, capacity
+- [x] Events: categories (homecoming, sports, CEO forums, executive, networking, mentorship, leadership, philanthropy), date/time, location, capacity
 - [ ] School homecomings tied to schools
 - [ ] RSVP and registration in a locked transaction (capacity check, lock, create, update, commit)
 - [ ] Idempotent registration

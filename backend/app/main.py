@@ -76,6 +76,8 @@ from app.modules.alumni.router import router as alumni_router  # noqa: E402
 from app.modules.audit.router import router as audit_router  # noqa: E402
 from app.modules.connections.router import router as connections_router  # noqa: E402
 from app.modules.domain_events import handlers as _domain_events_handlers  # noqa: E402, F401
+from app.modules.events.router import router as events_router  # noqa: E402
+from app.modules.events.router import series_router as event_series_router  # noqa: E402
 from app.modules.files.router import router as files_router  # noqa: E402
 from app.modules.identity.account_router import router as account_router  # noqa: E402
 from app.modules.identity.self_service import router as self_service_router  # noqa: E402
@@ -91,6 +93,8 @@ app.include_router(self_service_router, prefix=settings.api_v1_prefix)
 app.include_router(alumni_router, prefix=settings.api_v1_prefix)
 app.include_router(audit_router, prefix=settings.api_v1_prefix)
 app.include_router(connections_router, prefix=settings.api_v1_prefix)
+app.include_router(events_router, prefix=settings.api_v1_prefix)
+app.include_router(event_series_router, prefix=settings.api_v1_prefix)
 app.include_router(files_router, prefix=settings.api_v1_prefix)
 app.include_router(moderation_router, prefix=settings.api_v1_prefix)
 app.include_router(roles_router, prefix=settings.api_v1_prefix)

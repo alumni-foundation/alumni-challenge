@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors.exceptions import NotFoundError
 from app.modules.alumni.models import AlumniProfile
 from app.modules.alumni.service import get_own_profile
+from app.modules.events.models import Event
 from app.modules.files.models import File, FilePurpose
 from app.modules.files.service import remove_file_row
 from app.modules.identity.models import User
@@ -89,5 +90,31 @@ async def set_logo(
 async def clear_logo(db: AsyncSession, *, organization: Organization) -> str | None:
     old_id = organization.logo_file_id
     organization.logo_file_id = None
+    await db.flush()
+    return await _drop(db, old_id)
+
+
+async def set_event_poster(db: AsyncSession, *, event: Event, file_id: uuid.UUID) -> str | None:
+    """The poster must have been uploaded for exactly this event's organizer (or, for a platform
+    event, by a platform admin with no organization): a poster made for another school is
+    simply not found."""
+    row = await db.get(File, file_id)
+    if (
+        row is None
+        or row.purpose != FilePurpose.EVENT_POSTER
+        or row.organization_id != event.organization_id
+    ):
+        raise NotFoundError("File not found.")
+    old_id = event.poster_file_id
+    if old_id == row.id:
+        return None
+    event.poster_file_id = row.id
+    await db.flush()
+    return await _drop(db, old_id)
+
+
+async def clear_event_poster(db: AsyncSession, *, event: Event) -> str | None:
+    old_id = event.poster_file_id
+    event.poster_file_id = None
     await db.flush()
     return await _drop(db, old_id)

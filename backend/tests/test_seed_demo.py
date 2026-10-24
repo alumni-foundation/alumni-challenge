@@ -197,3 +197,37 @@ def test_the_old_all_roles_account_command_is_gone() -> None:
 def test_the_demo_addresses_are_unique_per_account_kind() -> None:
     assert demo.demo_email("alumni", "01") != demo.demo_email("alumni", "02")
     assert demo.demo_email("school-admin", "a") != demo.demo_email("school-admin", "b")
+
+
+async def test_the_seed_makes_a_meetup_a_paid_evening_a_four_slot_golf_day_and_a_draft(
+    db_session: AsyncSession,
+) -> None:
+    from app.modules.events.models import Event, EventSlot, EventStatus
+    from app.seed import demo_events
+
+    await demo.seed_demo(db_session, password=PASSWORD)
+    events = {
+        e.title: e
+        for e in await db_session.scalars(select(Event).where(Event.title.like("Demo %")))
+    }
+    assert set(events) >= {
+        demo_events.MEETUP,
+        demo_events.EVENING,
+        demo_events.GOLF,
+        demo_events.DRAFT,
+    }
+    assert events[demo_events.MEETUP].price_minor == 0
+    assert events[demo_events.EVENING].price_minor == 150_000
+    assert events[demo_events.GOLF].status == EventStatus.PUBLISHED
+    assert events[demo_events.DRAFT].status == EventStatus.DRAFT
+    golf_slots = list(
+        await db_session.scalars(
+            select(EventSlot).where(EventSlot.event_id == events[demo_events.GOLF].id)
+        )
+    )
+    assert len(golf_slots) == 4 and {s.capacity for s in golf_slots} == {40}
+
+    # a second run adds nothing
+    await demo.seed_demo(db_session, password=PASSWORD)
+    again = list(await db_session.scalars(select(Event).where(Event.title.like("Demo %"))))
+    assert len(again) == len(events)
