@@ -24,7 +24,7 @@ export async function PublicHeader({ overlay = false }: { overlay?: boolean }) {
         className={cn(
           "mx-auto flex max-w-6xl items-center gap-3",
           overlay
-            ? "rounded-full border border-white/15 bg-[rgb(20_16_12/0.6)] py-1.5 pl-4 pr-1.5 text-white backdrop-blur-md sm:pl-5"
+            ? "rounded-full border border-white/15 bg-[rgb(20_14_8/0.7)] py-1.5 pl-4 pr-1.5 text-white backdrop-blur-md sm:pl-5"
             : "px-4 py-3 sm:px-6",
         )}
       >
