@@ -8,6 +8,8 @@ import { cn, initials, toneFor } from "@/lib/utils";
 export { ConfirmDialog, Dialog, ReasonDialog } from "./dialog";
 export { ToastProvider, useToast } from "./toast";
 export { RadioCards, Switch, Tabs, TagInput } from "./controls";
+export { Icon3D } from "./icon3d";
+export type { Icon3DSize, Icon3DTone } from "./icon3d";
 
 /* ---- Buttons ---------------------------------------------------------------------------- */
 
@@ -18,18 +20,19 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   loading?: boolean;
 };
 const VARIANTS = {
-  primary: "bg-brand text-white hover:bg-brand-dark",
-  secondary: "border border-line-strong bg-surface text-ink hover:bg-sunken",
+  primary: "bg-brand text-white shadow-raised hover:bg-brand-dark",
+  // Quiet: no fill to compete with the primary, just a fine line.
+  secondary: "border border-line-strong bg-transparent text-ink hover:bg-sunken",
   ghost: "text-muted hover:bg-sunken hover:text-ink",
   danger: "border border-brand/40 bg-surface text-brand-ink hover:bg-brand-soft",
 };
 // 44px tall on phones is the minimum comfortable touch target; "sm" is for dense desktop rows.
 const SIZES: Record<ButtonSize, string> = {
-  md: "h-11 px-5 text-small",
+  md: "h-11 px-6 text-small",
   sm: "h-11 px-4 text-small sm:h-9 sm:px-3",
 };
 const buttonBase =
-  "inline-flex items-center justify-center gap-2 rounded-control font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-[background-color,box-shadow,transform] duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60";
 
 export function Button({ variant = "primary", size = "md", loading, className, children, disabled, type = "button", ...rest }: ButtonProps) {
   return (
@@ -113,7 +116,7 @@ export function Card({
     <div
       {...p}
       className={cn(
-        "rounded-card border border-line bg-surface p-4 sm:p-5",
+        "rounded-card border border-line bg-surface p-5 sm:p-6",
         ELEVATION[elevation],
         interactive && "transition-[box-shadow,border-color] duration-200 hover:border-line-strong hover:shadow-lifted",
         className,
@@ -152,7 +155,7 @@ export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "ok" 
     gold: "bg-gold-soft text-gold",
     blue: "bg-verified-soft text-verified",
   };
-  return <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-caption font-medium", tones[tone])}>{children}</span>;
+  return <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-caption font-medium ring-1 ring-inset ring-current/10", tones[tone])}>{children}</span>;
 }
 
 export const VerifiedMark = () => <BadgeCheck className="inline size-4 text-verified" aria-label="Verified alumnus" />;

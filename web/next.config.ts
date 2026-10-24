@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
-const nextConfig: NextConfig = {
+// Files named page.dev.tsx are routes only in `next dev` (the design-check page). `next build` does
+// not know the "dev.tsx" extension, so those pages are not compiled or shipped.
+const nextConfig = (phase: string): NextConfig => ({
   output: "standalone",
+  pageExtensions: phase === PHASE_DEVELOPMENT_SERVER ? ["tsx", "ts", "jsx", "js", "dev.tsx"] : ["tsx", "ts", "jsx", "js"],
   poweredByHeader: false,
   async redirects() {
     // The directory moved from /alumni to /directory. Profiles stay at /alumni/:profileId.
@@ -20,6 +24,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-};
+});
 
 export default nextConfig;

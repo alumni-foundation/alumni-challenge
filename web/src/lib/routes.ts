@@ -22,7 +22,11 @@ const PUBLIC_PREFIXES = ["/schools", "/partners"];
  */
 const SIGNED_OUT_ONLY = new Set(["/login", "/register"]);
 
+/** The design-check page exists only in `next dev` (see next.config.ts), so opening it needs no sign-in there. */
+const DEV_PAGES = process.env.NODE_ENV === "production" ? [] : ["/design-check"];
+
 export const isPublicPath = (pathname: string) =>
+  DEV_PAGES.includes(pathname) ||
   PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 export const isSignedOutOnly = (pathname: string) => SIGNED_OUT_ONLY.has(pathname);

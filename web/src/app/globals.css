@@ -5,41 +5,44 @@
  * spacing, shape and motion. Components in src/components/ui read these tokens; nothing else
  * in the app should use a raw colour or a one-off size.
  *
- * Principles: calm and clear, one strong accent (the school-crest red), warm neutrals, large
- * touch targets, 16px text in form fields so phones don't zoom, and motion that never gets in
- * the way. Light and dark follow the person's device setting.
+ * Principles: warm and calm, light first. An ivory canvas, deep warm ink, and ONE accent (the
+ * school-crest red). Pill buttons, soft layered shadows, large touch targets, 16px text in form
+ * fields so phones don't zoom, and motion that never gets in the way. Dark is the secondary
+ * theme and follows the device setting. Put data-theme="light" or "dark" on an element to force
+ * a theme for that part of the page (the design-check page does this to show both at once).
  *
  * Spacing: Tailwind's 4px grid. Use 4/8/12/16/24/32/48 (p-1, p-2, p-3, p-4, p-6, p-8, p-12).
  * Page gutters: 16px on phones, 24px from 640px, 40px from 1024px.
  *
- * Contrast (checked against WCAG AA): text-ink, text-muted and text-faint all reach 4.5:1 on
- * canvas and surface in both themes. Status colours reach 4.5:1 on their own -soft backgrounds.
+ * Contrast (WCAG AA, checked): text-ink, text-muted and text-faint reach 4.5:1 on canvas, surface
+ * and sunken in both themes. Status colours reach 4.5:1 on their own -soft backgrounds.
  */
 
-/* ---- Raw palette: light ---------------------------------------------------------------- */
-:root {
+/* ---- Raw palette: light (the default) ------------------------------------------------- */
+:root,
+[data-theme="light"] {
   color-scheme: light;
 
   --brand: #c31e2c;
   --brand-dark: #9c1620;
-  --brand-soft: #fdecec;
+  --brand-soft: #fbe8e4;
   --brand-ink: #b01a27; /* brand as text on canvas/surface */
 
-  --gold: #8a6409;
-  --gold-soft: #fbf3e2;
+  --gold: #84600a;
+  --gold-soft: #f8eed7;
 
-  --ink: #17171b;
-  --muted: #5d5d69;
-  --faint: #6f6f7b;
-  --line: #e4e1da;
-  --line-strong: #cfcbc2;
+  --ink: #1b1713;
+  --muted: #5a5248;
+  --faint: #6a6155;
+  --line: #e7dfd0;
+  --line-strong: #d2c8b4;
 
-  --canvas: #f6f4f0; /* warm off-white page background */
-  --surface: #ffffff; /* cards, sheets, inputs */
-  --sunken: #efece6; /* quiet fills inside a surface */
+  --canvas: #faf6ee; /* warm ivory page background */
+  --surface: #fffdf9; /* cards, sheets, inputs */
+  --sunken: #f2ecdf; /* quiet fills inside a surface */
 
-  --side: #17161a; /* the always-dark navigation bar */
-  --side-deep: #0e0d10;
+  --side: #17140f; /* the always-dark navigation bar and hero scrims */
+  --side-deep: #0e0c09;
 
   --verified: #1d4fd8;
   --verified-soft: #e8effd;
@@ -48,35 +51,35 @@
   --warn: #9a4a07;
   --warn-soft: #fcefdc;
 
-  --scrim: rgb(14 13 16 / 0.5);
-  --shadow-color: 23 23 27;
+  --scrim: rgb(20 15 10 / 0.5);
+  --shadow-color: 60 40 18; /* warm brown, so shadows never look grey on ivory */
 }
 
-/* ---- Raw palette: dark ----------------------------------------------------------------- */
+/* ---- Raw palette: dark (secondary) ---------------------------------------------------- */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
 
     --brand: #d12f3c;
     --brand-dark: #e0434f;
-    --brand-soft: #3a171b;
+    --brand-soft: #3a1a1c;
     --brand-ink: #ff8791;
 
     --gold: #e3b448;
     --gold-soft: #35290e;
 
-    --ink: #f3f1ed;
-    --muted: #b1b0ba;
-    --faint: #9594a0;
-    --line: #2d2d35;
-    --line-strong: #43434d;
+    --ink: #f4efe6;
+    --muted: #b8b1a4;
+    --faint: #9d968a;
+    --line: #2e2a24;
+    --line-strong: #453f36;
 
-    --canvas: #0f0f12;
-    --surface: #18181d;
-    --sunken: #222228;
+    --canvas: #14110e;
+    --surface: #1c1814;
+    --sunken: #26211b;
 
-    --side: #101013;
-    --side-deep: #0a0a0c;
+    --side: #100e0b;
+    --side-deep: #0a0907;
 
     --verified: #8fb0ff;
     --verified-soft: #172544;
@@ -89,10 +92,49 @@
     --shadow-color: 0 0 0;
   }
 }
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --brand: #d12f3c;
+  --brand-dark: #e0434f;
+  --brand-soft: #3a1a1c;
+  --brand-ink: #ff8791;
+
+  --gold: #e3b448;
+  --gold-soft: #35290e;
+
+  --ink: #f4efe6;
+  --muted: #b8b1a4;
+  --faint: #9d968a;
+  --line: #2e2a24;
+  --line-strong: #453f36;
+
+  --canvas: #14110e;
+  --surface: #1c1814;
+  --sunken: #26211b;
+
+  --side: #100e0b;
+  --side-deep: #0a0907;
+
+  --verified: #8fb0ff;
+  --verified-soft: #172544;
+  --ok: #6fd391;
+  --ok-soft: #12301d;
+  --warn: #f0b266;
+  --warn-soft: #36230c;
+
+  --scrim: rgb(0 0 0 / 0.65);
+  --shadow-color: 0 0 0;
+
+  background: var(--canvas);
+  color: var(--ink);
+}
 
 /* ---- Tailwind theme: names the rest of the app uses ------------------------------------- */
 @theme inline {
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-inter), "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --font-serif: var(--font-serif-face), "Iowan Old Style", "Times New Roman", serif;
 
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
@@ -133,16 +175,21 @@
   --text-title--line-height: 2rem;
   --text-display: 2.25rem;
   --text-display--line-height: 2.5rem;
+  /* The landing headline. Serif accent words get .accent-serif. */
+  --text-hero: clamp(2.5rem, 1.4rem + 5vw, 5rem);
+  --text-hero--line-height: 1.04;
+  --text-hero--letter-spacing: -0.025em;
 
   /* Shape */
-  --radius-control: 0.75rem; /* buttons, inputs */
-  --radius-card: 1rem;
-  --radius-sheet: 1.5rem;
+  --radius-control: 0.875rem; /* inputs */
+  --radius-card: 1.25rem;
+  --radius-sheet: 1.75rem;
+  --radius-pill: 9999px; /* buttons, badges, nav pills */
 
   /* Elevation: borders do most of the work; shadows are barely there. */
-  --shadow-resting: 0 1px 1px rgb(var(--shadow-color) / 0.03);
-  --shadow-raised: 0 1px 2px rgb(var(--shadow-color) / 0.06);
-  --shadow-lifted: 0 8px 24px rgb(var(--shadow-color) / 0.12);
+  --shadow-resting: 0 1px 1px rgb(var(--shadow-color) / 0.04), 0 2px 6px -2px rgb(var(--shadow-color) / 0.05);
+  --shadow-raised: 0 1px 2px rgb(var(--shadow-color) / 0.06), 0 6px 14px -4px rgb(var(--shadow-color) / 0.09);
+  --shadow-lifted: 0 2px 4px rgb(var(--shadow-color) / 0.06), 0 12px 28px -6px rgb(var(--shadow-color) / 0.16), 0 28px 48px -16px rgb(var(--shadow-color) / 0.12);
 
   /* Motion: short and soft. */
   --ease-calm: cubic-bezier(0.22, 1, 0.36, 1);
@@ -165,6 +212,15 @@ body {
 
 /* Headings share one voice. Pages pick the size with text-title / text-heading. */
 h1, h2, h3 { font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+
+/* One or two serif words in a headline: <em className="accent-serif">belong</em>. */
+.accent-serif {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-size: 1.1em; /* the serif sets small beside the sans, so it is nudged up to match */
+}
 
 /* Calm entrance for sheets, menus and toasts. */
 @keyframes rise-in {
@@ -194,3 +250,67 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
     scroll-behavior: auto !important;
   }
 }
+
+/* ---- Icon3D: a tactile tile for a line icon ---------------------------------------------- */
+/* A gradient body, a bright inner edge, a soft inner shade, layered shadows (contact, mid, and a
+   coloured glow) and a barely-there grain, so it reads as material and not flat colour. */
+.icon3d {
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  position: relative;
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 30%;
+  color: #fff;
+  isolation: isolate;
+  background: linear-gradient(152deg, var(--t-hi) 0%, var(--t-mid) 50%, var(--t-lo) 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgb(255 255 255 / 0.5),
+    inset 0 0 0 1px rgb(255 255 255 / 0.1),
+    inset 0 -3px 6px rgb(0 0 0 / 0.2),
+    0 1px 1px rgb(var(--shadow-color) / 0.18),
+    0 4px 8px -1px rgb(var(--t-glow) / 0.28),
+    0 12px 22px -6px rgb(var(--t-glow) / 0.42);
+  transition: transform 160ms var(--ease-calm), box-shadow 160ms var(--ease-calm);
+}
+.icon3d::before { /* grain */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: var(--noise);
+  background-size: 120px;
+  opacity: 0.12;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.icon3d::after { /* soft sheen from the top-left */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(120% 80% at 28% 0%, rgb(255 255 255 / 0.38), transparent 58%);
+  pointer-events: none;
+}
+.icon3d > svg { filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.3)); }
+.icon3d[data-pressed="true"],
+button.icon3d:active {
+  transform: translateY(2px) scale(0.96);
+  filter: brightness(0.93) saturate(1.05);
+  box-shadow:
+    inset 0 3px 8px rgb(0 0 0 / 0.42),
+    inset 0 0 0 1px rgb(255 255 255 / 0.07),
+    0 1px 1px rgb(var(--shadow-color) / 0.14),
+    0 2px 4px -1px rgb(var(--t-glow) / 0.2);
+}
+button.icon3d { cursor: pointer; border: 0; padding: 0; }
+@media (hover: hover) {
+  button.icon3d:hover:not(:active) { transform: translateY(-1px); }
+}
+.icon3d[data-tone="ember"] { --t-hi: #f0705c; --t-mid: #d3362f; --t-lo: #a1171f; --t-glow: 195 40 40; }
+.icon3d[data-tone="gold"] { --t-hi: #eab33d; --t-mid: #b87508; --t-lo: #85540a; --t-glow: 190 120 10; }
+.icon3d[data-tone="moss"] { --t-hi: #5fbf86; --t-mid: #2a8a55; --t-lo: #14603a; --t-glow: 30 120 70; }
+.icon3d[data-tone="sky"] { --t-hi: #6aa0f2; --t-mid: #2f66d6; --t-lo: #1a419c; --t-glow: 40 90 210; }
+.icon3d[data-tone="ink"] { --t-hi: #6a655d; --t-mid: #3b3732; --t-lo: #1d1a17; --t-glow: 30 26 22; }

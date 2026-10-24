@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import "@fontsource-variable/inter";
+import { sans, serif } from "./fonts";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -11,14 +11,14 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f4f0" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f0f12" },
+    { media: "(prefers-color-scheme: light)", color: "#faf6ee" },
+    { media: "(prefers-color-scheme: dark)", color: "#14110e" },
   ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${sans.variable} ${serif.variable}`}>
       <body>
         <a href="#main" className="skip-link">Skip to content</a>
         <Providers>{children}</Providers>
