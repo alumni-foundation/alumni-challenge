@@ -44,7 +44,7 @@ from app.modules.connections.models import Connection
 from app.modules.domain_events import service as domain_events_service
 from app.modules.files.models import File
 from app.modules.identity.models import Session, User, UserStatus
-from app.modules.identity.security import hash_password, verify_password
+from app.modules.identity.security import hash_password_async, verify_password_async
 from app.modules.memberships.models import Membership, MembershipStatus
 from app.modules.memberships.role_changes import lock_super_admins_and_check_one_remains
 from app.modules.moderation.models import Report
@@ -247,7 +247,7 @@ async def delete_account(db: AsyncSession, *, user: User, password: str) -> list
         limit=DELETE_LIMIT,
         window_seconds=DELETE_WINDOW_SECONDS,
     )
-    if not verify_password(password, user.password_hash):
+    if not await verify_password_async(password, user.password_hash):
         raise ValidationError("Your password is not correct.", code="invalid_current_password")
 
     # The platform must never be left without a super admin.
@@ -324,7 +324,7 @@ async def delete_account(db: AsyncSession, *, user: User, password: str) -> list
 
     user.email = f"deleted-{uid}@deleted.invalid"
     # Not a password anyone knows or could guess; the status below stops sign-in anyway.
-    user.password_hash = hash_password(secrets.token_urlsafe(32))
+    user.password_hash = await hash_password_async(secrets.token_urlsafe(32))
     user.email_verified_at = None
     user.age_confirmed_at = None
     user.security_stamp = uuid.uuid4()

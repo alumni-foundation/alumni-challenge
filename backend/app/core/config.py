@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import PostgresDsn, RedisDsn, SecretStr, model_validator
+from pydantic import Field, PostgresDsn, RedisDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 MIN_DEPLOYED_SECRET_KEY_LENGTH = 32
@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
     jwt_algorithm: str = "HS256"
+    # Password hashes running at once. Each uses 64 MiB, so this caps the memory they can take.
+    password_hash_concurrency: int = Field(default=2, ge=1, le=16)
 
     # Database
     database_url: PostgresDsn
