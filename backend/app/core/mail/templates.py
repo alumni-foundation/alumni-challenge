@@ -95,15 +95,40 @@ def _plain_page(text: str) -> str:
 
 
 def booking_confirmed_email(
-    *, event_title: str, when: str, reference: str, link: str
+    *,
+    event_title: str,
+    when: str,
+    reference: str,
+    link: str,
+    tickets: list[tuple[str, str]],
 ) -> EmailContent:
+    """`tickets` is (holder name, ticket link) for everyone in the booking."""
+    lines = "".join(f"  {name}: {ticket_link}\n" for name, ticket_link in tickets)
     text = (
         f"You are booked for {event_title} ({when}).\n\nYour reference is {reference}.\n"
-        f"See your booking: {link}\n"
+        f"See your booking: {link}\n\nTickets (show the QR code at the door):\n{lines}"
+        "\nEach link opens that person's ticket without signing in, so only share it with them.\n"
     )
     return EmailContent(
         subject=f"Booking confirmed: {event_title}", text=text, html=_plain_page(text)
     )
+
+
+def ticket_email(
+    *, event_title: str, when: str, holder_name: str, reference: str, link: str
+) -> EmailContent:
+    text = (
+        f"{holder_name}, you are booked for {event_title} ({when}).\n\n"
+        f"Your ticket (show the QR code at the door): {link}\n"
+        f"Booking reference: {reference}\n\nThe link opens your ticket without signing in, "
+        "so keep it to yourself.\n"
+    )
+    return EmailContent(subject=f"Your ticket: {event_title}", text=text, html=_plain_page(text))
+
+
+def event_message_email(*, event_title: str, subject: str, body: str) -> EmailContent:
+    text = f"A message from the organizers of {event_title}:\n\n{body}\n"
+    return EmailContent(subject=f"{event_title}: {subject}", text=text, html=_plain_page(text))
 
 
 def booking_cancelled_email(*, event_title: str, reference: str) -> EmailContent:

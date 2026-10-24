@@ -158,3 +158,114 @@ class BookingBrief(BaseModel):
     slot_id: uuid.UUID
     party_size: int
     hold_expires_at: datetime | None
+
+
+# ------------------------------------------------------------------------------ tickets
+
+
+class TicketEventInfo(BaseModel):
+    id: uuid.UUID
+    title: str
+    starts_at: datetime
+    ends_at: datetime
+    venue_name: str | None
+    venue_address: str | None
+
+
+class TicketOut(BaseModel):
+    """A ticket as shown to its holder. `code` is what the QR encodes: draw the QR from it in
+    the app. `status` is valid, checked_in or void (void whenever the booking is not confirmed)."""
+
+    code: str
+    status: str
+    holder_name: str
+    position: int
+    booking_reference: str
+    event: TicketEventInfo
+    slot: BookingSlotInfo
+    checked_in_at: datetime | None
+    claimed: bool
+
+
+class ClaimTicketRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=100)
+
+
+class CheckInRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=100)
+
+
+class CheckInResult(BaseModel):
+    result: str  # checked_in | already_checked_in
+    holder_name: str
+    position: int
+    booking_reference: str
+    slot: BookingSlotInfo
+    party_size: int
+    checked_in_at: datetime | None
+    # True when this organizer's scan was the one that first checked this person in.
+    first_scan_by_you: bool
+
+
+# ---------------------------------------------------------------------- organizer's day
+
+
+class RosterParticipant(BaseModel):
+    position: int
+    full_name: str
+    email: str | None
+    phone: str | None
+    listed: bool
+    claimed: bool
+    ticket_status: str | None
+    checked_in_at: datetime | None
+
+
+class RegistrationRow(BaseModel):
+    booking_id: uuid.UUID
+    reference: str
+    status: BookingStatus
+    created_at: datetime
+    slot: BookingSlotInfo
+    party_size: int
+    amount_minor: int
+    currency: str
+    booker_name: str
+    participants: list[RosterParticipant]
+    answers: list[AnswerOut]
+
+
+class TeeSheetSlot(BaseModel):
+    slot: BookingSlotInfo
+    capacity: int | None
+    seats_confirmed: int
+    seats_held: int
+    bookings: list[RegistrationRow]
+
+
+class MessageCreate(BaseModel):
+    subject: str = Field(min_length=1, max_length=200)
+    body: str = Field(min_length=1, max_length=5000)
+    slot_id: uuid.UUID | None = None
+
+    @field_validator("subject")
+    @classmethod
+    def _one_line(cls, v: str) -> str:
+        v = v.strip()
+        if not v or "\n" in v or "\r" in v:
+            raise ValueError("The subject must be a single line.")
+        return v
+
+    @field_validator("body")
+    @classmethod
+    def _body(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("The message cannot be empty.")
+        return v
+
+
+class MessageOut(BaseModel):
+    id: uuid.UUID
+    recipient_count: int
+    created_at: datetime

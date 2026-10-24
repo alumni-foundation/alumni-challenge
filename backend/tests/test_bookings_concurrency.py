@@ -28,6 +28,7 @@ from app.infrastructure.database.session import get_db_session
 from app.main import app
 from app.modules.bookings import seats
 from app.modules.bookings import service as bookings_service
+from app.modules.bookings import tickets as tickets_module
 from app.modules.bookings.models import Booking
 from app.modules.bookings.schemas import BookingCreate, ParticipantInput
 from app.modules.events.models import EventSlot
@@ -220,6 +221,7 @@ async def world() -> AsyncGenerator[World, None]:
             yield w
         finally:
             seats.capacity_check_hook = None
+            tickets_module.check_in_hook = None
             await w.cleanup()
     app.dependency_overrides.clear()
     await engine.dispose()
@@ -506,3 +508,53 @@ async def test_a_slot_that_stays_locked_gives_a_clean_retryable_503(
     # Nothing was left half-done: the same person can book as soon as the slot is free.
     again = await world.book(p, event)
     assert again.status_code == 201, again.text
+
+
+# ------------------------------------------------------------- 7. ten phones, one ticket
+
+
+async def test_ten_scans_of_one_ticket_at_once_agree_on_a_single_first_scan(world: World) -> None:
+    event = await world.event(capacity=5)
+    (p,) = await world.people(1)
+    booking = (await world.book(p, event)).json()
+    mine = await world.client.get(f"{API}/bookings/{booking['id']}/tickets", headers=p.headers)
+    code = mine.json()[0]["code"]
+    assert world.admin is not None
+
+    arrived = 0
+    both_here = asyncio.Event()
+
+    async def hold_between_read_and_write() -> None:
+        # Every scan that gets here has found the ticket unused. With the ticket locked only one
+        # gets here, so the wait times out; without the lock several arrive together.
+        nonlocal arrived
+        arrived += 1
+        if arrived >= 2:
+            both_here.set()
+        with contextlib.suppress(TimeoutError):
+            await asyncio.wait_for(both_here.wait(), timeout=1.0)
+
+    tickets_module.check_in_hook = hold_between_read_and_write
+    try:
+        results = await _scan_ten(world, event, code)
+    finally:
+        tickets_module.check_in_hook = None
+    assert {r.status_code for r in results} == {200}, [r.text for r in results]
+    outcomes = sorted(r.json()["result"] for r in results)
+    assert outcomes == ["already_checked_in"] * 9 + ["checked_in"]
+    assert len({r.json()["checked_in_at"] for r in results}) == 1
+
+
+async def _scan_ten(world: World, event: dict[str, Any], code: str) -> list[Response]:
+    assert world.admin is not None
+    results = await asyncio.gather(
+        *(
+            world.client.post(
+                f"{API}/events/{event['id']}/check-in",
+                json={"code": code},
+                headers=world.admin.headers,
+            )
+            for _ in range(10)
+        )
+    )
+    return list(results)

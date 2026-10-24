@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
+import { visitorHeaders } from "./visitor";
 
 export const ACCESS_COOKIE = "ac_access";
 export const REFRESH_COOKIE = "ac_refresh";
@@ -80,7 +81,7 @@ export type RefreshResult =
 const TTL_MS = 30_000;
 const inflight = new Map<string, { promise: Promise<RefreshResult>; at: number }>();
 
-export function refreshTokens(refreshToken: string): Promise<RefreshResult> {
+export function refreshTokens(refreshToken: string, visitor: Record<string, string> = {}): Promise<RefreshResult> {
   const now = Date.now();
   for (const [key, entry] of inflight) if (now - entry.at > TTL_MS) inflight.delete(key);
   const existing = inflight.get(refreshToken);
@@ -90,7 +91,7 @@ export function refreshTokens(refreshToken: string): Promise<RefreshResult> {
     try {
       const res = await fetch(`${apiBase()}/auth/refresh`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...visitor },
         body: JSON.stringify({ refresh_token: refreshToken }),
         cache: "no-store",
       });
@@ -119,7 +120,7 @@ export async function forwardPublicPost(req: NextRequest, apiPath: string): Prom
   try {
     const upstream = await fetch(`${apiBase()}/${apiPath}`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...visitorHeaders(req.headers) },
       body: await req.text(),
       cache: "no-store",
     });

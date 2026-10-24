@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
       <div className="space-y-5">
         <h1 className="text-title">Check your email</h1>
         <Alert tone="ok">If that email has an account, we sent a link.</Alert>
-        <p className="text-small text-muted">The link works for a short time. If nothing arrives, check your spam folder.</p>
+        <p className="text-small text-ink">The link works for a short time. If nothing arrives, check your spam folder.</p>
         <Link href="/login" className="flex min-h-11 items-center justify-center text-small font-medium text-brand-ink hover:underline">Back to log in</Link>
       </div>
     );
@@ -41,13 +41,13 @@ export default function ForgotPasswordPage() {
     <form onSubmit={submit} className="space-y-5" noValidate>
       <div>
         <h1 className="text-title">Forgot your password?</h1>
-        <p className="mt-1 text-small text-muted">Enter your email and we will send you a link to choose a new one.</p>
+        <p className="mt-2 text-body text-ink">Enter your email and we will send you a link to choose a new one.</p>
       </div>
       {error && <Alert>{error}</Alert>}
       <Field label="Email" htmlFor="email">
         <Input id="email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
       </Field>
-      <Button type="submit" className="w-full" loading={busy} disabled={!email.trim()}>Send me a link</Button>
+      <Button type="submit" variant="dark" className="w-full" loading={busy} disabled={!email.trim()}>Send me a link</Button>
       <Link href="/login" className="flex min-h-11 items-center justify-center text-small font-medium text-brand-ink hover:underline">Back to log in</Link>
     </form>
   );

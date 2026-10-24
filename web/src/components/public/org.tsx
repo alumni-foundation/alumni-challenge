@@ -1,6 +1,7 @@
 import { Building2 } from "lucide-react";
 import Link from "next/link";
 import { Card, EmptyState } from "@/components/ui";
+import { Reveal } from "@/components/ui/reveal";
 import type { Organization } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +22,7 @@ export function OrgLogo({ org, size = 48 }: { org: Pick<Organization, "name" | "
 }
 
 /** A grid of schools or partners, each linking to its own public page. */
-export function OrgGrid({ orgs, base, noun }: { orgs: Organization[] | null; base: "/schools" | "/partners"; noun: string }) {
+export function OrgGrid({ orgs, base, noun, reveal = false }: { orgs: Organization[] | null; base: "/schools" | "/partners"; noun: string; reveal?: boolean }) {
   if (orgs === null) {
     return <EmptyState title={`We can’t show ${noun} right now`} body="Please try again in a moment." />;
   }
@@ -30,8 +31,8 @@ export function OrgGrid({ orgs, base, noun }: { orgs: Organization[] | null; bas
   }
   return (
     <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {orgs.map((o) => (
-        <li key={o.id}>
+      {orgs.map((o, i) => {
+        const card = (
           <Link href={`${base}/${o.id}`} className="block h-full rounded-card">
             <Card interactive className="flex h-full items-start gap-3">
               <OrgLogo org={o} />
@@ -41,8 +42,19 @@ export function OrgGrid({ orgs, base, noun }: { orgs: Organization[] | null; bas
               </span>
             </Card>
           </Link>
-        </li>
-      ))}
+        );
+        return (
+          <li key={o.id}>
+            {reveal ? (
+              <Reveal from={i % 2 === 0 ? "left" : "right"} delay={(i % 3) * 90} className="h-full">
+                {card}
+              </Reveal>
+            ) : (
+              card
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

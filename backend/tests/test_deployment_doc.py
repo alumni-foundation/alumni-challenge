@@ -20,6 +20,7 @@ NOT_SETTINGS = {"WEB_CONCURRENCY"}
 # Secret values must be marked as such in the table.
 SECRET_FIELDS = {
     "SECRET_KEY",
+    "TICKET_SIGNING_KEY",
     "DATABASE_URL",
     "REDIS_URL",
     "STORAGE_ACCESS_KEY",

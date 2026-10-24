@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy import DateTime, Index, Integer, String, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -27,6 +27,16 @@ class DomainEvent(Base, UUIDPrimaryKeyMixin):
     """
 
     __tablename__ = "domain_events"
+    __table_args__ = (
+        # One row per dedupe key: publishing the same key twice is a no-op, so a repeated
+        # trigger (a retried request, a repeated payment callback) cannot queue a second email.
+        Index(
+            "uq_domain_events_dedupe_key",
+            "dedupe_key",
+            unique=True,
+            postgresql_where=text("dedupe_key IS NOT NULL"),
+        ),
+    )
 
     event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
@@ -39,6 +49,7 @@ class DomainEvent(Base, UUIDPrimaryKeyMixin):
         DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
     )
     dispatched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    dedupe_key: Mapped[str | None] = mapped_column(String(200), nullable=True)
     # After a failure the event waits until this time before it is tried again (see
     # service.retry_delay). Null means: ready now.
     next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

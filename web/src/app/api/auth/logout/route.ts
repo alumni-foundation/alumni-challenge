@@ -9,6 +9,7 @@ import {
   jsonError,
   refreshTokens,
 } from "@/lib/server/auth";
+import { visitorHeaders } from "@/lib/server/visitor";
 
 export async function POST(req: NextRequest) {
   if (!isSameOrigin(req)) return jsonError(403, "bad_origin", "Cross-site request blocked.");
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
   let access = jar.get(ACCESS_COOKIE)?.value;
   try {
     if (refresh && !access) {
-      const r = await refreshTokens(refresh);
+      const r = await refreshTokens(refresh, visitorHeaders(req.headers));
       if (r.ok) {
         access = r.tokens.access_token;
         refresh = r.tokens.refresh_token;
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     if (refresh && access) {
       await fetch(`${apiBase()}/auth/logout`, {
         method: "POST",
-        headers: { authorization: `Bearer ${access}`, "content-type": "application/json" },
+        headers: { ...visitorHeaders(req.headers), authorization: `Bearer ${access}`, "content-type": "application/json" },
         body: JSON.stringify({ refresh_token: refresh }),
         cache: "no-store",
       });

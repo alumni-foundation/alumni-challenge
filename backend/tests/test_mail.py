@@ -337,6 +337,7 @@ def test_production_links_must_be_https() -> None:
 def test_a_complete_production_mail_setup_is_accepted() -> None:
     ok = _settings(
         environment="production",
+        ticket_signing_key="a-ticket-key-that-is-long-enough-0123456789",
         mail_backend="resend",
         resend_api_key="re_x",
         frontend_url="https://alumni.example",
