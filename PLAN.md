@@ -155,6 +155,25 @@ Builder: solo. Status key: `[ ]` not done, `[x]` done.
 - Not a pass/fail item but recorded: 3 of the 10 runs (4, 6, 8) had one client-side `ReadError` each (a connection dropped on the load script's side; that one request has no answer). The checks above still held in those runs.
 - Not yet covered: slot-level waitlist promotion and the nightly counter check (slice 5.6), and payments (slice 5.5 and Phase 6). Re-run this gate after each.
 
+### Re-run on `backend/batch-1` (slice 5.5 payments, hash pool, keep-alive fix), GitHub Actions run 40112476038
+
+Same settings (2 workers, 200 in flight, 6 slots, 450 seats). Concurrency test, 20 rounds: **11 passed** (the 10 above plus the new confirm-versus-new-bookings race test), 84.4 s. Ten load runs: **0 overbooked, 0 counter mismatches, 450 / 450 seats every run, no problems reported, no client read errors.** (The load script is free-event only, so it does not exercise the payment path; the race test does.)
+
+| Run | Requests sent | Accepted (201) | Sold out (409) | Repeat in flight (409) | Requests/s | p95 ms | p99 ms | Slowest ms |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 3311 | 254 | 3029 | 28 | 103 | 3572 | 5505 | 7703 |
+| 2 | 3305 | 238 | 3035 | 32 | 110 | 3096 | 4245 | 5239 |
+| 3 | 3300 | 242 | 3022 | 36 | 101 | 3557 | 4815 | 5909 |
+| 4 | 3258 | 248 | 2979 | 31 | 100 | 4124 | 5657 | 7968 |
+| 5 | 3301 | 268 | 3009 | 24 | 87 | 4558 | 5850 | 7666 |
+| 6 | 3309 | 267 | 3004 | 38 | 103 | 3734 | 5229 | 6603 |
+| 7 | 3331 | 256 | 3045 | 30 | 96 | 4123 | 5722 | 7185 |
+| 8 | 3314 | 256 | 3023 | 35 | 95 | 4331 | 5953 | 8952 |
+| 9 | 3290 | 233 | 3025 | 32 | 93 | 4794 | 6036 | 7705 |
+| 10 | 3304 | 261 | 3005 | 38 | 99 | 3809 | 5148 | 7300 |
+
+The three client `ReadError`s of the first gate were a keep-alive race: the load script's client and uvicorn both closed idle connections after 5 s, so now and then the client sent on a connection the server was closing. Reproduced with uvicorn at equal 2 s timeouts on both sides (1 dropped request in 800) and not with the client's timeout shorter (0 in 800). Fixed by `--timeout-keep-alive 75` on the server and a 2 s idle limit in the script. This re-run had none. One clean run is consistent with the fix, not proof.
+
 ---
 
 ## PHASE 6: Payments (provider-agnostic, no M-Pesa yet)
