@@ -32,7 +32,7 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
 
   const expired = () => {
     const res = jsonError(401, "unauthorized", "Your session has expired.");
-    clearAuthCookies(res);
+    clearAuthCookies(req, res);
     return res;
   };
   const unavailable = () => jsonError(503, "unavailable", "The service is unavailable. Try again.");
@@ -78,7 +78,7 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
   const total = upstream.headers.get("x-total-count");
   if (total) headers["x-total-count"] = total;
   const res = new NextResponse(upstream.status === 204 ? null : text, { status: upstream.status, headers });
-  if (fresh) setAuthCookies(res, fresh);
+  if (fresh) setAuthCookies(req, res, fresh);
   return res;
 }
 

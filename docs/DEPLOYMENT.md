@@ -1,7 +1,7 @@
-# Deploying the Alumni Challenge API
+# Deploying the Alumni Challenge API and web app
 
-For the person setting up the servers. This covers the backend (API + worker). The web app
-(`web/`, Next.js) is deployed separately and only needs to know the API's address.
+For the person setting up the servers. Sections 1 to 10 cover the backend (API + worker). The web app (`web/`, Next.js) is deployed separately
+and only needs to know the API's address: its section is **Part 2** at the end.
 
 Everything below was run by hand against the real image, except where a line says **not
 yet tested**. If a step surprises you, the step is wrong: tell the developer.
@@ -269,3 +269,84 @@ they can read.
 * After a password change, another device's already-issued login token works for up to 15
   minutes (its refresh token is revoked at once).
 * Events, bookings and payments are not built yet.
+
+---
+
+# Part 2: the web app
+
+The web app is a Next.js server (`web/`). It talks to the API **from the server**: the browser only
+ever talks to the web app's own address, which forwards calls to the API. So the API does not need to
+be reachable from visitors' browsers for the app to work (it still needs a public address for
+Cloudflare, health checks and email links to the web app, which are built from the API's `FRONTEND_URL`).
+
+Proven by hand: the image below was built and run locally against the development API (health
+check, sign-in, pictures, cookies). **Not yet tested:** behind a real Cloudflare zone on a real domain.
+
+## W1. Build
+
+From the repository root:
+
+```
+docker build -t alumni-web:<version> --build-arg NEXT_PUBLIC_CONTACT_EMAIL=support@example.org web
+```
+
+Use the git commit as `<version>`. The image runs as the unprivileged `node` user, contains no
+`.env` and no source, and has its own health check.
+
+Without Docker, from `web/`: `npm ci`, then `npm run build`, then start with
+`API_URL=https://api.example.org npm run start` (port 3000, override with `PORT`).
+
+## W2. Environment variables
+
+| Variable | When read | Required | Meaning |
+|---|---|---|---|
+| `API_URL` | **runtime**, on the server | **yes** in production (the server answers 503 to every API call without it) | The API's address with no path and no trailing slash, as the web server reaches it: `https://api.example.org` or an internal address such as `http://api:8000`. Change it and restart; no rebuild. |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | **build time** (baked into the JavaScript) | no | Where "contact support" points. If unset, the contact page shows no address. Changing it needs a **rebuild** (`--build-arg`), not a restart. |
+| `PORT` | runtime | no | Default `3000`. |
+| `HOSTNAME` | runtime | no | Set to `0.0.0.0` in the image so the container is reachable. |
+| `NODE_ENV` | | no | Set to `production` by the image and by `npm run start`. |
+
+Anything else starting with `NEXT_PUBLIC_` would also be baked in at build time, so never put a
+secret in one. The web app holds **no secrets**: sign-in cookies are issued from the API's tokens.
+
+## W3. Start and health check
+
+The image's default command is `node server.js`. Run as many copies as you like **except** that
+token refresh sharing is per process: with more than one web container a visitor's parallel requests
+can occasionally each refresh the same token and be signed out. Run **one** web container until
+that is moved to Redis.
+
+Health check URL for the platform: `GET /api/health` returns `{"status":"ok"}` while the process is
+up. It does not call the API on purpose, so a short API outage does not restart the web app. The
+image already runs this check every 30 seconds.
+
+## W4. Behind Cloudflare
+
+* Proxy the web DNS record (orange cloud). SSL/TLS mode **Full (strict)**; the origin must offer
+  https to Cloudflare, or use Cloudflare Tunnel / the platform's own TLS.
+* The app sets the `Secure` flag on its sign-in cookies when the request arrived over https. It
+  decides from the `X-Forwarded-Proto` header, which Cloudflare and Coolify's proxy send. If your
+  proxy does not send it and terminates TLS, cookies will not be marked Secure: tell the developer.
+* **HSTS is left to Cloudflare.** Turn on "HTTP Strict Transport Security" in Cloudflare
+  (SSL/TLS, Edge Certificates) once https works everywhere; the web app does not send it itself.
+* Pictures are fetched at `https://<web address>/api/v1/files/<id>/content`, which the web app
+  forwards to the API. Public ones (logos) are sent with a one-year cache header. Cloudflare does not
+  cache an address with no file extension by default; a cache rule for that path is optional and
+  **not yet tested**.
+* **Known gap, tell the developer:** the web server calls the API itself, so the API sees the web
+  server's address for sign-in, register and password-reset calls, not the visitor's. Until the web
+  app forwards the visitor's address (`CF-Connecting-IP`) the API's per-address limits (for example 20
+  sign-ins per 15 minutes) are shared by **all** visitors.
+* Add Cloudflare's managed WAF rules and a rate-limiting rule on `/api/auth/*`. **Not yet tested.**
+
+## W5. Test after every web deploy
+
+Replace `WEB` with the web address.
+
+1. `curl -s WEB/api/health` is `{"status":"ok"}`.
+2. Open `WEB/` in a private window: the home page loads with no errors in the browser console.
+3. Open a public school page (`WEB/schools`): its logo shows. In a private window too.
+4. Sign in. In the browser's developer tools (Application, Cookies) `ac_access` and `ac_refresh` are
+   `HttpOnly` and `Secure`.
+5. Open Profile: your photo shows (if you have one). Copy the photo's address, remove `?token=...`
+   and open it: **404**.

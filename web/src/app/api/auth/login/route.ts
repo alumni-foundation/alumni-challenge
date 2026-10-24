@@ -24,6 +24,6 @@ export async function POST(req: NextRequest) {
     });
   }
   const res = NextResponse.json({ ok: true });
-  setAuthCookies(res, (await upstream.json()) as TokenPair);
+  setAuthCookies(req, res, (await upstream.json()) as TokenPair);
   return res;
 }

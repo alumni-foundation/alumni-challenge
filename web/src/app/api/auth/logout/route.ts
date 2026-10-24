@@ -35,6 +35,6 @@ export async function POST(req: NextRequest) {
     // The browser is signed out either way; the backend session expires on its own.
   }
   const res = new NextResponse(null, { status: 204 });
-  clearAuthCookies(res);
+  clearAuthCookies(req, res);
   return res;
 }

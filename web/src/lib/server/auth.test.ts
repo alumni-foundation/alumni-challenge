@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { refreshTokens } from "./auth";
+import { NextRequest, NextResponse } from "next/server";
+import { clearAuthCookies, isHttps, refreshTokens, setAuthCookies } from "./auth";
 
 const PAIR = { access_token: "new-access", refresh_token: "new-refresh", token_type: "bearer" };
 const json = (status: number, body: unknown = {}) =>
@@ -78,5 +79,34 @@ describe("refreshTokens", () => {
     fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
 
     expect(await refreshTokens(freshToken())).toEqual({ ok: false, reason: "unavailable" });
+  });
+});
+
+describe("cookie security follows the protocol the visitor used", () => {
+  const req = (url: string, proto?: string) =>
+    new NextRequest(url, { headers: proto ? { "x-forwarded-proto": proto } : {} });
+
+  it("is secure for https, directly or via a proxy header", () => {
+    expect(isHttps(req("https://example.org/"))).toBe(true);
+    expect(isHttps(req("http://10.0.0.5:3000/", "https"))).toBe(true);
+    expect(isHttps(req("http://10.0.0.5:3000/", "https, http"))).toBe(true);
+  });
+
+  it("is not secure for plain http", () => {
+    expect(isHttps(req("http://localhost:3000/"))).toBe(false);
+    expect(isHttps(req("http://localhost:3000/", "http"))).toBe(false);
+  });
+
+  it("sets and clears both cookies with the Secure flag only over https", () => {
+    const pair = { access_token: "a", refresh_token: "r", token_type: "bearer" };
+    for (const [r, expected] of [[req("https://example.org/"), true], [req("http://localhost:3000/"), false]] as const) {
+      const set = NextResponse.json({});
+      setAuthCookies(r, set, pair);
+      const cleared = NextResponse.json({});
+      clearAuthCookies(r, cleared);
+      for (const res of [set, cleared]) {
+        for (const name of ["ac_access", "ac_refresh"]) expect(res.cookies.get(name)?.secure ?? false).toBe(expected);
+      }
+    }
   });
 });

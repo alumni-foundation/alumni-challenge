@@ -5,11 +5,11 @@ export const REFRESH_COOKIE = "ac_refresh";
 
 export type TokenPair = { access_token: string; refresh_token: string; token_type: string };
 
-const secure = process.env.NODE_ENV === "production";
+const inProduction = process.env.NODE_ENV === "production";
 const REFRESH_MAX_AGE = 60 * 60 * 24 * 30; // matches backend refresh_token_expire_days
 
 export function apiBase(): string {
-  const url = process.env.API_URL ?? (secure ? undefined : "http://localhost:8000");
+  const url = process.env.API_URL ?? (inProduction ? undefined : "http://localhost:8000");
   if (!url) throw new Error("API_URL is not set");
   return `${url.replace(/\/$/, "")}/api/v1`;
 }
@@ -23,18 +23,28 @@ function jwtExp(token: string): number | undefined {
   }
 }
 
-export function setAuthCookies(res: NextResponse, tokens: TokenPair): void {
+/**
+ * True when the visitor reached us over https. Behind Cloudflare or another proxy the hop to this
+ * server is plain http, so the proxy's X-Forwarded-Proto says what the browser actually used.
+ * Cookies get the Secure flag only then: a Secure cookie set over plain http is silently dropped.
+ */
+export function isHttps(req: NextRequest): boolean {
+  const forwarded = req.headers.get("x-forwarded-proto")?.split(",")[0].trim().toLowerCase();
+  return forwarded ? forwarded === "https" : req.nextUrl.protocol === "https:";
+}
+
+export function setAuthCookies(req: NextRequest, res: NextResponse, tokens: TokenPair): void {
   const exp = jwtExp(tokens.access_token);
   // Access cookie expires 30s before the token does, so we refresh instead of sending a dead token.
   const maxAge = exp ? Math.max(exp - Math.floor(Date.now() / 1000) - 30, 1) : 600;
-  const base = { httpOnly: true, secure, sameSite: "lax" as const, path: "/" };
+  const base = { httpOnly: true, secure: isHttps(req), sameSite: "lax" as const, path: "/" };
   res.cookies.set(ACCESS_COOKIE, tokens.access_token, { ...base, maxAge });
   res.cookies.set(REFRESH_COOKIE, tokens.refresh_token, { ...base, maxAge: REFRESH_MAX_AGE });
 }
 
-export function clearAuthCookies(res: NextResponse): void {
+export function clearAuthCookies(req: NextRequest, res: NextResponse): void {
   for (const name of [ACCESS_COOKIE, REFRESH_COOKIE]) {
-    res.cookies.set(name, "", { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge: 0 });
+    res.cookies.set(name, "", { httpOnly: true, secure: isHttps(req), sameSite: "lax", path: "/", maxAge: 0 });
   }
 }
 
