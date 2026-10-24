@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Alumni Challenge: web app
 
-## Getting Started
+Next.js (App Router, TypeScript strict, Tailwind). It talks to the API from the server; the browser only
+talks to this app. Read `AGENTS.md` first: this Next.js version differs from older ones.
 
-First, run the development server:
+## Run
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+You need the API running (`docker compose up -d` in the repo root, API on http://localhost:8000).
+
+```
+npm ci
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Demo accounts: `docker compose exec api uv run python -m app.cli seed-demo` prints the shared password once.
+Keep it in an untracked file (`web/.env.demo-accounts` is ignored by git).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Check (all must pass before a commit)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
 
-## Learn More
+After the API's schema changes: `npm run api:types` regenerates `src/lib/api/schema.d.ts`.
 
-To learn more about Next.js, take a look at the following resources:
+## Environment variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Variable | When | Meaning |
+|---|---|---|
+| `API_URL` | runtime, server | The API's address, for example `http://localhost:8000`. Defaults to that in development; **required** in production. |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | build time | Address shown for "contact support". Baked into the build: change it, rebuild. |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Production
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`Dockerfile` builds the standalone server (non-root, health check at `/api/health`). Build and start
+commands, Cloudflare and the post-deploy checks are in `../docs/DEPLOYMENT.md`, Part 2.
