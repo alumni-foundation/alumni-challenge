@@ -14,10 +14,10 @@ const TONES: Icon3DTone[] = ["ember", "gold", "moss", "sky", "ink"];
 const SIZES: Icon3DSize[] = ["sm", "md", "lg"];
 const GLYPHS = [Search, HeartHandshake, Trophy, ShieldCheck, Compass];
 
-function Theme({ theme }: { theme: "light" | "dark" }) {
+function Theme({ theme }: { theme: "light" }) {
   return (
     <div data-theme={theme} className="space-y-10 rounded-sheet border border-line bg-canvas p-5 text-ink sm:p-8">
-      <h2 className="text-title">{theme === "light" ? "Light (default)" : "Dark (secondary)"}</h2>
+      <h2 className="text-title">Light</h2>
 
       <section className="space-y-3">
         <h3 className="text-heading">Colour</h3>
@@ -103,7 +103,6 @@ export default function DesignCheck() {
       <p className="text-small text-muted">Development only. Both themes are forced on their own panels, whatever the device setting.</p>
       <div className="grid gap-6 xl:grid-cols-2">
         <Theme theme="light" />
-        <Theme theme="dark" />
       </div>
     </main>
   );

@@ -1,4 +1,4 @@
-/** tone="dark" follows the theme's ink colour, so the mark stays visible in light and dark mode. */
+/** tone="dark" follows the theme's ink colour, so the mark stays visible. */
 export function Logo({ size = 36, tone = "light" }: { size?: number; tone?: "light" | "dark" }) {
   const mark = tone === "light" ? "#fff" : "var(--ink)";
   return (
