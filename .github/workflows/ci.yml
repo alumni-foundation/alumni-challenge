@@ -2,12 +2,44 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging, development]
   pull_request:
-    branches: [main]
+    branches: [main, staging, development]
   workflow_call:
 
 jobs:
+  promotion-path:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce branch promotion path
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          case "$BASE_REF" in
+            main)
+              if [ "$HEAD_REF" != "staging" ]; then
+                echo "::error::main only accepts pull requests from staging. Merge development into staging first, then open staging → main. development may pull from main, and must not merge into main."
+                exit 1
+              fi
+              ;;
+            staging)
+              if [ "$HEAD_REF" != "development" ] && [ "$HEAD_REF" != "main" ]; then
+                echo "::error::staging only accepts pull requests from development, or from main when bringing production commits back."
+                exit 1
+              fi
+              ;;
+            development)
+              ;;
+            *)
+              echo "::error::No promotion rule for base branch '$BASE_REF'."
+              exit 1
+              ;;
+          esac
+          echo "Promotion path ok: ${HEAD_REF} -> ${BASE_REF}"
+
   lint-and-test:
     runs-on: ubuntu-latest
     defaults:
