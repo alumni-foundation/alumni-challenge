@@ -22,22 +22,16 @@ export type ReportStatus = S["ReportStatus"];
 
 export type AuditLogEntry = S["AuditLogEntryResponse"];
 
-/**
- * One event in the list (GET /events). Written by hand from the API's EventSummary because the generated
- * schema file predates the events API; only the fields the app reads are here.
- */
-export type EventSummary = {
-  id: string;
-  title: string;
-  category: string;
-  starts_at: string;
-  ends_at: string;
-  venue_name: string | null;
-  poster_url: string | null;
-  price_minor: number;
-  currency: string;
-  going_count: number;
-  /** null when the event has no cap. */
-  spots_left: number | null;
-  availability: string;
-};
+/* Events, bookings and tickets (docs/events-api.md). */
+export type EventSummary = S["EventSummary"];
+export type EventDetail = S["EventDetail"];
+export type EventSlot = S["SlotOut"];
+export type EventQuestion = S["QuestionOut"];
+export type EventConsent = S["ConsentOut"];
+export type Booking = S["BookingOut"];
+export type BookingBrief = S["BookingBrief"];
+export type BookingStatus = S["BookingStatus"];
+export type BookingCreate = S["BookingCreate"];
+export type ParticipantInput = S["ParticipantInput"];
+export type AnswerInput = S["AnswerInput"];
+export type Ticket = S["TicketOut"];

@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { isPublicPath, isSignedOutOnly, isStaffArea, worksWithoutProfile } from "./routes";
 
 describe("isPublicPath", () => {
-  it.each(["/", "/schools", "/schools/abc", "/partners", "/partners/abc", "/terms", "/privacy", "/community-rules", "/contact", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/403", "/404", "/suspended"])(
+  it.each(["/", "/schools", "/schools/abc", "/partners", "/partners/abc", "/terms", "/privacy", "/community-rules", "/contact", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/403", "/404", "/suspended", "/events", "/events/abc"])(
     "lets anyone open %s",
     (p) => expect(isPublicPath(p)).toBe(true),
   );
 
-  it.each(["/home", "/directory", "/alumni/abc", "/connections", "/profile", "/settings", "/onboarding", "/admin", "/admin/reports", "/school/abc", "/partner/abc", "/start"])(
+  it.each(["/home", "/directory", "/alumni/abc", "/connections", "/profile", "/settings", "/onboarding", "/admin", "/admin/reports", "/school/abc", "/partner/abc", "/start", "/bookings", "/bookings/abc", "/tickets"])(
     "asks for a sign-in before %s",
     (p) => expect(isPublicPath(p)).toBe(false),
   );
@@ -15,6 +15,19 @@ describe("isPublicPath", () => {
   it("does not treat the staff /school and /partner areas as the public /schools and /partners", () => {
     expect(isPublicPath("/school/abc")).toBe(false);
     expect(isPublicPath("/schoolsfoo")).toBe(false);
+  });
+});
+
+describe("ticket pages", () => {
+  const code = "a".repeat(64);
+  it("opens a ticket page by its full code without a sign-in", () => {
+    expect(isPublicPath(`/tickets/${code}`)).toBe(true);
+  });
+  it("does not open the ticket list, or anything that only looks like a code", () => {
+    expect(isPublicPath("/tickets")).toBe(false);
+    expect(isPublicPath("/tickets/abc")).toBe(false);
+    expect(isPublicPath(`/tickets/${code}/extra`)).toBe(false);
+    expect(isPublicPath(`/tickets/${code.toUpperCase()}`)).toBe(false);
   });
 });
 

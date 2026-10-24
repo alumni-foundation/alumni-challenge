@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  Building2, Check, ChevronDown, FileText, Globe, GraduationCap, Home, LayoutDashboard, LogOut, Pencil, Repeat, ScrollText,
-  PanelLeftClose, PanelLeftOpen, Search, Settings, ShieldCheck, User, UserPlus, Users,
+  Building2, CalendarCheck, CalendarDays, Check, ChevronDown, FileText, Globe, GraduationCap, Home, LayoutDashboard, LogOut, Pencil, Repeat, ScrollText,
+  PanelLeftClose, PanelLeftOpen, Search, Settings, ShieldCheck, Ticket, User, UserPlus, Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -31,9 +31,10 @@ type NavItem = {
 const MEMBER_NAV: NavItem[] = [
   { label: "Home", href: "/home", icon: Home },
   { label: "Directory", href: "/directory", icon: Users, also: ["/alumni"] },
+  { label: "Events", href: "/events", icon: CalendarDays, also: ["/bookings", "/tickets"] },
   { label: "Connections", href: "/connections", icon: UserPlus },
   { label: "My profile", href: "/profile", icon: User },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Settings", href: "/settings", icon: Settings, desktopOnly: true },
 ];
 const MEMBER_VIEW_ITEM: NavItem = { label: "Member view", href: "/home", icon: Home };
 
@@ -241,6 +242,12 @@ function ProfileMenu({ profile, placement = "down" }: { profile: Profile | null;
           </div>
           <Link role="menuitem" href="/profile" onClick={() => setOpen(false)} className={menuItem}>
             <User className="size-4" aria-hidden /> My profile
+          </Link>
+          <Link role="menuitem" href="/bookings" onClick={() => setOpen(false)} className={menuItem}>
+            <CalendarCheck className="size-4" aria-hidden /> My bookings
+          </Link>
+          <Link role="menuitem" href="/tickets" onClick={() => setOpen(false)} className={menuItem}>
+            <Ticket className="size-4" aria-hidden /> My tickets
           </Link>
           <Link role="menuitem" href="/settings" onClick={() => setOpen(false)} className={menuItem}>
             <Settings className="size-4" aria-hidden /> Settings
