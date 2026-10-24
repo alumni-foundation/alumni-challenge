@@ -1,78 +1,86 @@
-import { ArrowRight, Building2, Handshake } from "lucide-react";
-import { getImageProps } from "next/image";
+import { ArrowRight, Building2, Handshake, LogIn } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { PublicHeader } from "@/components/public/header";
 import { Icon3D } from "@/components/ui/icon3d"; // direct import: the ui index is a client module
-import heroLight from "@/assets/hero-group.jpg";
-import { cn } from "@/lib/utils";
+import hero from "@/assets/hero.jpg";
 
 export type HeroStat = { icon: React.ElementType; tone: "ember" | "gold" | "sky"; value: string; label: string };
 
-/** Counts below this say "we are small" rather than "we are a community", so the strip stays hidden. */
+/** Counts below this say "we are small" rather than "we are a community", so the stat panel stays hidden. */
 export const MIN_STAT = 10;
 
-const pill =
-  "inline-flex h-12 items-center justify-center gap-2 rounded-full px-7 text-body font-medium transition-[background-color,transform] duration-150 active:scale-[0.98]";
-
 /**
- * The hero. The text sits on the page colour; the photo stands on the page, anchored bottom-right on
- * wide screens and under the text on phones. Readability does not depend on the picture: a scrim in the
- * page colour runs from the text side and fades out toward the people, and the photo fades into the
- * page at its top and bottom. Contrast is measured against the worst pixels behind the text, not eyeballed.
+ * A full-bleed photograph in a rounded card, with the nav, headline and buttons on top. White text
+ * stays AA over any picture because of the scrim: dark warm, strongest under the text column and
+ * fading out toward the right, or over the whole picture on phones. Keep that true when swapping the photo.
  */
 export function Hero({ signedIn, stats }: { signedIn: boolean; stats: HeroStat[] }) {
-  const common = { alt: "", sizes: "(min-width: 1024px) 48vw, 100vw", quality: 70, loading: "eager" as const, fetchPriority: "high" as const };
-  const light = getImageProps({ ...common, src: heroLight, placeholder: "blur" }).props;
-
   return (
-    <section className="relative isolate overflow-hidden bg-canvas">
-      <PublicHeader bare />
-
-      <div className="relative flex flex-col lg:block lg:h-[min(53.4vw,56rem)]">
-        {/* The photo. pointer-events-none so it can never sit on top of a button. */}
-        <picture className="pointer-events-none mix-blend-multiply relative order-2 -z-10 -mt-24 block aspect-[576/641] w-full sm:mx-auto sm:max-w-lg lg:absolute lg:bottom-0 lg:right-0 lg:mt-0 lg:w-[min(48vw,780px)] lg:max-w-none">
-          <img {...light} alt="" className="hero-photo size-full object-cover" />
-        </picture>
-
-        {/* Scrim: the page colour, solid behind the text, fading to nothing toward the people. */}
+    <section className="p-3 sm:p-4">
+      <div className="relative isolate flex min-h-[44rem] flex-col overflow-hidden rounded-[1.75rem] bg-side text-white shadow-lifted sm:min-h-[46rem] sm:rounded-[2.25rem] lg:min-h-[max(42rem,calc(100svh-2rem))]">
+        <Image
+          src={hero}
+          alt=""
+          fill
+          sizes="100vw"
+          quality={60}
+          placeholder="blur"
+          loading="eager"
+          fetchPriority="high"
+          className="-z-20 object-cover object-[65%_50%]"
+        />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(90deg,var(--canvas)_0%,var(--canvas)_36%,transparent_60%)] lg:block"
+          className="absolute inset-0 -z-10 bg-[rgb(14_10_6/0.76)] lg:bg-transparent lg:bg-[linear-gradient(90deg,rgb(14_10_6/0.8)_0,rgb(14_10_6/0.76)_640px,rgb(14_10_6/0)_calc(640px+24vw))]"
         />
 
-        <div className="relative z-10 order-1 mx-auto flex w-full lg:h-full max-w-6xl flex-col justify-start px-4 pt-8 sm:px-6 lg:justify-center lg:px-10 lg:pt-0">
-          <div className="max-w-xl lg:max-w-[min(34rem,50%)]">
-            <h1 className="text-hero font-semibold text-ink">
-              Where alumni of Kenyan schools meet, <em className="accent-serif">connect</em> and <em className="accent-serif">belong</em>.
+        <PublicHeader overlay />
+
+        <div className="flex flex-1 flex-col justify-center px-5 pb-10 pt-40 sm:px-8 lg:px-12 lg:pt-28">
+          <div className="max-w-xl">
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-caption font-medium text-white backdrop-blur-md">
+              <span className="size-1.5 rounded-full bg-[#e8c48a]" aria-hidden /> For alumni of Kenyan schools
+            </p>
+            <h1 className="mt-6 text-hero font-medium text-white">
+              Where alumni<br />
+              <em className="accent-serif text-[#ecc98f]">connect</em><br />
+              and belong.
             </h1>
-            <p className="mt-5 max-w-md text-lead text-muted">
+            <p className="mt-6 max-w-md text-lead text-white/90">
               Find classmates, stay close to your school, and keep the community that shaped you.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href={signedIn ? "/start" : "/register"} className={cn(pill, "bg-brand text-white shadow-raised hover:bg-brand-dark")}>
+            <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
+              <Link
+                href={signedIn ? "/start" : "/register"}
+                className="inline-flex h-12 items-center gap-2 rounded-full bg-[#1b1713] px-7 text-body font-medium text-white shadow-lifted ring-1 ring-white/15 transition-colors hover:bg-black"
+              >
                 {signedIn ? "Open my home" : "Get started"} <ArrowRight className="size-4" aria-hidden />
               </Link>
-              <Link href={signedIn ? "#schools" : "/login"} className={cn(pill, "border border-line-strong text-ink hover:bg-sunken")}>
+              <Link href={signedIn ? "#schools" : "/login"} className="group inline-flex items-center gap-3 text-body font-medium text-white">
+                <span className="grid size-12 place-items-center rounded-full border border-white/50 bg-white/10 backdrop-blur-md transition-colors group-hover:bg-white/20">
+                  <LogIn className="size-4" aria-hidden />
+                </span>
                 {signedIn ? "See schools" : "Log in"}
               </Link>
             </div>
           </div>
         </div>
-      </div>
 
-      {stats.length > 0 && (
-        <div className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-6 sm:px-6 lg:px-10">
-          <dl className="grid w-full max-w-lg grid-cols-2 divide-x divide-line rounded-sheet border border-line bg-surface/80 py-4 shadow-resting backdrop-blur-xl sm:py-5">
-            {stats.map((s) => (
-              <div key={s.label} className="flex flex-col items-center gap-2 px-3 text-center">
-                <Icon3D icon={s.icon} tone={s.tone} size="sm" />
-                <dd className="text-heading font-semibold leading-none text-ink">{s.value}</dd>
-                <dt className="text-caption text-muted">{s.label}</dt>
-              </div>
-            ))}
-          </dl>
-        </div>
-      )}
+        {stats.length > 0 && (
+          <div className="px-5 pb-6 sm:px-8 sm:pb-8 lg:px-12">
+            <dl className="grid w-full max-w-md grid-cols-2 divide-x divide-white/20 rounded-sheet border border-white/20 bg-[rgb(20_14_8/0.5)] py-4 backdrop-blur-xl sm:py-5">
+              {stats.map((s) => (
+                <div key={s.label} className="flex flex-col items-center gap-2 px-3 text-center">
+                  <Icon3D icon={s.icon} tone={s.tone} size="sm" />
+                  <dd className="font-serif text-heading font-semibold leading-none text-white">{s.value}</dd>
+                  <dt className="text-caption text-white/90">{s.label}</dt>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

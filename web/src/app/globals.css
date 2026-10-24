@@ -55,7 +55,7 @@
 
 /* ---- Tailwind theme: names the rest of the app uses ------------------------------------- */
 @theme inline {
-  --font-sans: var(--font-inter), "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-jost), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --font-serif: var(--font-serif-face), "Iowan Old Style", "Times New Roman", serif;
 
@@ -99,8 +99,8 @@
   --text-display: 2.25rem;
   --text-display--line-height: 2.5rem;
   /* The landing headline. Serif accent words get .accent-serif. */
-  --text-hero: clamp(2.25rem, 1.2rem + 3.2vw, 4.25rem);
-  --text-hero--line-height: 1.04;
+  --text-hero: clamp(2.5rem, 1.4rem + 3.4vw, 4.5rem);
+  --text-hero--line-height: 1;
   --text-hero--letter-spacing: -0.025em;
 
   /* Shape */
@@ -135,15 +135,12 @@ body {
 
 /* Headings share one voice. Pages pick the size with text-title / text-heading. */
 h1, h2, h3 { font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+/* h1 and h2 are set in the display serif. It has a small x-height, so font-size-adjust keeps it
+   the same apparent size as the sans it replaced. */
+h1, h2 { font-family: var(--font-serif); font-weight: 600; letter-spacing: -0.015em; font-size-adjust: 0.5; }
 
-/* One or two serif words in a headline: <em className="accent-serif">belong</em>. */
-.accent-serif {
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  font-size: 1.1em; /* the serif sets small beside the sans, so it is nudged up to match */
-}
+/* One or two words in a headline set in italic: <em className="accent-serif">belong</em>. */
+.accent-serif { font-family: var(--font-serif); font-style: italic; font-weight: 500; }
 
 /* Calm entrance for sheets, menus and toasts. */
 @keyframes rise-in {
@@ -237,11 +234,3 @@ button.icon3d { cursor: pointer; border: 0; padding: 0; }
 .icon3d[data-tone="moss"] { --t-hi: #5fbf86; --t-mid: #2a8a55; --t-lo: #14603a; --t-glow: 30 120 70; }
 .icon3d[data-tone="sky"] { --t-hi: #6aa0f2; --t-mid: #2f66d6; --t-lo: #1a419c; --t-glow: 40 90 210; }
 .icon3d[data-tone="ink"] { --t-hi: #6a655d; --t-mid: #3b3732; --t-lo: #1d1a17; --t-glow: 30 26 22; }
-
-/* ---- Landing hero photo ------------------------------------------------------------------- */
-/* The photo's white studio backdrop is multiplied into the page ivory (the file has its backdrop
-   levelled to pure white for this), and the photo fades out at the top and bottom, so no edge is drawn. */
-.hero-photo {
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 84%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 84%, transparent 100%);
-}
