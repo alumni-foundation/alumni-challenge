@@ -91,7 +91,7 @@ export default function SettingsPage() {
                   <p className="truncate font-medium">{s.device_label || "Unknown device"}</p>
                   <p className="text-caption text-muted">{s.ip_address ?? "Unknown address"} · Last used {formatDate(s.last_used_at)}</p>
                 </div>
-                <Button variant="secondary" size="sm" onClick={() => setEnding(s)}>Log out this device</Button>
+                <Button variant="secondary" size="sm" className="shrink-0 whitespace-nowrap" onClick={() => setEnding(s)}>Log out this device</Button>
               </li>
             ))}
           </ul>

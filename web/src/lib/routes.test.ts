@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPublicPath, isSignedOutOnly, isStaffArea } from "./routes";
+import { isPublicPath, isSignedOutOnly, isStaffArea, worksWithoutProfile } from "./routes";
 
 describe("isPublicPath", () => {
   it.each(["/", "/schools", "/schools/abc", "/partners", "/partners/abc", "/terms", "/privacy", "/community-rules", "/contact", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/403", "/404", "/suspended"])(
@@ -31,5 +31,12 @@ describe("isStaffArea", () => {
   it("covers admin, school and partner pages only", () => {
     expect(["/admin", "/admin/reports", "/school/abc", "/partner/abc/edit"].every(isStaffArea)).toBe(true);
     expect(["/home", "/schools", "/partners/abc", "/adminfoo", "/directory"].some(isStaffArea)).toBe(false);
+  });
+});
+
+describe("worksWithoutProfile", () => {
+  it("covers staff areas and Settings, but not member pages", () => {
+    expect(["/admin/reports", "/school/abc", "/partner/abc", "/settings"].every(worksWithoutProfile)).toBe(true);
+    expect(["/home", "/directory", "/profile", "/connections", "/settings/x"].some(worksWithoutProfile)).toBe(false);
   });
 });

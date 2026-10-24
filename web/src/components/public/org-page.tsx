@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EmptyState, LinkButton } from "@/components/ui";
+import { hasSession } from "@/lib/server/auth";
 import { fetchOrg } from "@/lib/server/public-api";
 import { OrgLogo } from "./org";
 
@@ -15,6 +16,7 @@ export async function OrgPage({ id, type }: { id: string; type: "school" | "part
   const { org } = result;
   if (org.type !== type) notFound();
 
+  const signedIn = await hasSession();
   const back = type === "school" ? { href: "/schools", label: "All schools" } : { href: "/partners", label: "All partners" };
   return (
     <article className="mx-auto max-w-2xl">
@@ -26,13 +28,15 @@ export async function OrgPage({ id, type }: { id: string; type: "school" | "part
         <h1 className="text-title">{org.name}</h1>
       </div>
       {org.description && <p className="mt-6 whitespace-pre-line text-body">{org.description}</p>}
-      <div className="mt-8 rounded-card border border-line bg-surface p-5">
-        <p className="font-semibold">
-          {type === "school" ? `Went to ${org.name}?` : `Part of the ${org.name} community?`}
-        </p>
-        <p className="mt-1 text-small text-muted">Create an account to find fellow alumni and stay connected.</p>
-        <LinkButton href="/register" className="mt-4 w-full sm:w-auto">Join the alumni network</LinkButton>
-      </div>
+      {!signedIn && (
+        <div className="mt-8 rounded-card border border-line bg-surface p-5">
+          <p className="font-semibold">
+            {type === "school" ? `Went to ${org.name}?` : `Part of the ${org.name} community?`}
+          </p>
+          <p className="mt-1 text-small text-muted">Create an account to find fellow alumni and stay connected.</p>
+          <LinkButton href="/register" className="mt-4 w-full sm:w-auto">Join the alumni network</LinkButton>
+        </div>
+      )}
     </article>
   );
 }

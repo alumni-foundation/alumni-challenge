@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
 export const ACCESS_COOKIE = "ac_access";
@@ -7,6 +8,11 @@ export type TokenPair = { access_token: string; refresh_token: string; token_typ
 
 const inProduction = process.env.NODE_ENV === "production";
 const REFRESH_MAX_AGE = 60 * 60 * 24 * 30; // matches backend refresh_token_expire_days
+
+/** Whether this visitor has a session cookie. Public pages use it to stop offering sign-up to members. */
+export async function hasSession(): Promise<boolean> {
+  return (await cookies()).has(REFRESH_COOKIE);
+}
 
 export function apiBase(): string {
   const url = process.env.API_URL ?? (inProduction ? undefined : "http://localhost:8000");

@@ -1,8 +1,7 @@
-import { cookies } from "next/headers";
 import Link from "next/link";
 import { Logo } from "@/components/shell/logo";
 import { LinkButton } from "@/components/ui";
-import { REFRESH_COOKIE } from "@/lib/server/auth";
+import { hasSession } from "@/lib/server/auth";
 
 const LINKS = [
   { href: "/schools", label: "Schools" },
@@ -10,7 +9,7 @@ const LINKS = [
 ];
 
 export async function PublicHeader() {
-  const signedIn = (await cookies()).has(REFRESH_COOKIE);
+  const signedIn = await hasSession();
   return (
     <header className="border-b border-line bg-surface">
       <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3 sm:px-6">

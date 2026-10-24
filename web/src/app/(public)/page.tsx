@@ -2,6 +2,7 @@ import { HeartHandshake, Search, Trophy } from "lucide-react";
 import Link from "next/link";
 import { OrgGrid } from "@/components/public/org";
 import { LinkButton } from "@/components/ui";
+import { hasSession } from "@/lib/server/auth";
 import { fetchOrgs } from "@/lib/server/public-api";
 
 const POINTS = [
@@ -23,7 +24,7 @@ const POINTS = [
 ];
 
 export default async function Home() {
-  const [schools, partners] = await Promise.all([fetchOrgs("school"), fetchOrgs("partner")]);
+  const [schools, partners, signedIn] = await Promise.all([fetchOrgs("school"), fetchOrgs("partner"), hasSession()]);
   return (
     <div className="space-y-16">
       <section className="max-w-2xl">
@@ -32,8 +33,14 @@ export default async function Home() {
           Reconnect with the people you shared a school with, and stay part of the community that shaped you.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <LinkButton href="/register" className="sm:min-w-40">Sign up</LinkButton>
-          <LinkButton href="/login" variant="secondary" className="sm:min-w-40">Log in</LinkButton>
+          {signedIn ? (
+            <LinkButton href="/start" className="sm:min-w-40">Open my home</LinkButton>
+          ) : (
+            <>
+              <LinkButton href="/register" className="sm:min-w-40">Sign up</LinkButton>
+              <LinkButton href="/login" variant="secondary" className="sm:min-w-40">Log in</LinkButton>
+            </>
+          )}
         </div>
       </section>
 
@@ -66,11 +73,13 @@ export default async function Home() {
         <OrgGrid orgs={partners?.slice(0, 6) ?? null} base="/partners" noun="partners" />
       </section>
 
-      <section className="rounded-sheet bg-side p-6 text-white sm:p-10">
-        <h2 className="text-title">Ready to find your school family?</h2>
-        <p className="mt-2 max-w-xl text-white/75">Creating an account is free and takes about a minute.</p>
-        <LinkButton href="/register" className="mt-5">Join the alumni network</LinkButton>
-      </section>
+      {!signedIn && (
+        <section className="rounded-sheet bg-side p-6 text-white sm:p-10">
+          <h2 className="text-title">Ready to find your school family?</h2>
+          <p className="mt-2 max-w-xl text-white/75">Creating an account is free and takes about a minute.</p>
+          <LinkButton href="/register" className="mt-5">Join the alumni network</LinkButton>
+        </section>
+      )}
     </div>
   );
 }

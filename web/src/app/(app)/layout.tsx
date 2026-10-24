@@ -6,7 +6,7 @@ import { AppShell } from "@/components/shell/app-shell";
 import { Alert, Button, Spinner } from "@/components/ui";
 import { useMe, useMyProfile, useRoles } from "@/lib/api/hooks";
 import { isAnyAdmin } from "@/lib/roles";
-import { isStaffArea } from "@/lib/routes";
+import { worksWithoutProfile } from "@/lib/routes";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const me = useMe();
@@ -20,7 +20,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // work in their own area without one; the member pages still ask them to create it.
   // Staff also need to open other people's profiles (to review a report, or to verify someone).
   const viewingProfile = pathname.startsWith("/alumni/") && isAnyAdmin(roles.data);
-  const staffArea = isStaffArea(pathname) || viewingProfile;
+  const staffArea = worksWithoutProfile(pathname) || viewingProfile;
 
   useEffect(() => {
     // Wait for the roles: they decide whether a missing member profile matters on this page.

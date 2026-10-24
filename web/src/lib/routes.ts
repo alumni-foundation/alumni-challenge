@@ -30,3 +30,9 @@ export const isSignedOutOnly = (pathname: string) => SIGNED_OUT_ONLY.has(pathnam
 /** The staff areas. Someone working here does not need a member (alumni) profile. */
 export const isStaffArea = (pathname: string) =>
   ["/admin", "/school", "/partner"].some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+/**
+ * Pages that work without a member (alumni) profile: the staff areas, and Settings, which is about
+ * the account (password, devices, data) and not the member profile.
+ */
+export const worksWithoutProfile = (pathname: string) => isStaffArea(pathname) || pathname === "/settings";
