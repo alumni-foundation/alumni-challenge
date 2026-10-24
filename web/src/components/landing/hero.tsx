@@ -13,31 +13,35 @@ export const MIN_STAT = 10;
 /**
  * A full-bleed photograph in a rounded card, with the nav, headline and buttons on top. White text
  * stays AA over any picture because of the scrim: dark warm, strongest under the text column and
- * fading out toward the right, or over the whole picture on phones. Keep that true when swapping the photo.
+ * fading out toward the right, and absent below xl, where the text is on the card, not the photo. Keep that true when swapping the photo.
  */
 export function Hero({ signedIn, stats }: { signedIn: boolean; stats: HeroStat[] }) {
   return (
     <section className="p-3 sm:p-4">
-      <div className="relative isolate flex min-h-[44rem] flex-col overflow-hidden rounded-[1.75rem] bg-side text-white shadow-lifted sm:min-h-[46rem] sm:rounded-[2.25rem] lg:min-h-[max(42rem,calc(100svh-2rem))]">
-        <Image
-          src={hero}
-          alt=""
-          fill
-          sizes="100vw"
-          quality={60}
-          placeholder="blur"
-          loading="eager"
-          fetchPriority="high"
-          className="-z-20 object-cover object-[65%_50%]"
-        />
+      <div className="relative isolate flex flex-col overflow-hidden rounded-[1.75rem] bg-side text-white shadow-lifted sm:rounded-[2.25rem] xl:min-h-[max(42rem,calc(100svh-2rem))]">
+        {/* Below xl the text sits on the card and the group is shown whole underneath it, fading up into the card.
+            From xl the photo fills the card and the text sits on its dark left side. */}
+        <div className="absolute inset-x-0 bottom-0 -z-20 h-[20rem] [mask-image:linear-gradient(to_bottom,transparent,#000_32%)] sm:h-[25rem] xl:inset-0 xl:h-auto xl:[mask-image:none]">
+          <Image
+            src={hero}
+            alt=""
+            fill
+            sizes="100vw"
+            quality={70}
+            placeholder="blur"
+            loading="eager"
+            fetchPriority="high"
+            className="object-cover object-[88%_30%] xl:object-[100%_30%]"
+          />
+        </div>
         <div
           aria-hidden
-          className="absolute inset-0 -z-10 bg-[rgb(14_10_6/0.76)] lg:bg-transparent lg:bg-[linear-gradient(90deg,rgb(14_10_6/0.8)_0,rgb(14_10_6/0.76)_640px,rgb(14_10_6/0)_calc(640px+24vw))]"
+          className="absolute inset-0 -z-10 hidden xl:block xl:bg-[linear-gradient(90deg,rgb(14_10_6/0.7)_0,rgb(14_10_6/0.62)_620px,rgb(14_10_6/0)_calc(620px+20vw))]"
         />
 
         <PublicHeader overlay />
 
-        <div className="flex flex-1 flex-col justify-center px-5 pb-10 pt-40 sm:px-8 lg:px-12 lg:pt-28">
+        <div className="flex flex-1 flex-col justify-center px-5 pb-[21rem] pt-40 sm:px-8 sm:pb-[26rem] xl:px-12 xl:pb-10 xl:pt-28">
           <div className="max-w-xl">
             <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-caption font-medium text-white backdrop-blur-md">
               <span className="size-1.5 rounded-full bg-[#e8c48a]" aria-hidden /> For alumni of Kenyan schools
@@ -73,7 +77,7 @@ export function Hero({ signedIn, stats }: { signedIn: boolean; stats: HeroStat[]
               {stats.map((s) => (
                 <div key={s.label} className="flex flex-col items-center gap-2 px-3 text-center">
                   <Icon3D icon={s.icon} tone={s.tone} size="sm" />
-                  <dd className="font-serif text-heading font-semibold leading-none text-white">{s.value}</dd>
+                  <dd className="text-heading font-semibold leading-none text-white">{s.value}</dd>
                   <dt className="text-caption text-white/90">{s.label}</dt>
                 </div>
               ))}

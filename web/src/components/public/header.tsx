@@ -23,10 +23,10 @@ export async function PublicHeader({ overlay = false }: { overlay?: boolean }) {
   if (overlay) {
     return (
       <header className="absolute inset-x-0 top-0 z-20 text-white">
-        <div className="relative flex items-center gap-3 px-5 py-4 sm:px-8 sm:py-6 lg:px-12">
+        <div className="relative flex items-center gap-2 px-4 py-4 sm:gap-3 sm:px-8 sm:py-6 lg:px-12">
           <Link href="/" className="flex min-h-11 items-center gap-2.5" aria-label="Alumni Challenge home">
-            <Logo size={34} tone="light" />
-            <span className="whitespace-nowrap font-serif text-xl font-semibold tracking-wide sm:text-2xl">Alumni Challenge</span>
+            <Logo size={32} tone="light" />
+            <span className="whitespace-nowrap text-caption font-semibold uppercase tracking-[0.1em] sm:text-body sm:tracking-[0.14em]">Alumni Challenge</span>
           </Link>
           <nav aria-label="Main" className="absolute left-1/2 hidden -translate-x-1/2 gap-1 rounded-full bg-[rgb(20_14_8/0.62)] px-2 backdrop-blur-md lg:flex">
             {OVERLAY_LINKS.map((l) => (
@@ -44,9 +44,14 @@ export async function PublicHeader({ overlay = false }: { overlay?: boolean }) {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-1">
+            {!signedIn && (
+              <Link href="/login" className="mr-1 hidden h-11 items-center rounded-full bg-[rgb(20_14_8/0.62)] px-5 text-small font-medium text-white backdrop-blur-md transition-colors hover:bg-[rgb(20_14_8/0.8)] sm:inline-flex">
+                Log in
+              </Link>
+            )}
             <Link
               href={signedIn ? "/start" : "/register"}
-              className="inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full bg-[#1b1713] px-5 text-small font-medium text-white shadow-lifted transition-colors hover:bg-black"
+              className="inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full bg-[#1b1713] px-4 text-small sm:px-5 font-medium text-white shadow-lifted transition-colors hover:bg-black"
             >
               {signedIn ? "Open my home" : "Get started"} <ArrowRight className="size-4" aria-hidden />
             </Link>
@@ -68,7 +73,7 @@ export async function PublicHeader({ overlay = false }: { overlay?: boolean }) {
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-10">
         <Link href="/" className="flex min-h-11 items-center gap-2.5" aria-label="Alumni Challenge home">
           <Logo size={32} tone="dark" />
-          <span className="hidden font-serif text-xl font-semibold tracking-wide sm:inline">Alumni Challenge</span>
+          <span className="hidden font-semibold uppercase tracking-[0.14em] sm:inline">Alumni Challenge</span>
         </Link>
         <nav aria-label="Main" className="ml-4 hidden gap-1 sm:flex">
           {LINKS.map((l) => (
