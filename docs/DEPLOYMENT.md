@@ -141,6 +141,10 @@ schema. Take a database backup (section 8) before any deploy that adds a migrati
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY} --timeout-keep-alive 75 --no-access-log
 ```
 
+`--timeout-keep-alive 75` keeps idle connections open longer than any proxy or client waits, so a
+client never sends on a connection the server is closing (uvicorn's default of 5 s caused rare
+dropped requests under load).
+
 Health check URL for the platform: `GET /health/live` (is the process alive). To decide
 whether to send traffic, use `GET /health/ready` (database reachable).
 
