@@ -89,5 +89,5 @@ jobs:
             echo "Set the COOLIFY_TOKEN and COOLIFY_STAGING_WEBHOOK repository secrets, then re-run this job."
             exit 1
           fi
-          curl --fail-with-body --request GET "$COOLIFY_STAGING_WEBHOOK" \
+          curl --fail-with-body --request POST "$COOLIFY_STAGING_WEBHOOK" \
             --header "Authorization: Bearer $COOLIFY_TOKEN"
