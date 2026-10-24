@@ -1,4 +1,5 @@
 import { CalendarDays, MapPin } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Badge, LinkButton } from "@/components/ui";
 import type { EventSummary } from "@/lib/api/types";
@@ -33,10 +34,9 @@ export function EventCard({ event, ended = false }: { event: EventSummary; ended
   const free = event.price_minor <= 0;
   return (
     <article className="relative flex w-full flex-col overflow-hidden rounded-card border border-line bg-surface shadow-resting transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-raised motion-reduce:transition-none motion-reduce:hover:translate-y-0">
-      <div className="aspect-[16/9] w-full overflow-hidden bg-sunken">
+      <div className="relative aspect-[16/9] w-full overflow-hidden bg-sunken">
         {event.poster_url ? (
-          // eslint-disable-next-line @next/next/no-img-element -- a poster served by the API through our own origin
-          <img src={event.poster_url} alt="" width={640} height={360} loading="lazy" className="size-full object-cover" />
+          <Image src={event.poster_url} alt="" fill sizes="(min-width: 1280px) 384px, (min-width: 640px) 50vw, 100vw" quality={75} className="object-cover" />
         ) : (
           <DateTile iso={event.starts_at} className="size-full" />
         )}

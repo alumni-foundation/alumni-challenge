@@ -1,6 +1,7 @@
 "use client";
 
 import { BadgeCheck, CalendarDays, Circle, Search, UserPlus, Users } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Avatar, Button, Card, LinkButton, Skeleton, VerifiedMark, useToast } from "@/components/ui";
 import { Icon3D } from "@/components/ui/icon3d";
@@ -145,8 +146,7 @@ export function NextEventCard({ events, loading, failed }: { events: EventSummar
         <div className="mt-4 flex flex-1 flex-col gap-4">
           <div className="flex items-start gap-4">
             {next.poster_url ? (
-              // eslint-disable-next-line @next/next/no-img-element -- a poster served by the API through our own origin
-              <img src={next.poster_url} alt="" width={80} height={112} loading="lazy" className="h-28 w-20 shrink-0 rounded-2xl bg-sunken object-cover" />
+              <Image src={next.poster_url} alt="" width={80} height={112} quality={75} className="h-28 w-20 shrink-0 rounded-2xl bg-sunken object-cover" />
             ) : (
               <DateTile iso={next.starts_at} />
             )}
@@ -374,8 +374,7 @@ export function UpcomingEvents({ events }: { events: EventSummary[] }) {
           <Bar key={e.id} columns={EVENT_COLS}>
             <div className="flex min-w-0 items-center gap-3">
               {e.poster_url ? (
-                // eslint-disable-next-line @next/next/no-img-element -- a poster served by the API through our own origin
-                <img src={e.poster_url} alt="" width={40} height={40} loading="lazy" className="size-10 shrink-0 rounded-xl bg-sunken object-cover" />
+                <Image src={e.poster_url} alt="" width={40} height={40} quality={75} className="size-10 shrink-0 rounded-xl bg-sunken object-cover" />
               ) : (
                 <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gold-soft text-gold" aria-hidden><CalendarDays className="size-5" /></span>
               )}

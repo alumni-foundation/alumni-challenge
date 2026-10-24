@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeft, Building2, CalendarDays, Info, Mail, MapPin, Phone } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Badge, Card, LinkButton, Skeleton } from "@/components/ui";
 import { useEvent, useMe, useMyProfile } from "@/lib/api/hooks";
@@ -99,10 +100,9 @@ export function EventView({ initial, signedIn }: { initial: EventDetail; signedI
       </Link>
 
       <div className="overflow-hidden rounded-[1.75rem] border border-line bg-sunken shadow-resting">
-        <div className={event.poster_url ? "aspect-[16/9] max-h-[26rem] w-full sm:aspect-[21/9]" : "h-40 w-full sm:h-48"}>
+        <div className={event.poster_url ? "relative aspect-[16/9] max-h-[26rem] w-full sm:aspect-[21/9]" : "h-40 w-full sm:h-48"}>
           {event.poster_url ? (
-            // eslint-disable-next-line @next/next/no-img-element -- a poster served by the API through our own origin
-            <img src={event.poster_url} alt="" width={1200} height={514} className="size-full object-cover" fetchPriority="high" />
+            <Image src={event.poster_url} alt="" fill sizes="(min-width: 1024px) 1024px, 100vw" quality={75} loading="eager" fetchPriority="high" className="object-cover" />
           ) : (
             <DateTile iso={event.starts_at} className="size-full" />
           )}
