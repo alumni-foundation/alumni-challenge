@@ -2,11 +2,11 @@
 
 import {
   Building2, Check, ChevronDown, FileText, Globe, GraduationCap, Home, LayoutDashboard, LogOut, Pencil, Repeat, ScrollText,
-  Search, Settings, ShieldCheck, User, UserPlus, Users,
+  PanelLeftClose, PanelLeftOpen, Search, Settings, ShieldCheck, User, UserPlus, Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { authCall } from "@/lib/api/client";
 import { useConnections, useMe, useOrgs, useRoles } from "@/lib/api/hooks";
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui";
 import { Icon3D } from "@/components/ui/icon3d";
 import { Logo } from "./logo";
+import { NotificationBell } from "./notification-bell";
 
 type NavItem = {
   label: string;
@@ -157,7 +158,7 @@ function SwitchView({ placement = "down" }: { placement?: Placement }) {
   if (views.length < 2) return null;
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className={cn("relative", placement === "rail" && "w-full")}>
       <button
         type="button"
         aria-label="Switch view"
@@ -166,12 +167,13 @@ function SwitchView({ placement = "down" }: { placement?: Placement }) {
         onClick={() => setOpen((v) => !v)}
         className={
           placement === "rail"
-            ? "grid size-11 place-items-center rounded-2xl bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white"
+            ? "flex h-11 w-full items-center gap-3 rounded-2xl bg-white/10 px-[14px] text-white transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white"
             : "inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full border border-line-strong bg-surface px-3.5 text-small font-medium hover:bg-sunken"
         }
       >
         <Repeat className={cn("size-4", placement === "rail" ? "text-white" : "text-muted")} aria-hidden />
         {placement === "down" && <span aria-hidden className="hidden sm:inline">Switch view</span>}
+        {placement === "rail" && <span className="rail-label text-small font-medium" aria-hidden>Switch view</span>}
         {placement === "down" && <ChevronDown className={cn("size-3.5 text-muted transition-transform", open && "rotate-180")} aria-hidden />}
       </button>
       {open && (
@@ -208,7 +210,7 @@ function ProfileMenu({ profile, placement = "down" }: { profile: Profile | null;
   const roleName = viewsFor(roles.data).length > 1 && top ? roleLabel(top.role) : "Alumni member";
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className={cn("relative", placement === "rail" && "w-full")}>
       <button
         type="button"
         aria-haspopup="menu"
@@ -216,11 +218,19 @@ function ProfileMenu({ profile, placement = "down" }: { profile: Profile | null;
         aria-label="Account menu"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex min-h-11 items-center gap-2 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2",
-          placement === "rail" ? "p-0.5 ring-2 ring-white/25 hover:ring-white/50 focus-visible:outline-white" : "py-1 pl-1 pr-2 hover:bg-sunken focus-visible:outline-ink",
+          "flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2",
+          placement === "rail" ? "w-full gap-3 rounded-2xl p-0.5 hover:bg-white/10 focus-visible:outline-white" : "gap-2 rounded-full py-1 pl-1 pr-2 hover:bg-sunken focus-visible:outline-ink",
         )}
       >
-        <Avatar name={profile?.full_name ?? me.data?.email ?? "Account"} id={profile?.id ?? me.data?.id ?? "me"} size={placement === "rail" ? 40 : 36} src={profile?.avatar_url} />
+        <span className={cn("shrink-0 rounded-full", placement === "rail" && "ring-2 ring-white/25")}>
+          <Avatar name={profile?.full_name ?? me.data?.email ?? "Account"} id={profile?.id ?? me.data?.id ?? "me"} size={placement === "rail" ? 40 : 36} src={profile?.avatar_url} />
+        </span>
+        {placement === "rail" && (
+          <span className="rail-name min-w-0 text-left">
+            <span className="block truncate text-small font-semibold text-white">{profile?.full_name ?? me.data?.email}</span>
+            <span className="block truncate text-caption text-white/80">{roleName}</span>
+          </span>
+        )}
         {placement === "down" && <ChevronDown className={cn("hidden size-3.5 text-muted transition-transform sm:block", open && "rotate-180")} aria-hidden />}
       </button>
       {open && (
@@ -244,10 +254,11 @@ function ProfileMenu({ profile, placement = "down" }: { profile: Profile | null;
   );
 }
 
-function Brand({ compact = false, light = false }: { compact?: boolean; light?: boolean }) {
+function Brand({ compact = false, light = false, label = false }: { compact?: boolean; light?: boolean; label?: boolean }) {
   return (
-    <Link href="/start" className="flex min-h-11 shrink-0 items-center gap-2.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink" aria-label="Alumni Challenge home">
+    <Link href="/start" className="flex min-h-11 shrink-0 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink" aria-label="Alumni Challenge home">
       <Logo size={compact ? 32 : 36} tone={light ? "light" : "dark"} />
+      {label && <span className="rail-label whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.12em] text-white" aria-hidden>Alumni Challenge</span>}
     </Link>
   );
 }
@@ -286,22 +297,26 @@ const SearchBox = ({ className, id }: { className?: string; id: string }) => (
   <Suspense fallback={null}><SearchForm className={className} id={id} /></Suspense>
 );
 
-/** One item in the desktop rail: a tile with a label that appears on hover and focus. */
+/** One item in the sidebar: the tile stays put; the label slides out beside it when the sidebar is open, and a tooltip names it when it is not. */
 function RailItem({ item, active, badge }: { item: NavItem; active: boolean; badge?: number }) {
   return (
     <Link
       href={item.href}
       aria-label={badge ? `${item.label}, ${badge} waiting` : item.label}
       aria-current={active ? "page" : undefined}
-      className="rail-item group relative grid size-12 place-items-center rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+      className="rail-item group relative flex h-12 w-full items-center gap-3 rounded-2xl pl-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
     >
-      <Icon3D icon={item.icon} tone={active ? "ember" : "ink"} size="sm" className="transition-transform duration-200 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5" />
-      {badge ? (
-        <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold leading-4 text-brand-ink" aria-hidden>{badge}</span>
-      ) : null}
+      <span className="relative shrink-0">
+        <Icon3D icon={item.icon} tone={active ? "ember" : "ink"} size="sm" className="transition-transform duration-200 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5" />
+        {badge ? (
+          <span className="rail-dot absolute -right-1 -top-1 flex min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold leading-4 text-brand-ink" aria-hidden>{badge}</span>
+        ) : null}
+      </span>
+      <span className={cn("rail-label text-body font-medium", active ? "text-white" : "text-white/85")} aria-hidden>{item.label}</span>
+      {badge ? <span className="rail-pill ml-auto mr-2 rounded-full bg-white px-2 text-caption font-bold leading-5 text-brand-ink" aria-hidden>{badge}</span> : null}
       <span
         aria-hidden
-        className="pointer-events-none absolute left-full z-50 ml-4 translate-x-1 whitespace-nowrap rounded-full bg-ink px-3.5 py-1.5 text-small font-medium text-white opacity-0 shadow-lifted transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+        className="rail-tip pointer-events-none absolute left-[calc(100%+1.25rem)] z-50 translate-x-1 whitespace-nowrap rounded-full bg-ink px-3.5 py-1.5 text-small font-medium text-white opacity-0 shadow-lifted transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
       >
         {item.label}
       </span>
@@ -309,21 +324,41 @@ function RailItem({ item, active, badge }: { item: NavItem; active: boolean; bad
   );
 }
 
-/** Desktop: a slim dark rail with this view's items, the view switcher and the account menu at the bottom. */
-function Rail({ profile }: { profile: Profile | null }) {
+const WIDE = "(min-width: 1280px)";
+const subscribeWide = (cb: () => void) => {
+  const m = window.matchMedia(WIDE);
+  m.addEventListener("change", cb);
+  return () => m.removeEventListener("change", cb);
+};
+const useWide = () => useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => false);
+
+/** Desktop: a dark sidebar. Collapsed it is a slim icon rail; expanded it shows labels, the badge and the person's name. */
+function Rail({ profile, expanded, onToggle }: { profile: Profile | null; expanded: boolean; onToggle: () => void }) {
   const incoming = useIncomingCount();
   const isActive = useIsActive();
   const { current } = useViews();
   const items = navFor(current);
+  const Toggle = expanded ? PanelLeftClose : PanelLeftOpen;
   return (
-    <aside className="fixed bottom-3 left-3 top-3 z-30 hidden w-[4.75rem] flex-col items-center rounded-[28px] bg-side py-4 shadow-lifted lg:flex">
-      <Brand light />
-      <nav aria-label="Main" className="mt-5 flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto overflow-x-visible py-1">
+    <aside className="rail fixed bottom-3 left-3 top-3 z-30 hidden flex-col rounded-[28px] bg-side px-4 py-4 shadow-lifted lg:flex">
+      <div className="rail-head">
+        <Brand light label />
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
+          className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        >
+          <Toggle className="size-[18px]" aria-hidden />
+        </button>
+      </div>
+      <nav aria-label="Main" className="mt-4 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-clip py-1">
         {items.map((item) => (
           <RailItem key={item.href + item.label} item={item} active={isActive(item)} badge={item.href === "/connections" ? incoming : undefined} />
         ))}
       </nav>
-      <div className="mt-3 flex flex-col items-center gap-3">
+      <div className="mt-3 flex flex-col gap-3">
         <SwitchView placement="rail" />
         <ProfileMenu profile={profile} placement="rail" />
       </div>
@@ -342,6 +377,7 @@ function TopBar({ profile }: { profile: Profile | null }) {
       <div className="flex items-center gap-2 px-4 pt-3 sm:px-6 lg:hidden">
         <Brand compact />
         <p className="min-w-0 flex-1 truncate pl-1 text-lead font-semibold">{title}</p>
+        {member && <NotificationBell />}
         <SwitchView />
         <ProfileMenu profile={profile} />
       </div>
@@ -349,6 +385,7 @@ function TopBar({ profile }: { profile: Profile | null }) {
       <div className="mx-auto hidden h-20 max-w-[1680px] items-center gap-6 px-10 xl:px-14 lg:flex">
         <p className="min-w-0 flex-1 truncate text-heading font-semibold">{title}</p>
         {member && <SearchBox id="top-search" className="w-full max-w-sm" />}
+        {member && <NotificationBell />}
       </div>
     </header>
   );
@@ -385,10 +422,20 @@ function PhoneTabs() {
   );
 }
 
-export function AppShell({ profile, children }: { profile: Profile | null; children: React.ReactNode }) {
+export function AppShell({ profile, sidebar, children }: { profile: Profile | null; sidebar: "expanded" | "collapsed" | null; children: React.ReactNode }) {
+  // The saved choice comes from a cookie, so the server draws the right width. With no choice yet, CSS decides by
+  // screen width (collapsed under 1280px, expanded from 1280px) and the toggle starts from the same rule.
+  const [pref, setPref] = useState(sidebar);
+  const wide = useWide();
+  const expanded = pref ? pref === "expanded" : wide;
+  function toggle() {
+    const next = expanded ? "collapsed" : "expanded";
+    setPref(next);
+    document.cookie = `ac_sidebar=${next}; path=/; max-age=31536000; samesite=lax${window.location.protocol === "https:" ? "; secure" : ""}`;
+  }
   return (
-    <div className="min-h-dvh bg-canvas lg:pl-[6.25rem]">
-      <Rail profile={profile} />
+    <div className="shell min-h-dvh bg-canvas lg:pl-[var(--rail-gap)]" data-sb={pref ?? "auto"}>
+      <Rail profile={profile} expanded={expanded} onToggle={toggle} />
       <TopBar profile={profile} />
       <PhoneTabs />
       <main id="main">

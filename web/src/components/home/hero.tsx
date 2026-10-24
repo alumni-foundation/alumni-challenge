@@ -41,7 +41,7 @@ function Stat({ value, empty, label }: { value: number | null; empty: string; la
  */
 export function HomeHero({ name, connections, waiting, verified }: Props) {
   return (
-    <section aria-label="Welcome" className="relative isolate flex min-h-[29rem] flex-col overflow-hidden rounded-[1.75rem] bg-side text-white shadow-lifted sm:rounded-[2.25rem] lg:min-h-[28rem]">
+    <section aria-label="Welcome" className="relative isolate flex h-full min-h-[29rem] flex-col overflow-hidden rounded-[1.75rem] bg-side text-white shadow-lifted sm:rounded-[2.25rem] lg:min-h-[28rem]">
       <Image
         src={hero}
         alt=""
