@@ -132,14 +132,14 @@ booking, and an organization admin matches it to a payment and confirms.
 Events take `payment_account_id` on create and update (same organization, switched on; `422
 invalid_payee` / `payee_inactive`). It cannot change once anyone has booked
 (`409 event_has_bookings`). The event detail then has `payment: {method, kind, number,
-payee_name, currency}`: show it on the event page. **A paid event with no payee can still be
-published for now, but nobody can pay it: set one.** `hold_minutes` above 60 (up to 2880, 48
+payee_name, currency}`: show it on the event page. **A paid event cannot be published without
+an active payee (`422 payee_required`).** `hold_minutes` above 60 (up to 2880, 48
 hours) is allowed only when the event has a payee (`422 hold_too_long` otherwise).
 
 ### On every booking: `payment`
 `null` for a free event or one with no payee. Otherwise:
 `{payee: {kind, number, payee_name, ...}, account_reference, state, code, submitted_at,
-decided_at, rejection_reason, can_submit_code}`.
+decided_at, rejection_reason, marked_paid_by_hand, can_submit_code}`.
 * **Paybill:** tell the person to type `account_reference` (the booking reference) as the account
   number. **Till:** there is no account number (`account_reference` is `null`); the code they send
   is how the payment is matched.
@@ -162,16 +162,17 @@ confirm anything.
 | Method and path | Notes |
 |---|---|
 | `POST /bookings/{id}/confirm-manual` | Payment received. Held places become confirmed, tickets are made and the booker emailed. Repeating changes and sends nothing. **If the hold had run out:** places still free means it is confirmed again ("late payment accepted"); places gone, or the booking was cancelled, means the booking stays as it is and `payment.state` becomes `needs_refund`. Read `status` and `payment.state` in the answer. |
+| `POST /bookings/{id}/mark-paid` `{reason}` | The money arrived with no M-Pesa code (cash, a transfer). **A written reason, 3 to 500 characters, is required** and goes in the audit row. Settles exactly like a confirmed code, late-payment rules included. Afterwards `payment.marked_paid_by_hand` is `true` and `payment.code` is `null`. Repeating it changes nothing. `409 not_a_paid_booking` for a free booking; `409 payment_already_settled` once the payment is owed back or refunded. |
 | `POST /bookings/{id}/reject-manual` `{reason}` | The code matches no payment. Booking and hold stay as they are, the code is released, the booker is emailed the reason and may send another. |
 | `POST /bookings/{id}/mark-refunded` `{note?}` | The organizer sent the money back. Only from `needs_refund`. A cancelled booking that had been confirmed becomes `refunded`. |
 | `POST /bookings/{id}/organizer-cancel` `{reason, refund}` | Cancels and frees the places. `refund: true` on a confirmed payment moves it to `needs_refund`. |
 | `GET /events/{id}/payments?state=awaiting_confirmation\|needs_refund` | The money queue (default both), oldest first, same rows as registrations. `X-Total-Count`. |
-| `GET /events/{id}/registrations?payment_state=` | Rows now carry `payment: {state, code, submitted_at, decided_at, rejection_reason}`; `q` also matches the M-Pesa code. |
+| `GET /events/{id}/registrations?payment_state=` | Rows now carry `payment: {state, code, submitted_at, decided_at, rejection_reason, marked_paid_by_hand, note}`; `q` also matches the M-Pesa code. |
 
 Cancelling an event moves every confirmed payment to `needs_refund`. Every confirm, reject,
 refund and late-payment decision writes an audit row for the organization.
 
 ### Emails to the booker (only the booker, never other players)
-Code received; booking confirmed with tickets (the existing email); code not matched (with the
+Code received; booking confirmed with tickets (the existing email; it says so when the payment came after the hold ended but the places were still free); code not matched (with the
 organizer's reason); payment arrived too late and a refund is coming; cancelled with a refund
 coming; refund sent.

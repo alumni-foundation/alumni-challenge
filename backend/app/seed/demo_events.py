@@ -9,6 +9,7 @@ A meetup or golf day from an older seed (one without a poster) that nobody has b
 replaced with the current one; one that has bookings is left alone.
 """
 
+import contextlib
 import io
 from datetime import UTC, datetime, timedelta
 
@@ -16,6 +17,7 @@ from PIL import Image, ImageDraw, ImageFont
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors.exceptions import ConflictError
 from app.infrastructure.storage import get_storage
 from app.modules.bookings.models import Booking
 from app.modules.events import schemas, service
@@ -33,7 +35,7 @@ GOLF = "Demo Golf Day"
 DRAFT = "Demo Draft Dinner"
 
 # An invented paybill number, so the booking page has somewhere to say "pay to".
-DEMO_PAYEE_LABEL = "Demo Golf Day (invented paybill)"
+DEMO_PAYEE_LABEL = "Demo paybill (invented)"
 DEMO_PAYBILL = "888880"
 
 # (label, start, end) of the four tee-off periods, in Nairobi time (UTC+3).
@@ -99,6 +101,25 @@ async def _exists(db: AsyncSession, school: Organization, title: str) -> bool:
         )
         is not None
     )
+
+
+async def _give_payee_if_missing(
+    db: AsyncSession, school: Organization, manager: User, title: str, payee: PaymentAccount
+) -> None:
+    """A paid demo event from an older seed has nowhere to pay. Fix it unless people booked
+    already (then the payee is frozen and it is left as it is)."""
+    event = await db.scalar(
+        select(Event).where(Event.organization_id == school.id, Event.title == title)
+    )
+    if event is None or event.payment_account_id is not None:
+        return
+    with contextlib.suppress(ConflictError):
+        await service.update_event(
+            db,
+            actor=manager,
+            event=event,
+            body=schemas.EventUpdate(payment_account_id=payee.id),
+        )
 
 
 async def _payee(db: AsyncSession, school: Organization, manager: User) -> PaymentAccount:
@@ -208,6 +229,7 @@ async def ensure_demo_events(
         )
         await service.publish(db, actor=admin, event=event)
 
+    evening_payee = await _payee(db, school, manager)
     if not await _exists(db, school, EVENING):
         start = _day(21) + timedelta(hours=18)
         event = await service.create_event(
@@ -224,9 +246,12 @@ async def ensure_demo_events(
                 price_minor=150_000,  # KES 1,500
                 capacity=50,
                 max_party_size=2,
+                payment_account_id=evening_payee.id,
             ),
         )
         await service.publish(db, actor=admin, event=event)
+    else:
+        await _give_payee_if_missing(db, school, manager, EVENING, evening_payee)
 
     if await _needs_creating(db, school, GOLF):
         day = _day(30)

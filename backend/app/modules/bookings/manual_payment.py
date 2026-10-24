@@ -33,7 +33,7 @@ from app.modules.bookings.service import db_now, get_booking
 from app.modules.bookings.tickets import announce_confirmed
 from app.modules.domain_events.service import publish as publish_event
 from app.modules.events import access
-from app.modules.events.models import Event
+from app.modules.events.models import Event, EventSlot
 from app.modules.identity.models import User
 
 CODES_PER_USER_PER_HOUR = 10
@@ -163,10 +163,7 @@ async def submit_code(db: AsyncSession, *, user: User, booking_id: uuid.UUID, co
 async def confirm(db: AsyncSession, *, actor: User, booking_id: uuid.UUID) -> Booking:
     """Marks the payment received. Idempotent."""
     booking, event = await _admin_booking(db, actor=actor, booking_id=booking_id)
-    from app.modules.bookings.service import _expire  # same sweep booking itself uses
-
-    slot = await seats.lock_slot(db, booking.slot_id)
-    await _expire(db, slot)  # a hold that ran out is an expired booking before we look at it
+    slot = await _lock_and_sweep(db, booking)
     booking = await _lock_booking(db, booking.id)
 
     if booking.payment_state == ManualPaymentState.CONFIRMED:
@@ -176,7 +173,53 @@ async def confirm(db: AsyncSession, *, actor: User, booking_id: uuid.UUID) -> Bo
             "There is no payment code waiting to be confirmed on this booking.",
             code="no_payment_to_confirm",
         )
+    await _settle(db, actor=actor, booking=booking, event=event, slot=slot, reason=None)
+    return booking
 
+
+async def mark_paid(
+    db: AsyncSession, *, actor: User, booking_id: uuid.UUID, reason: str
+) -> Booking:
+    """An organization admin says the money arrived, with no M-Pesa code to show for it (cash,
+    a bank transfer, a code that was never sent). The reason is written down and audited.
+    Settles exactly like a confirmed code, late-payment rules included. Idempotent."""
+    booking, event = await _admin_booking(db, actor=actor, booking_id=booking_id)
+    if booking.amount_minor == 0:
+        raise ConflictError("Nothing is owed on this booking.", code="not_a_paid_booking")
+    slot = await _lock_and_sweep(db, booking)
+    booking = await _lock_booking(db, booking.id)
+
+    if booking.payment_state == ManualPaymentState.CONFIRMED:
+        return booking
+    if booking.payment_state in (ManualPaymentState.NEEDS_REFUND, ManualPaymentState.REFUNDED):
+        raise ConflictError(
+            "This payment has already been settled.", code="payment_already_settled"
+        )
+    await _settle(db, actor=actor, booking=booking, event=event, slot=slot, reason=reason)
+    return booking
+
+
+async def _lock_and_sweep(db: AsyncSession, booking: Booking) -> EventSlot:
+    """Locks the slot and ends any hold that ran out, so the booking is judged as it really is."""
+    from app.modules.bookings.service import _expire  # the same sweep booking itself uses
+
+    slot = await seats.lock_slot(db, booking.slot_id)
+    await _expire(db, slot)
+    return slot
+
+
+async def _settle(
+    db: AsyncSession,
+    *,
+    actor: User,
+    booking: Booking,
+    event: Event,
+    slot: EventSlot,
+    reason: str | None,
+) -> None:
+    """The money is in. Confirm the booking if the places allow it, otherwise record that the
+    payment must be returned. `reason` is set when the organizer marked it paid by hand."""
+    by_hand = reason is not None
     now = await db_now(db)
     was = booking.status
     late = False
@@ -213,10 +256,17 @@ async def confirm(db: AsyncSession, *, actor: User, booking_id: uuid.UUID) -> Bo
     booking.payment_state = (
         ManualPaymentState.NEEDS_REFUND if owed else ManualPaymentState.CONFIRMED
     )
+    booking.paid_without_code = by_hand and booking.payment_reference_code is None
     booking.payment_decided_at = now
     booking.payment_decided_by = actor.id
-    booking.payment_note = None
+    booking.payment_note = reason
     await db.flush()
+    context = _audit_context(
+        event,
+        code=booking.payment_reference_code,
+        was=was.value,
+        **({"marked_paid_by_hand": True, "reason": reason} if by_hand else {}),
+    )
 
     if owed:
         await record_audit(
@@ -225,7 +275,7 @@ async def confirm(db: AsyncSession, *, actor: User, booking_id: uuid.UUID) -> Bo
             action="booking.payment_unallocated",
             target_type="booking",
             target_id=booking.id,
-            context=_audit_context(event, code=booking.payment_reference_code, was=was.value),
+            context=context,
         )
         await publish_event(
             db,
@@ -233,15 +283,21 @@ async def confirm(db: AsyncSession, *, actor: User, booking_id: uuid.UUID) -> Bo
             payload={"booking_id": str(booking.id)},
             dedupe_key=f"booking.payment_unallocated:{booking.id}",
         )
-        return booking
+        return
 
     await record_audit(
         db,
         actor_user_id=actor.id,
-        action="booking.late_payment_accepted" if late else "booking.payment_confirmed",
+        action=(
+            "booking.late_payment_accepted"
+            if late
+            else "booking.payment_marked_paid"
+            if by_hand
+            else "booking.payment_confirmed"
+        ),
         target_type="booking",
         target_id=booking.id,
-        context=_audit_context(event, code=booking.payment_reference_code),
+        context=context,
     )
     await publish_event(
         db,
@@ -249,8 +305,7 @@ async def confirm(db: AsyncSession, *, actor: User, booking_id: uuid.UUID) -> Bo
         payload={"booking_id": str(booking.id)},
         dedupe_key=f"booking.payment_confirmed:{booking.id}",
     )
-    await announce_confirmed(db, booking)
-    return booking
+    await announce_confirmed(db, booking, late_payment=late)
 
 
 async def reject(db: AsyncSession, *, actor: User, booking_id: uuid.UUID, reason: str) -> Booking:

@@ -88,10 +88,11 @@ class Booking(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "payment_reference_code IS NULL OR payment_reference_code ~ '^[A-Z0-9]{8,12}$'",
             name="ck_bookings_payment_code_format",
         ),
-        # A payment that is waiting, done or owed back has a code; a rejected one gave it up.
+        # A payment that is waiting, done or owed back has a code, unless an organizer marked it
+        # paid by hand; a rejected one gave its code up.
         CheckConstraint(
             "payment_state IS NULL OR (payment_state = 'rejected') = "
-            "(payment_reference_code IS NULL)",
+            "(payment_reference_code IS NULL AND NOT paid_without_code)",
             name="ck_bookings_payment_code_matches_state",
         ),
         # One M-Pesa code pays for one booking, ever, across all events.
@@ -182,6 +183,10 @@ class Booking(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     # The organizer's reason for a rejection, or their note on a refund.
     payment_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # True when an organizer marked it paid with no M-Pesa code (the reason is in payment_note).
+    paid_without_code: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
 
 class BookingParticipant(UUIDPrimaryKeyMixin, TimestampMixin, Base):

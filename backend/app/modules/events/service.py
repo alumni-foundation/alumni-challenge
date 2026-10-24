@@ -616,6 +616,19 @@ async def publish(db: AsyncSession, *, actor: User, event: Event) -> Event:
         raise ValidationError("Add at least one slot before publishing.", code="no_slots")
     for s in slots:
         _check_slot_capacity(s.capacity, event.price_minor)
+    if event.price_minor > 0:
+        # Nobody could pay an event with nowhere to send the money, so it cannot go live.
+        payee = (
+            await db.get(PaymentAccount, event.payment_account_id)
+            if event.payment_account_id
+            else None
+        )
+        if payee is None or not payee.active:
+            raise ValidationError(
+                "Choose where people pay (an active paybill or till) before publishing a paid "
+                "event.",
+                code="payee_required",
+            )
     event.status = EventStatus.PUBLISHED
     event.updated_by = actor.id
     await db.flush()

@@ -142,6 +142,8 @@ class BookingPaymentOut(BaseModel):
     decided_at: datetime | None
     # Why the organizer could not match the payment (only while it is rejected).
     rejection_reason: str | None
+    # True when an organizer marked it paid with no M-Pesa code.
+    marked_paid_by_hand: bool = False
     can_submit_code: bool
 
 
@@ -248,6 +250,9 @@ class RegistrationPayment(BaseModel):
     submitted_at: datetime | None
     decided_at: datetime | None
     rejection_reason: str | None
+    marked_paid_by_hand: bool = False
+    # The reason the organizer gave when marking it paid by hand, or the note on a refund.
+    note: str | None = None
 
 
 class RegistrationRow(BaseModel):
@@ -283,6 +288,10 @@ class PaymentReferenceRequest(BaseModel):
 
 class RejectPaymentRequest(BaseModel):
     reason: str = Field(min_length=3, max_length=500)
+
+
+class MarkPaidRequest(BaseModel):
+    reason: str = Field(min_length=3, max_length=500, description="Why no M-Pesa code (audited).")
 
 
 class MarkRefundedRequest(BaseModel):

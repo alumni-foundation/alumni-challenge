@@ -101,11 +101,18 @@ def booking_confirmed_email(
     reference: str,
     link: str,
     tickets: list[tuple[str, str]],
+    late_payment: bool = False,
 ) -> EmailContent:
     """`tickets` is (holder name, ticket link) for everyone in the booking."""
+    late = (
+        "Your payment reached us after your reservation had ended, but the places were still "
+        "free, so we have confirmed your booking.\n\n"
+        if late_payment
+        else ""
+    )
     lines = "".join(f"  {name}: {ticket_link}\n" for name, ticket_link in tickets)
     text = (
-        f"You are booked for {event_title} ({when}).\n\nYour reference is {reference}.\n"
+        f"You are booked for {event_title} ({when}).\n\n{late}Your reference is {reference}.\n"
         f"See your booking: {link}\n\nTickets (show the QR code at the door):\n{lines}"
         "\nEach link opens that person's ticket without signing in, so only share it with them.\n"
     )

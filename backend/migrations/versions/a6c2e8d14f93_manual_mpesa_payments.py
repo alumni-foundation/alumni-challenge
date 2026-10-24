@@ -48,6 +48,10 @@ def upgrade() -> None:
     op.add_column('bookings', sa.Column('payment_decided_at', sa.DateTime(timezone=True), nullable=True))
     op.add_column('bookings', sa.Column('payment_decided_by', sa.UUID(), nullable=True))
     op.add_column('bookings', sa.Column('payment_note', sa.String(length=500), nullable=True))
+    op.add_column(
+        'bookings',
+        sa.Column('paid_without_code', sa.Boolean(), server_default=sa.text('false'), nullable=False),
+    )
     op.create_index('ix_bookings_event_payment_state', 'bookings', ['event_id', 'payment_state'], unique=False, postgresql_where=sa.text('payment_state IS NOT NULL'))
     op.create_index('uq_bookings_payment_reference_code', 'bookings', ['payment_reference_code'], unique=True, postgresql_where=sa.text('payment_reference_code IS NOT NULL'))
     op.create_foreign_key('fk_bookings_payment_decided_by', 'bookings', 'users', ['payment_decided_by'], ['id'], ondelete='SET NULL')
@@ -60,7 +64,8 @@ def upgrade() -> None:
     op.create_check_constraint(
         'ck_bookings_payment_code_matches_state',
         'bookings',
-        "payment_state IS NULL OR (payment_state = 'rejected') = (payment_reference_code IS NULL)",
+        "payment_state IS NULL OR (payment_state = 'rejected') = "
+        "(payment_reference_code IS NULL AND NOT paid_without_code)",
     )
     op.add_column('events', sa.Column('payment_account_id', sa.UUID(), nullable=True))
     op.create_index(op.f('ix_events_payment_account_id'), 'events', ['payment_account_id'], unique=False)
@@ -78,6 +83,7 @@ def downgrade() -> None:
     op.drop_index('ix_bookings_event_payment_state', table_name='bookings', postgresql_where=sa.text('payment_state IS NOT NULL'))
     op.drop_constraint('ck_bookings_payment_code_matches_state', 'bookings', type_='check')
     op.drop_constraint('ck_bookings_payment_code_format', 'bookings', type_='check')
+    op.drop_column('bookings', 'paid_without_code')
     op.drop_column('bookings', 'payment_note')
     op.drop_column('bookings', 'payment_decided_by')
     op.drop_column('bookings', 'payment_decided_at')

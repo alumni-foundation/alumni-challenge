@@ -11,6 +11,7 @@ from app.modules.bookings.schemas import (
     BookingCreate,
     BookingOut,
     CancelBookingRequest,
+    MarkPaidRequest,
     MarkRefundedRequest,
     OrganizerCancelRequest,
     ParticipantUpdate,
@@ -138,6 +139,26 @@ async def confirm_manual_payment(
     moves to `needs_refund` instead: read `payment.state` in the answer.
     """
     booking = await manual_payment.confirm(db, actor=user, booking_id=booking_id)
+    out = await service.build_out(db, booking)
+    await db.commit()
+    return out
+
+
+@router.post("/{booking_id}/mark-paid", response_model=BookingOut)
+async def mark_booking_paid(
+    booking_id: uuid.UUID,
+    body: MarkPaidRequest,
+    db: AsyncSession = Depends(get_db_session),
+    user: User = Depends(get_current_user),
+) -> BookingOut:
+    """
+    An organization admin says the money arrived without an M-Pesa code (cash, a transfer, a code
+    never sent). A written reason is required and audited. Settles like a confirmed code, late
+    payment rules included. Doing it again changes nothing.
+    """
+    booking = await manual_payment.mark_paid(
+        db, actor=user, booking_id=booking_id, reason=body.reason
+    )
     out = await service.build_out(db, booking)
     await db.commit()
     return out

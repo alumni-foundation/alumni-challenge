@@ -50,6 +50,7 @@ def booking_payment(
         rejection_reason=(
             booking.payment_note if booking.payment_state == ManualPaymentState.REJECTED else None
         ),
+        marked_paid_by_hand=booking.paid_without_code,
         can_submit_code=(
             booking.status in _MAY_SEND_CODE
             and booking.payment_state in (None, ManualPaymentState.REJECTED)
@@ -68,5 +69,9 @@ def registration_payment(booking: Booking) -> RegistrationPayment | None:
         decided_at=booking.payment_decided_at,
         rejection_reason=(
             booking.payment_note if booking.payment_state == ManualPaymentState.REJECTED else None
+        ),
+        marked_paid_by_hand=booking.paid_without_code,
+        note=(
+            booking.payment_note if booking.payment_state != ManualPaymentState.REJECTED else None
         ),
     )

@@ -163,6 +163,7 @@ async def send_booking_confirmed(db: AsyncSession, payload: dict[str, Any]) -> N
         reference=booking.reference,
         link=_booking_link(booking.id),
         tickets=links,
+        late_payment=bool(payload.get("late_payment")),
     )
     await get_mailer().send(
         to=user.email, subject=content.subject, body=content.text, html=content.html

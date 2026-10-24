@@ -379,6 +379,36 @@ async def test_dropping_the_payee_from_an_event_with_a_long_hold_is_refused(
     assert r.status_code == 422 and r.json()["error"]["code"] == "hold_too_long"
 
 
+async def test_a_paid_event_cannot_be_published_without_an_active_payee(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    school, admin = await _run_school(client, db_session, Role.SCHOOL_ADMIN)
+    account = await _account(client, admin, school.id)
+    bare = await _create(client, admin, school, price_minor=PRICE, capacity=5)
+    free = await _create(client, admin, school, capacity=5)
+
+    refused = await _publish(client, admin, bare["id"])
+    free_ok = await _publish(client, admin, free["id"])
+    await client.patch(
+        f"{API}/events/{bare['id']}",
+        json={"payment_account_id": account["id"]},
+        headers=admin.headers,
+    )
+    await client.patch(
+        f"{API}/payment-accounts/{account['id']}", json={"active": False}, headers=admin.headers
+    )
+    switched_off = await _publish(client, admin, bare["id"])
+    await client.patch(
+        f"{API}/payment-accounts/{account['id']}", json={"active": True}, headers=admin.headers
+    )
+    ok = await _publish(client, admin, bare["id"])
+
+    assert refused.status_code == 422 and refused.json()["error"]["code"] == "payee_required"
+    assert free_ok.status_code == 200  # free events need no payee
+    assert switched_off.status_code == 422
+    assert ok.status_code == 200 and ok.json()["payment"]["number"] == "123456"
+
+
 async def test_the_payee_cannot_change_once_someone_has_booked(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
@@ -1109,3 +1139,178 @@ async def test_the_counters_stay_true_through_a_mixed_run_of_payments(
 
     assert await _truth(db_session, shop) == (3, 0)
     assert a.user_id != c.user_id
+
+
+# ============================================================== marking paid by hand
+
+
+async def test_an_admin_marks_a_booking_paid_with_a_reason_and_no_code(
+    client: AsyncClient, db_session: AsyncSession, mailbox: Mailbox
+) -> None:
+    shop = await _shop(client, db_session)
+    who, b = await _booked(client, shop, names=("Ann", "Ben"))
+    await drain_pending(db_session)
+    mailbox.sent.clear()
+
+    r = await _act(client, shop.admin, b["id"], "mark-paid", reason="Paid cash at the office")
+
+    assert r.status_code == 200, r.text
+    out = r.json()
+    assert out["status"] == "confirmed" and out["payment"]["state"] == "confirmed"
+    assert out["payment"]["code"] is None and out["payment"]["marked_paid_by_hand"] is True
+    assert await _truth(db_session, shop) == (2, 0)
+    assert await _audit(db_session, "booking.payment_marked_paid", b["id"]) == 1
+    entry = await db_session.scalar(
+        select(AuditLogEntry).where(
+            AuditLogEntry.action == "booking.payment_marked_paid",
+            AuditLogEntry.target_id == uuid.UUID(b["id"]),
+        )
+    )
+    assert entry is not None and entry.context["reason"] == "Paid cash at the office"
+    assert entry.actor_user_id == shop.admin.user_id
+    tickets = await db_session.scalar(
+        select(func.count()).select_from(Ticket).where(Ticket.booking_id == uuid.UUID(b["id"]))
+    )
+    assert tickets == 2
+    await drain_pending(db_session)
+    assert [m["to"] for m in mailbox.sent] == [await _email_of(db_session, who)]
+
+    url = f"{API}/events/{shop.event['id']}/registrations"
+    row = (await client.get(url, headers=shop.admin.headers)).json()[0]
+    assert row["payment"]["marked_paid_by_hand"] is True
+    assert row["payment"]["note"] == "Paid cash at the office"
+
+
+async def test_marking_paid_twice_changes_and_sends_nothing_more(
+    client: AsyncClient, db_session: AsyncSession, mailbox: Mailbox
+) -> None:
+    shop = await _shop(client, db_session)
+    _, b = await _booked(client, shop)
+    assert (await _act(client, shop.admin, b["id"], "mark-paid", reason="cash")).status_code == 200
+    await drain_pending(db_session)
+    mailbox.sent.clear()
+
+    again = await _act(client, shop.admin, b["id"], "mark-paid", reason="cash again")
+
+    assert again.status_code == 200 and again.json()["status"] == "confirmed"
+    assert await _audit(db_session, "booking.payment_marked_paid", b["id"]) == 1
+    assert await _outbox(db_session, "booking.confirmed") == 1
+    assert await _truth(db_session, shop) == (1, 0)
+    await drain_pending(db_session)
+    assert mailbox.sent == []
+
+
+async def test_marking_paid_a_booking_already_confirmed_by_code_does_nothing(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    shop = await _shop(client, db_session)
+    _, b, code = await _paid_and_sent(client, shop)
+    await _act(client, shop.admin, b["id"], "confirm-manual")
+
+    r = await _act(client, shop.admin, b["id"], "mark-paid", reason="cash too")
+
+    assert r.status_code == 200 and r.json()["payment"]["code"] == code
+    assert r.json()["payment"]["marked_paid_by_hand"] is False
+    assert await _audit(db_session, "booking.payment_marked_paid", b["id"]) == 0
+
+
+async def test_marking_paid_needs_a_written_reason_an_admin_and_a_paid_booking(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    shop = await _shop(client, db_session)
+    who, b = await _booked(client, shop)
+    stranger = await _make_actor(client)
+    school, admin = await _run_school(client, db_session, Role.SCHOOL_ADMIN)
+    free_event = await _create(client, admin, school, capacity=3)
+    free = (await _publish(client, admin, free_event["id"])).json()
+    fb = (await _book(client, await _make_actor(client), free)).json()
+
+    for reason in ("", "ab"):
+        assert (
+            await _act(client, shop.admin, b["id"], "mark-paid", reason=reason)
+        ).status_code == 422
+    no_body = await client.post(f"{API}/bookings/{b['id']}/mark-paid", headers=shop.admin.headers)
+    assert no_body.status_code == 422
+    assert (
+        await _act(client, shop.manager, b["id"], "mark-paid", reason="cash")
+    ).status_code == 403
+    for actor in (who, stranger):
+        assert (await _act(client, actor, b["id"], "mark-paid", reason="cash")).status_code == 404
+    nothing = await _act(client, admin, fb["id"], "mark-paid", reason="cash")
+    assert nothing.status_code == 409 and nothing.json()["error"]["code"] == "not_a_paid_booking"
+    row = await db_session.get(Booking, uuid.UUID(b["id"]), populate_existing=True)
+    assert row is not None and row.status == BookingStatus.PENDING_PAYMENT
+
+
+async def test_a_late_hand_payment_with_the_places_free_is_accepted(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    shop = await _shop(client, db_session, capacity=2)
+    _, a = await _booked(client, shop)
+    await _expire(db_session, a["id"])
+
+    r = await _act(client, shop.admin, a["id"], "mark-paid", reason="cash")
+
+    assert r.json()["status"] == "confirmed"
+    assert await _audit(db_session, "booking.late_payment_accepted", a["id"]) == 1
+    assert await _truth(db_session, shop) == (1, 0)
+
+
+async def test_a_hand_payment_with_the_places_gone_is_owed_back_and_can_be_refunded(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    shop = await _shop(client, db_session, capacity=1)
+    _, b = await _booked(client, shop)
+    await _expire(db_session, b["id"])
+    await _booked(client, shop)  # someone else takes the only place
+
+    owed = await _act(client, shop.admin, b["id"], "mark-paid", reason="cash")
+    again = await _act(client, shop.admin, b["id"], "mark-paid", reason="cash")
+    refunded = await _act(client, shop.admin, b["id"], "mark-refunded", note="Returned in cash")
+
+    assert owed.json()["payment"]["state"] == "needs_refund" and owed.json()["status"] == "expired"
+    assert again.status_code == 409
+    assert again.json()["error"]["code"] == "payment_already_settled"
+    assert refunded.json()["payment"]["state"] == "refunded"
+    assert await _truth(db_session, shop) == (0, 1)
+
+
+async def test_the_database_refuses_a_paid_booking_without_a_code_unless_marked_by_hand(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    shop = await _shop(client, db_session)
+    _, b = await _booked(client, shop)
+
+    with pytest.raises(IntegrityError, match="ck_bookings_payment_code_matches_state"):
+        async with db_session.begin_nested():
+            await db_session.execute(
+                text("UPDATE bookings SET payment_state = 'confirmed' WHERE id = :i"),
+                {"i": b["id"]},
+            )
+    async with db_session.begin_nested():  # with the flag it is allowed
+        await db_session.execute(
+            text(
+                "UPDATE bookings SET payment_state = 'confirmed', paid_without_code = true"
+                " WHERE id = :i"
+            ),
+            {"i": b["id"]},
+        )
+
+
+async def test_the_booking_confirmed_email_says_when_the_payment_came_late(
+    client: AsyncClient, db_session: AsyncSession, mailbox: Mailbox
+) -> None:
+    shop = await _shop(client, db_session, capacity=4)
+    late, a, _ = await _paid_and_sent(client, shop)
+    await _expire(db_session, a["id"])
+    punctual, b, _ = await _paid_and_sent(client, shop)
+    await drain_pending(db_session)
+    mailbox.sent.clear()
+
+    await _act(client, shop.admin, a["id"], "confirm-manual")
+    await _act(client, shop.admin, b["id"], "confirm-manual")
+    await drain_pending(db_session)
+
+    by_to = {m["to"]: m["body"] or "" for m in mailbox.sent}
+    assert "reached us after your reservation had ended" in by_to[await _email_of(db_session, late)]
+    assert "reached us after" not in by_to[await _email_of(db_session, punctual)]

@@ -218,6 +218,7 @@ async def test_the_seed_makes_a_meetup_a_paid_evening_a_four_slot_golf_day_and_a
     }
     assert events[demo_events.MEETUP].price_minor == 0
     assert events[demo_events.EVENING].price_minor == 150_000
+    assert events[demo_events.EVENING].payment_account_id is not None
     assert events[demo_events.GOLF].status == EventStatus.PUBLISHED
     assert events[demo_events.DRAFT].status == EventStatus.DRAFT
     golf_slots = list(
