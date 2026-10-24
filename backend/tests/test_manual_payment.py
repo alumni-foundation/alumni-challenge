@@ -96,7 +96,7 @@ async def _send(
 ) -> Response:
     return await client.post(
         f"{API}/bookings/{booking_id}/payment-reference",
-        json={"code": code or _code()},
+        json={"code": _code() if code is None else code},
         headers=actor.headers,
     )
 
@@ -162,7 +162,9 @@ async def _audit(db: AsyncSession, action: str, booking_id: str) -> int:
 async def _outbox(db: AsyncSession, event_type: str) -> int:
     return int(
         await db.scalar(
-            select(func.count()).select_from(DomainEvent).where(DomainEvent.event_type == event_type)
+            select(func.count())
+            .select_from(DomainEvent)
+            .where(DomainEvent.event_type == event_type)
         )
         or 0
     )
@@ -181,7 +183,9 @@ async def test_an_organization_admin_creates_lists_and_switches_off_their_payee(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     school, admin = await _run_school(client, db_session, Role.SCHOOL_ADMIN)
-    account = await _account(client, admin, school.id, mpesa_kind="till", shortcode_or_till="5551234")
+    account = await _account(
+        client, admin, school.id, mpesa_kind="till", shortcode_or_till="5551234"
+    )
 
     assert account["provider"] == "manual_mpesa" and account["active"] is True
     mine = await client.get(f"{API}/payment-accounts", headers=admin.headers)
@@ -262,10 +266,12 @@ async def test_the_number_cannot_change_once_people_booked_events_paid_to_it(
     url = f"{API}/payment-accounts/{shop.account['id']}"
     await _booked(client, shop)
 
-    moved = await client.patch(url, json={"shortcode_or_till": "999999"}, headers=shop.admin.headers)
+    moved = await client.patch(
+        url, json={"shortcode_or_till": "999999"}, headers=shop.admin.headers
+    )
     renamed = await client.patch(url, json={"label": "New name"}, headers=shop.admin.headers)
 
-    assert moved.status_code == 409 and moved.json()["code"] == "payment_account_in_use"
+    assert moved.status_code == 409 and moved.json()["error"]["code"] == "payment_account_in_use"
     assert renamed.status_code == 200
 
 
@@ -314,7 +320,7 @@ async def test_an_event_cannot_use_another_organizations_or_a_switched_off_accou
             },
             headers=admin.headers,
         )
-        assert r.status_code == 422 and r.json()["code"] == code, r.text
+        assert r.status_code == 422 and r.json()["error"]["code"] == code, r.text
 
 
 async def test_long_holds_need_a_manual_payee_and_stop_at_48_hours(
@@ -346,7 +352,7 @@ async def test_long_holds_need_a_manual_payee_and_stop_at_48_hours(
         headers=admin.headers,
     )
 
-    assert plain.status_code == 422 and plain.json()["code"] == "hold_too_long"
+    assert plain.status_code == 422 and plain.json()["error"]["code"] == "hold_too_long"
     assert manual.status_code == 201 and manual.json()["hold_minutes"] == 2880
     assert too_long.status_code == 422
 
@@ -370,7 +376,7 @@ async def test_dropping_the_payee_from_an_event_with_a_long_hold_is_refused(
         f"{API}/events/{ev['id']}", json={"payment_account_id": None}, headers=admin.headers
     )
 
-    assert r.status_code == 422 and r.json()["code"] == "hold_too_long"
+    assert r.status_code == 422 and r.json()["error"]["code"] == "hold_too_long"
 
 
 async def test_the_payee_cannot_change_once_someone_has_booked(
@@ -386,7 +392,7 @@ async def test_the_payee_cannot_change_once_someone_has_booked(
         headers=shop.admin.headers,
     )
 
-    assert r.status_code == 409 and r.json()["code"] == "event_has_bookings"
+    assert r.status_code == 409 and r.json()["error"]["code"] == "event_has_bookings"
 
 
 # ===================================================================== how to pay
@@ -429,7 +435,7 @@ async def test_a_free_event_has_nothing_to_pay(
 
     assert b["payment"] is None and b["status"] == "confirmed"
     refused = await _send(client, who, b["id"])
-    assert refused.status_code == 409 and refused.json()["code"] == "not_manual_payment"
+    assert refused.status_code == 409 and refused.json()["error"]["code"] == "not_manual_payment"
 
 
 # ============================================================= the booker sends a code
@@ -477,7 +483,7 @@ async def test_one_code_pays_for_one_booking_only_even_across_events(
     other_event = await _send(client, third, tb["id"], code)
 
     for r in (same_event, other_event):
-        assert r.status_code == 409 and r.json()["code"] == "payment_code_used"
+        assert r.status_code == 409 and r.json()["error"]["code"] == "payment_code_used"
         assert first.user_id.hex not in r.text  # nothing about whose it was
     clean = await client.get(f"{API}/bookings/{sb['id']}", headers=second.headers)
     assert clean.json()["payment"]["code"] is None and clean.json()["payment"]["state"] is None
@@ -526,12 +532,10 @@ async def test_a_different_code_while_one_is_waiting_is_refused(
 
     r = await _send(client, who, b["id"], _code())
 
-    assert r.status_code == 409 and r.json()["code"] == "payment_already_submitted"
+    assert r.status_code == 409 and r.json()["error"]["code"] == "payment_already_submitted"
 
 
-async def test_only_the_booker_sends_a_code(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_only_the_booker_sends_a_code(client: AsyncClient, db_session: AsyncSession) -> None:
     shop = await _shop(client, db_session)
     _, b = await _booked(client, shop)
     stranger = await _make_actor(client)
@@ -647,7 +651,7 @@ async def test_there_is_nothing_to_confirm_without_a_code(
 
     r = await _act(client, shop.admin, b["id"], "confirm-manual")
 
-    assert r.status_code == 409 and r.json()["code"] == "no_payment_to_confirm"
+    assert r.status_code == 409 and r.json()["error"]["code"] == "no_payment_to_confirm"
     assert await _truth(db_session, shop) == (0, 1)
 
 
@@ -796,7 +800,9 @@ async def test_a_late_payment_with_the_places_gone_goes_to_the_refund_queue(
     assert [m["to"] for m in mailbox.sent] == [await _email_of(db_session, late)]
     assert "refund" in (mailbox.sent[0]["subject"] or "").lower()
 
-    queue = await client.get(f"{API}/events/{shop.event['id']}/payments", headers=shop.admin.headers)
+    queue = await client.get(
+        f"{API}/events/{shop.event['id']}/payments", headers=shop.admin.headers
+    )
     assert [(row["booking_id"], row["payment"]["state"]) for row in queue.json()] == [
         (b["id"], "needs_refund")
     ]
@@ -816,6 +822,21 @@ async def test_confirm_sweeps_a_hold_that_ran_out_before_deciding(
 
     assert r.json()["status"] == "expired" and r.json()["payment"]["state"] == "needs_refund"
     assert await _truth(db_session, shop) == (0, 1)
+
+
+async def test_a_hold_nobody_swept_yet_still_counts_as_ended_when_the_organizer_confirms(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    shop = await _shop(client, db_session, capacity=4)
+    _, b, _ = await _paid_and_sent(client, shop)
+    await _expire(db_session, b["id"], sweep=False)  # past its time, still marked pending
+
+    r = await _act(client, shop.admin, b["id"], "confirm-manual")
+
+    assert r.status_code == 200 and r.json()["status"] == "confirmed"
+    assert await _audit(db_session, "booking.late_payment_accepted", b["id"]) == 1
+    assert await _audit(db_session, "booking.payment_confirmed", b["id"]) == 0
+    assert await _truth(db_session, shop) == (1, 0)
 
 
 async def test_a_late_payment_from_someone_who_booked_again_is_owed_back(
@@ -863,7 +884,7 @@ async def test_no_code_is_taken_once_the_event_is_cancelled(
 
     r = await _send(client, who, b["id"])
 
-    assert r.status_code == 409 and r.json()["code"] == "payment_not_accepted"
+    assert r.status_code == 409 and r.json()["error"]["code"] == "payment_not_accepted"
 
 
 # ========================================================================= refunds
@@ -891,7 +912,9 @@ async def test_marking_a_refund_closes_it_and_tells_the_booker(
     assert await _audit(db_session, "booking.refund_marked", b["id"]) == 1
     await drain_pending(db_session)
     assert [m["to"] for m in mailbox.sent] == [await _email_of(db_session, late)]
-    queue = await client.get(f"{API}/events/{shop.event['id']}/payments", headers=shop.admin.headers)
+    queue = await client.get(
+        f"{API}/events/{shop.event['id']}/payments", headers=shop.admin.headers
+    )
     assert queue.json() == []
 
 
@@ -906,7 +929,7 @@ async def test_only_money_that_is_owed_can_be_marked_refunded(
     paid = await _act(client, shop.admin, b["id"], "mark-refunded")
 
     assert waiting.status_code == paid.status_code == 409
-    assert paid.json()["code"] == "nothing_to_refund"
+    assert paid.json()["error"]["code"] == "nothing_to_refund"
     assert (await _act(client, shop.manager, b["id"], "mark-refunded")).status_code == 403
     assert (await _act(client, who, b["id"], "mark-refunded")).status_code == 404
 
