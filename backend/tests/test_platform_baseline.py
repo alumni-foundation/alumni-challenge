@@ -5,6 +5,7 @@ import uuid
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.http.idempotency import cache_key, caller_scope
 from app.core.permissions.roles import Role
 from app.main import app
 from app.modules.domain_events.service import drain_pending
@@ -103,13 +104,97 @@ async def test_idempotency_key_blocks_a_concurrent_duplicate(client: AsyncClient
     # Simulates "first request already in flight" by holding the same lock
     # the middleware itself takes, rather than racing two real requests.
     redis = get_redis_client()
-    await redis.set(f"idempotency:POST:{path}:{key}:lock", "1", nx=True, ex=30)
+    scope = caller_scope(actor.headers["Authorization"], "127.0.0.1")
+    await redis.set(f"{cache_key('POST', path, scope, key)}:lock", "1", nx=True, ex=30)
 
     r = await client.post(
         path, json={"full_name": "Racer"}, headers={**actor.headers, "Idempotency-Key": key}
     )
     assert r.status_code == 409
     assert r.json()["error"]["code"] == "idempotency_in_progress"
+
+
+async def test_another_person_cannot_get_a_saved_reply_by_using_the_same_key(
+    client: AsyncClient,
+) -> None:
+    alice = await _make_actor(client)
+    bob = await _make_actor(client)
+    key = str(uuid.uuid4())
+    body = {"full_name": "Same Name"}
+
+    first = await client.post(
+        f"{API}/alumni/profile", json=body, headers={**alice.headers, "Idempotency-Key": key}
+    )
+    assert first.status_code == 201
+
+    # Bob uses Alice's key, path and body. He gets his own profile made, not hers replayed.
+    second = await client.post(
+        f"{API}/alumni/profile", json=body, headers={**bob.headers, "Idempotency-Key": key}
+    )
+    assert second.status_code == 201
+    assert second.headers.get("Idempotency-Replayed") is None
+    assert second.json()["id"] != first.json()["id"]
+    assert second.json()["user_id"] == str(bob.user_id)
+
+
+async def test_a_login_reply_is_never_handed_to_someone_who_reuses_its_key(
+    client: AsyncClient,
+) -> None:
+    email = f"idem-{uuid.uuid4().hex[:10]}@example.com"
+    await client.post(
+        f"{API}/auth/register",
+        json={"email": email, "password": "Correct-horse-9", "confirm_18_or_older": True},
+    )
+    key = str(uuid.uuid4())
+    first = await client.post(
+        f"{API}/auth/login",
+        json={"email": email, "password": "Correct-horse-9"},
+        headers={"Idempotency-Key": key},
+    )
+    assert first.status_code == 200
+
+    # Same key and path from the same address, but without the password.
+    stolen = await client.post(
+        f"{API}/auth/login",
+        json={"email": email, "password": "not-the-password"},
+        headers={"Idempotency-Key": key},
+    )
+    assert stolen.status_code == 422
+    assert stolen.json()["error"]["code"] == "idempotency_key_reused"
+    assert "access_token" not in stolen.text
+
+
+async def test_the_same_key_with_a_different_body_is_refused_not_replayed(
+    client: AsyncClient,
+) -> None:
+    actor = await _make_actor(client)
+    headers = {**actor.headers, "Idempotency-Key": str(uuid.uuid4())}
+    first = await client.post(f"{API}/alumni/profile", json={"full_name": "One"}, headers=headers)
+    assert first.status_code == 201
+    other = await client.post(f"{API}/alumni/profile", json={"full_name": "Two"}, headers=headers)
+    assert other.status_code == 422
+    assert other.json()["error"]["code"] == "idempotency_key_reused"
+
+
+async def test_a_refusal_that_depends_on_the_moment_is_not_saved_for_a_day(
+    client: AsyncClient,
+) -> None:
+    headers = {"Idempotency-Key": str(uuid.uuid4())}
+    first = await client.post(f"{API}/alumni/profile", json={"full_name": "x"}, headers=headers)
+    assert first.status_code == 401
+    again = await client.post(f"{API}/alumni/profile", json={"full_name": "x"}, headers=headers)
+    assert again.status_code == 401
+    assert again.headers.get("Idempotency-Replayed") is None
+
+
+async def test_an_oversized_idempotency_key_is_refused(client: AsyncClient) -> None:
+    actor = await _make_actor(client)
+    r = await client.post(
+        f"{API}/alumni/profile",
+        json={"full_name": "x"},
+        headers={**actor.headers, "Idempotency-Key": "k" * 300},
+    )
+    assert r.status_code == 422
 
 
 async def test_requests_without_the_header_are_never_cached(client: AsyncClient) -> None:
