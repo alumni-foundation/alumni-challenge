@@ -1,11 +1,17 @@
 import uuid
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+# Email addresses are compared exactly, so they are stored and looked up in lower case.
+# Without this, Bob@x.com and bob@x.com would be two accounts, and a reset for one would
+# never reach the other.
+LowerEmail = Annotated[EmailStr, AfterValidator(str.lower)]
 
 
 class RegisterRequest(BaseModel):
-    email: EmailStr
+    email: LowerEmail
     password: str = Field(min_length=10, max_length=128)
     confirm_18_or_older: bool = Field(
         description="Must be true — self-attestation that the user is 18 or older. "
@@ -21,7 +27,7 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: LowerEmail
     password: str
 
 
@@ -60,7 +66,7 @@ class VerifyEmailConfirmRequest(BaseModel):
 
 
 class PasswordForgotRequest(BaseModel):
-    email: EmailStr
+    email: LowerEmail
 
 
 class PasswordResetRequest(BaseModel):
