@@ -20,9 +20,9 @@ describe("landingFor", () => {
     expect(landingFor([m("alumni")])).toBe("/home");
   });
 
-  it("sends event and sports managers to the member home, since they have no features yet", () => {
-    expect(landingFor([m("event_manager", SCHOOL_A)])).toBe("/home");
-    expect(landingFor([m("sports_manager", SCHOOL_A)])).toBe("/home");
+  it("sends an event manager to their organization's dashboard and a sports manager to Events", () => {
+    expect(landingFor([m("event_manager", SCHOOL_A)])).toBe(`/organizer/${SCHOOL_A}`);
+    expect(landingFor([m("sports_manager", SCHOOL_A)])).toBe("/events");
   });
 
   it("sends admins and super admins to /admin and moderators to the reports queue", () => {
@@ -54,7 +54,8 @@ describe("landingFor", () => {
 describe("viewsFor", () => {
   it("always starts with the member view", () => {
     expect(viewsFor([]).map((v) => v.key)).toEqual(["member"]);
-    expect(viewsFor([m("event_manager", SCHOOL_A)]).map((v) => v.key)).toEqual(["member"]);
+    expect(viewsFor([m("event_manager", SCHOOL_A)]).map((v) => v.key)).toEqual(["member", `organizer:${SCHOOL_A}`]);
+    expect(viewsFor([m("sports_manager", SCHOOL_A)]).map((v) => v.key)).toEqual(["member", `sports:${SCHOOL_A}`]);
   });
 
   it("lists one entry per staff role and organization, highest first", () => {
@@ -76,6 +77,24 @@ describe("viewsFor", () => {
 });
 
 describe("currentViewKey", () => {
+  it("gives event and sports managers their own navigation", () => {
+    const ev = viewsFor([m("event_manager", SCHOOL_A)]);
+    expect(currentViewKey(`/organizer/${SCHOOL_A}`, ev)).toBe(`organizer:${SCHOOL_A}`);
+    const sp = viewsFor([m("sports_manager", SCHOOL_A)]);
+    expect(currentViewKey("/events/abc", sp)).toBe(`sports:${SCHOOL_A}`);
+    expect(currentViewKey("/home", sp)).toBe("member");
+    // A school admin who is also a sports manager keeps the school navigation on the events pages.
+    expect(currentViewKey("/events", viewsFor([m("school_admin", SCHOOL_A), m("sports_manager", SCHOOL_A)]))).toBe("member");
+  });
+
+  it("keeps a platform admin or moderator in their own navigation on school and partner pages", () => {
+    const platform = viewsFor([m("admin")]);
+    expect(currentViewKey(`/school/${SCHOOL_A}/roster`, platform)).toBe("platform");
+    expect(currentViewKey(`/partner/${PARTNER}`, platform)).toBe("platform");
+    expect(currentViewKey(`/school/${SCHOOL_A}`, viewsFor([m("moderator")]))).toBe("moderator");
+    expect(currentViewKey(`/school/${SCHOOL_A}`, viewsFor([m("alumni")]))).toBe("member");
+  });
+
   const views = viewsFor([m("admin"), m("moderator"), m("school_admin", SCHOOL_A)]);
 
   it("marks the school view while inside that school", () => {

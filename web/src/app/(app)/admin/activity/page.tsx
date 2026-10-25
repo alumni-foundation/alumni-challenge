@@ -12,7 +12,7 @@ export default function AuditLogPage() {
     return <EmptyState title="You can’t view the activity log" body="It’s open to platform administrators and school or partner admins." />;
   }
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeader title="Activity log" subtitle="Newest first." />
       <ActivityPanel />
     </div>

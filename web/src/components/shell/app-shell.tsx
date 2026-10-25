@@ -53,7 +53,11 @@ function navFor(view: StaffView): NavItem[] {
         MEMBER_VIEW_ITEM,
       ];
     case "moderator":
-      return [{ label: "Reports", href: "/admin/reports", icon: FileText }, MEMBER_VIEW_ITEM];
+      return [
+        { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+        { label: "Reports", href: "/admin/reports", icon: FileText },
+        MEMBER_VIEW_ITEM,
+      ];
     case "school":
       return [
         { label: "Overview", href: view.href, icon: Building2 },
@@ -62,6 +66,17 @@ function navFor(view: StaffView): NavItem[] {
         { label: "Activity", href: `${view.href}/activity`, icon: ScrollText },
         { label: "Edit", href: `${view.href}/edit`, icon: Pencil, desktopOnly: true },
         { label: "Email domains", href: `${view.href}/email-domains`, icon: Globe, desktopOnly: true },
+        MEMBER_VIEW_ITEM,
+      ];
+    case "organizer":
+      return [
+        { label: "Dashboard", href: view.href, icon: LayoutDashboard },
+        { label: "Events", href: "/events", icon: CalendarDays, also: ["/bookings", "/tickets"] },
+        MEMBER_VIEW_ITEM,
+      ];
+    case "sports":
+      return [
+        { label: "Events", href: "/events", icon: CalendarDays, also: ["/bookings", "/tickets"] },
         MEMBER_VIEW_ITEM,
       ];
     case "partner":
@@ -80,7 +95,7 @@ function useIsActive() {
   return (item: NavItem) => {
     const roots = [item.href, ...(item.also ?? [])];
     // Dashboard and home are exact matches, otherwise they would light up for every page under them.
-    const exact = item.href === "/admin" || item.href === "/home" || /^\/(school|partner)\/[^/]+$/.test(item.href);
+    const exact = item.href === "/admin" || item.href === "/home" || /^\/(school|partner|organizer)\/[^/]+$/.test(item.href);
     return roots.some((r) => pathname === r || (!exact && pathname.startsWith(`${r}/`)));
   };
 }
@@ -128,6 +143,7 @@ const menuItem = "flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 t
 function viewLabel(v: StaffView, orgs: Map<string, Organization>): string {
   if (v.kind === "member") return "Member view";
   if (v.kind === "moderator") return "Moderator";
+  if (v.kind === "sports") return `${roleLabel(v.role)} · ${(v.organizationId && orgs.get(v.organizationId)?.name) || "your organization"}`;
   if (v.kind === "platform") return roleLabel(v.role);
   const name = (v.organizationId && orgs.get(v.organizationId)?.name) || "your organization";
   return `${roleLabel(v.role)} · ${name}`;
@@ -379,12 +395,15 @@ function TopBar({ profile }: { profile: Profile | null }) {
   const { current } = useViews();
   const title = navFor(current).find(isActive)?.label ?? "";
   const member = current.kind === "member";
+  const pathname = usePathname();
+  // The dashboards draw their own bell in their header row, so the bar does not repeat it on wide screens.
+  const onDashboard = /^\/(admin|(school|partner|organizer)\/[^/]+)$/.test(pathname);
   return (
     <header className="bg-canvas lg:sticky lg:top-0 lg:z-20 lg:bg-canvas/85 lg:backdrop-blur">
       <div className="flex items-center gap-2 px-4 pt-3 sm:px-6 lg:hidden">
         <Brand compact />
         <p className="min-w-0 flex-1 truncate pl-1 text-lead font-semibold">{title}</p>
-        {member && <NotificationBell />}
+        <NotificationBell />
         <SwitchView />
         <ProfileMenu profile={profile} />
       </div>
@@ -392,7 +411,7 @@ function TopBar({ profile }: { profile: Profile | null }) {
       <div className="mx-auto hidden h-20 max-w-[1680px] items-center gap-6 px-10 xl:px-14 lg:flex">
         <p className="min-w-0 flex-1 truncate text-heading font-semibold">{title}</p>
         {member && <SearchBox id="top-search" className="w-full max-w-sm" />}
-        {member && <NotificationBell />}
+        {!onDashboard && <NotificationBell />}
       </div>
     </header>
   );

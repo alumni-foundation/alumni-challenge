@@ -178,8 +178,9 @@ export const useAddEmailDomain = (orgId: string) =>
 
 export const REPORTS_PAGE_SIZE = 25;
 
-export const useReports = (status: ReportStatus, page: number) =>
+export const useReports = (status: ReportStatus, page: number, enabled = true) =>
   useQuery({
+    enabled,
     queryKey: ["reports", status, page],
     queryFn: () =>
       api<Report[]>(`reports?status=${status}&limit=${REPORTS_PAGE_SIZE}&offset=${page * REPORTS_PAGE_SIZE}`),

@@ -74,7 +74,7 @@ export const assignableRoles = (m: Membership[] = [], org: { id: string; type: "
 
 /* ---- Where each kind of person lands, and which views they can switch between ---------- */
 
-export type ViewKind = "member" | "platform" | "moderator" | "school" | "partner";
+export type ViewKind = "member" | "platform" | "moderator" | "school" | "partner" | "organizer" | "sports";
 
 export type StaffView = {
   /** Stable key for lists and the remembered choice. */
@@ -90,8 +90,8 @@ const MEMBER_VIEW: StaffView = { key: "member", kind: "member", role: "alumni", 
 
 /**
  * Every view this person can open: the member view first, then one per staff role (one per
- * organization for school and partner admins), highest rank first. Event and sports managers
- * have no features yet, so they only get the member view.
+ * organization for school and partner admins), highest rank first. An event manager gets their
+ * organization's dashboard; a sports manager gets Events, which is all the API lets them see.
  */
 export function viewsFor(m: Membership[] = []): StaffView[] {
   const out: StaffView[] = [MEMBER_VIEW];
@@ -114,14 +114,25 @@ export function viewsFor(m: Membership[] = []): StaffView[] {
       out.push({ key: `${kind}:${x.organization_id}`, kind, role, organizationId: x.organization_id, href: `${base}/${x.organization_id}` });
     }
   }
+  for (const x of m) {
+    if (!x.organization_id) continue;
+    if (x.role === "event_manager" && !seen.has(`organizer:${x.organization_id}`)) {
+      seen.add(`organizer:${x.organization_id}`);
+      out.push({ key: `organizer:${x.organization_id}`, kind: "organizer", role: x.role, organizationId: x.organization_id, href: `/organizer/${x.organization_id}` });
+    }
+    if (x.role === "sports_manager" && !seen.has(`sports:${x.organization_id}`)) {
+      seen.add(`sports:${x.organization_id}`);
+      out.push({ key: `sports:${x.organization_id}`, kind: "sports", role: x.role, organizationId: x.organization_id, href: "/events" });
+    }
+  }
   return out;
 }
 
 /**
  * The page to open after sign-in. The highest role wins: admin, then moderator, then school
  * admin, then partner admin. Someone who runs several schools (or partners) lands on the
- * picker at /school (or /partner). Everyone else, including event and sports managers, lands
- * on the member home.
+ * picker at /school (or /partner). Event managers land on their organization's dashboard,
+ * sports managers on Events, and everyone else on the member home.
  */
 export function landingFor(m: Membership[] = []): string {
   const views = viewsFor(m);
@@ -137,9 +148,15 @@ export function landingFor(m: Membership[] = []): string {
 /** The view that matches the current page, so the "Switch view" menu can mark it. */
 export function currentViewKey(pathname: string, views: StaffView[]): string {
   const staff = views.filter((v) => v.kind !== "member");
-  const match = staff.find((v) => pathname === v.href || pathname.startsWith(`${v.href}/`));
+  const match = staff.find((v) => v.kind !== "sports" && (pathname === v.href || pathname.startsWith(`${v.href}/`)));
   if (match) return match.key;
+  // A sports manager with no other staff role stays in their own navigation on the events pages.
+  const eventsPage = ["/events", "/bookings", "/tickets"].some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (eventsPage && staff.length > 0 && staff.every((v) => v.kind === "sports")) return staff[0].key;
   if (pathname === "/school" || pathname === "/partner") return staff.find((v) => v.kind === pathname.slice(1))?.key ?? "member";
+  // A platform admin or moderator who opens a school or partner page keeps the staff navigation, not the member one.
+  if (pathname.startsWith("/school/") || pathname.startsWith("/partner/")) return staff.find((v) => v.kind === "platform" || v.kind === "moderator")?.key ?? "member";
+  if (pathname.startsWith("/organizer/")) return staff.find((v) => v.kind === "organizer")?.key ?? "member";
   if (pathname.startsWith("/admin")) return staff.find((v) => v.kind === "platform" || v.kind === "moderator")?.key ?? "member";
   return "member";
 }

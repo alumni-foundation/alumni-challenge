@@ -2,6 +2,7 @@
 
 import { Globe } from "lucide-react";
 import { useState } from "react";
+import { Row, RowList } from "@/components/staff/rows";
 import { Button, Card, ErrorState, Field, Input, Skeleton, useToast } from "@/components/ui";
 import { useAddEmailDomain, useEmailDomains } from "@/lib/api/hooks";
 import type { Organization } from "@/lib/api/types";
@@ -31,9 +32,9 @@ export function DomainsPanel({ org }: { org: Organization }) {
   }
 
   return (
-    <Card className="space-y-4">
+    <Card large className="space-y-4">
       <div>
-        <h2 className="text-heading">School email domains</h2>
+        <h2 className="text-lead font-semibold">School email domains</h2>
         <p className="mt-1 text-small text-muted">
           Alumni who sign up with an email address on one of these domains are verified automatically. Once a domain is added it can’t be removed here.
         </p>
@@ -45,13 +46,13 @@ export function DomainsPanel({ org }: { org: Organization }) {
       ) : domains.data && domains.data.length === 0 ? (
         <p className="text-small text-muted">No domains registered yet.</p>
       ) : (
-        <ul className="divide-y divide-line rounded-control border border-line">
+        <RowList label="Registered domains">
           {domains.data?.map((d) => (
-            <li key={d.id} className="flex min-h-11 items-center gap-3 px-3.5 py-2 text-small">
+            <Row key={d.id} className="min-h-12 py-2 text-small">
               <Globe className="size-4 text-muted" aria-hidden /> {d.domain}
-            </li>
+            </Row>
           ))}
-        </ul>
+        </RowList>
       )}
       <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row sm:items-start" noValidate>
         <div className="flex-1">
@@ -59,7 +60,7 @@ export function DomainsPanel({ org }: { org: Organization }) {
             <Input id="dom" value={value} onChange={(e) => { setValue(e.target.value); add.reset(); }} placeholder="school.ac.ke" autoCapitalize="none" autoCorrect="off" inputMode="url" />
           </Field>
         </div>
-        <Button type="submit" loading={add.isPending} className="sm:mt-[26px]">Add domain</Button>
+        <Button variant="dark" type="submit" loading={add.isPending} className="sm:mt-[26px]">Add domain</Button>
       </form>
     </Card>
   );
