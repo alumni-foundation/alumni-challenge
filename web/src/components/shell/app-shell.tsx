@@ -64,6 +64,8 @@ function navFor(view: StaffView): NavItem[] {
         { label: "Email domains", href: `${view.href}/email-domains`, icon: Globe, desktopOnly: true },
         MEMBER_VIEW_ITEM,
       ];
+    case "organizer":
+      return [{ label: "Events", href: "/organizer", icon: CalendarCheck }, MEMBER_VIEW_ITEM];
     case "partner":
       return [
         { label: "Overview", href: view.href, icon: Building2 },
@@ -129,6 +131,7 @@ function viewLabel(v: StaffView, orgs: Map<string, Organization>): string {
   if (v.kind === "member") return "Member view";
   if (v.kind === "moderator") return "Moderator";
   if (v.kind === "platform") return roleLabel(v.role);
+  if (v.kind === "organizer") return "Organizer";
   const name = (v.organizationId && orgs.get(v.organizationId)?.name) || "your organization";
   return `${roleLabel(v.role)} · ${name}`;
 }

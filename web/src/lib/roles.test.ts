@@ -20,7 +20,7 @@ describe("landingFor", () => {
     expect(landingFor([m("alumni")])).toBe("/home");
   });
 
-  it("sends event and sports managers to the member home, since they have no features yet", () => {
+  it("sends event and sports managers to the member home (the organizer view is one switch away)", () => {
     expect(landingFor([m("event_manager", SCHOOL_A)])).toBe("/home");
     expect(landingFor([m("sports_manager", SCHOOL_A)])).toBe("/home");
   });
@@ -54,7 +54,7 @@ describe("landingFor", () => {
 describe("viewsFor", () => {
   it("always starts with the member view", () => {
     expect(viewsFor([]).map((v) => v.key)).toEqual(["member"]);
-    expect(viewsFor([m("event_manager", SCHOOL_A)]).map((v) => v.key)).toEqual(["member"]);
+    expect(viewsFor([m("alumni")]).map((v) => v.key)).toEqual(["member"]);
   });
 
   it("lists one entry per staff role and organization, highest first", () => {
@@ -65,7 +65,13 @@ describe("viewsFor", () => {
       m("moderator"),
       m("admin"),
     ]).map((v) => v.key);
-    expect(keys).toEqual(["member", "platform", "moderator", `school:${SCHOOL_B}`, `school:${SCHOOL_A}`, `partner:${PARTNER}`]);
+    expect(keys).toEqual(["member", "platform", "moderator", `school:${SCHOOL_B}`, `school:${SCHOOL_A}`, `partner:${PARTNER}`, "organizer"]);
+  });
+
+  it("gives people who run events an organizer view, and moderators alone none", () => {
+    expect(viewsFor([m("event_manager", SCHOOL_A)]).map((v) => v.key)).toEqual(["member", "organizer"]);
+    expect(viewsFor([m("sports_manager", SCHOOL_A)]).map((v) => v.key)).toEqual(["member", "organizer"]);
+    expect(viewsFor([m("moderator")]).map((v) => v.key)).toEqual(["member", "moderator"]);
   });
 
   it("gives someone who is both admin and super admin a single platform view", () => {
@@ -83,6 +89,12 @@ describe("currentViewKey", () => {
   });
   it("marks the admin area as the platform view", () => {
     expect(currentViewKey("/admin/organizations", views)).toBe("platform");
+  });
+  it("marks the organizer view on /organizer pages, even for an admin", () => {
+    const v = viewsFor([m("admin"), m("event_manager", SCHOOL_A)]);
+    expect(currentViewKey("/organizer", v)).toBe("organizer");
+    expect(currentViewKey("/organizer/abc/tee-sheet", v)).toBe("organizer");
+    expect(currentViewKey("/organizer", viewsFor([m("alumni")]))).toBe("member");
   });
   it("falls back to the member view everywhere else", () => {
     expect(currentViewKey("/directory", views)).toBe("member");

@@ -72,9 +72,13 @@ export const assignableRoles = (m: Membership[] = [], org: { id: string; type: "
   return out;
 };
 
+/** Roles that may open the organizer area. The server still decides which events each one sees. */
+const EVENT_ROLES: Role[] = ["super_admin", "admin", "school_admin", "partner_admin", "event_manager", "sports_manager"];
+const topEventRole = (m: Membership[]): Role => EVENT_ROLES.find((r) => m.some((x) => x.role === r)) ?? "event_manager";
+
 /* ---- Where each kind of person lands, and which views they can switch between ---------- */
 
-export type ViewKind = "member" | "platform" | "moderator" | "school" | "partner";
+export type ViewKind = "member" | "platform" | "moderator" | "school" | "partner" | "organizer";
 
 export type StaffView = {
   /** Stable key for lists and the remembered choice. */
@@ -90,8 +94,8 @@ const MEMBER_VIEW: StaffView = { key: "member", kind: "member", role: "alumni", 
 
 /**
  * Every view this person can open: the member view first, then one per staff role (one per
- * organization for school and partner admins), highest rank first. Event and sports managers
- * have no features yet, so they only get the member view.
+ * organization for school and partner admins), highest rank first, then "organizer" for anyone who
+ * runs events (the events they run, at /organizer).
  */
 export function viewsFor(m: Membership[] = []): StaffView[] {
   const out: StaffView[] = [MEMBER_VIEW];
@@ -114,6 +118,9 @@ export function viewsFor(m: Membership[] = []): StaffView[] {
       out.push({ key: `${kind}:${x.organization_id}`, kind, role, organizationId: x.organization_id, href: `${base}/${x.organization_id}` });
     }
   }
+  if (m.some((x) => EVENT_ROLES.includes(x.role))) {
+    out.push({ key: "organizer", kind: "organizer", role: topEventRole(m), organizationId: null, href: "/organizer" });
+  }
   return out;
 }
 
@@ -121,11 +128,11 @@ export function viewsFor(m: Membership[] = []): StaffView[] {
  * The page to open after sign-in. The highest role wins: admin, then moderator, then school
  * admin, then partner admin. Someone who runs several schools (or partners) lands on the
  * picker at /school (or /partner). Everyone else, including event and sports managers, lands
- * on the member home.
+ * on the member home (the organizer view is one switch away).
  */
 export function landingFor(m: Membership[] = []): string {
   const views = viewsFor(m);
-  const first = views.find((v) => v.kind !== "member");
+  const first = views.find((v) => v.kind !== "member" && v.kind !== "organizer");
   if (!first) return MEMBER_VIEW.href;
   if (first.kind === "school" || first.kind === "partner") {
     const same = views.filter((v) => v.kind === first.kind);
@@ -137,6 +144,7 @@ export function landingFor(m: Membership[] = []): string {
 /** The view that matches the current page, so the "Switch view" menu can mark it. */
 export function currentViewKey(pathname: string, views: StaffView[]): string {
   const staff = views.filter((v) => v.kind !== "member");
+  if (pathname === "/organizer" || pathname.startsWith("/organizer/")) return staff.find((v) => v.kind === "organizer")?.key ?? "member";
   const match = staff.find((v) => pathname === v.href || pathname.startsWith(`${v.href}/`));
   if (match) return match.key;
   if (pathname === "/school" || pathname === "/partner") return staff.find((v) => v.kind === pathname.slice(1))?.key ?? "member";
