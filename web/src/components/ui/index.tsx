@@ -51,11 +51,11 @@ export function Button({ variant = "primary", size = "md", loading, className, c
   );
 }
 
-export function LinkButton({ href, variant = "primary", size = "md", className, children }: {
-  href: string; variant?: ButtonProps["variant"]; size?: ButtonSize; className?: string; children: React.ReactNode;
+export function LinkButton({ href, variant = "primary", size = "md", className, children, prefetch }: {
+  href: string; variant?: ButtonProps["variant"]; size?: ButtonSize; className?: string; children: React.ReactNode; prefetch?: boolean;
 }) {
   return (
-    <Link href={href} className={cn(buttonBase, SIZES[size], VARIANTS[variant ?? "primary"], className)}>
+    <Link href={href} prefetch={prefetch} className={cn(buttonBase, SIZES[size], VARIANTS[variant ?? "primary"], className)}>
       {children}
     </Link>
   );

@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { isPublicPath, isSignedOutOnly, isStaffArea, worksWithoutProfile } from "./routes";
 
 describe("isPublicPath", () => {
-  it.each(["/", "/schools", "/schools/abc", "/partners", "/partners/abc", "/terms", "/privacy", "/community-rules", "/contact", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/403", "/404", "/suspended"])(
+  it.each(["/", "/schools", "/schools/abc", "/partners", "/partners/abc", "/terms", "/privacy", "/community-rules", "/contact", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/403", "/404", "/suspended", "/events", "/events/abc"])(
     "lets anyone open %s",
     (p) => expect(isPublicPath(p)).toBe(true),
   );
 
-  it.each(["/home", "/directory", "/alumni/abc", "/connections", "/profile", "/settings", "/onboarding", "/admin", "/admin/reports", "/school/abc", "/partner/abc", "/start"])(
+  it.each(["/home", "/directory", "/alumni/abc", "/connections", "/profile", "/settings", "/onboarding", "/admin", "/admin/reports", "/school/abc", "/partner/abc", "/start", "/bookings", "/bookings/abc", "/tickets"])(
     "asks for a sign-in before %s",
     (p) => expect(isPublicPath(p)).toBe(false),
   );
@@ -18,12 +18,33 @@ describe("isPublicPath", () => {
   });
 });
 
+describe("ticket pages", () => {
+  const code = "a".repeat(64);
+  it("opens a ticket page by its full code without a sign-in", () => {
+    expect(isPublicPath(`/tickets/${code}`)).toBe(true);
+  });
+  it("does not open the ticket list, or anything that only looks like a code", () => {
+    expect(isPublicPath("/tickets")).toBe(false);
+    expect(isPublicPath("/tickets/abc")).toBe(false);
+    expect(isPublicPath(`/tickets/${code}/extra`)).toBe(false);
+    expect(isPublicPath(`/tickets/${code.toUpperCase()}`)).toBe(false);
+  });
+});
+
 describe("isSignedOutOnly", () => {
   it("covers the pages a signed-in person should be moved on from", () => {
     expect(["/login", "/register"].every(isSignedOutOnly)).toBe(true);
     expect(isSignedOutOnly("/forgot-password")).toBe(false);
     expect(isSignedOutOnly("/verify-email")).toBe(false);
     expect(isSignedOutOnly("/reset-password")).toBe(false);
+  });
+});
+
+describe("worksWithoutProfile for events", () => {
+  it("lets someone with no alumni profile open events, bookings and tickets", () => {
+    for (const p of ["/events", "/events/abc", "/bookings", "/bookings/abc", "/tickets", `/tickets/${"a".repeat(64)}`]) expect(worksWithoutProfile(p)).toBe(true);
+    expect(worksWithoutProfile("/directory")).toBe(false);
+    expect(worksWithoutProfile("/eventsfoo")).toBe(false);
   });
 });
 

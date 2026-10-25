@@ -1,7 +1,8 @@
 "use client";
 
 import { Search, SlidersHorizontal } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
 import { PersonCard } from "@/components/member/person-card";
 import { Button, EmptyState, ErrorState, Field, Input, PageHeader, Select, Skeleton, Switch } from "@/components/ui";
 import { NO_FILTERS, PAGE_SIZE, useDirectorySearch, useOrgs, type DirectoryFilters } from "@/lib/api/hooks";
@@ -11,8 +12,8 @@ import { useDebounced } from "@/lib/use-debounced";
 const COUNT_CAP = 10_000;
 const formatTotal = (n: number) => (n >= COUNT_CAP ? "10,000+" : n.toLocaleString("en-KE"));
 
-export default function DirectoryPage() {
-  const [form, setForm] = useState<DirectoryFilters>(NO_FILTERS);
+function DirectoryView({ initialQuery }: { initialQuery: string }) {
+  const [form, setForm] = useState<DirectoryFilters>({ ...NO_FILTERS, q: initialQuery });
   const [page, setPage] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const schools = useOrgs("school");
@@ -137,4 +138,14 @@ export default function DirectoryPage() {
       </div>
     </div>
   );
+}
+
+/** The search in the top bar sends people here with ?q=. A new search from here starts the page again with that text. */
+function DirectoryRoute() {
+  const q = useSearchParams().get("q") ?? "";
+  return <DirectoryView key={q} initialQuery={q} />;
+}
+
+export default function DirectoryPage() {
+  return <Suspense><DirectoryRoute /></Suspense>;
 }

@@ -5,8 +5,12 @@ import { useMemo } from "react";
 import { api, ApiError, apiPage } from "./client";
 import type {
   AuditLogEntry,
+  Booking,
+  BookingStatus,
   Connection,
   EmailDomain,
+  EventDetail,
+  EventSummary,
   MemberListItem,
   Membership,
   Organization,
@@ -20,6 +24,7 @@ import type {
   Role,
   RosterItem,
   Session,
+  Ticket,
   User,
 } from "./types";
 
@@ -211,3 +216,46 @@ export const useRoster = (orgId: string, filter: RosterFilter, page: number) =>
     placeholderData: (prev) => prev,
     retry: false,
   });
+
+/** The next published events the person may see, soonest first (GET /events lists upcoming ones). */
+export const useUpcomingEvents = (limit = 4) =>
+  useQuery({
+    queryKey: ["events", "upcoming", limit],
+    queryFn: () => api<EventSummary[]>(`events?limit=${limit}`),
+    staleTime: 60_000,
+    retry: false,
+  });
+
+/** One event. The page draws it on the server first (`initialData`); a signed-in person also gets their own booking on it. */
+export const useEvent = (id: string, opts: { initialData?: EventDetail; enabled: boolean }) =>
+  useQuery({
+    queryKey: ["event", id],
+    queryFn: () => api<EventDetail>(`events/${id}`),
+    initialData: opts.initialData,
+    enabled: opts.enabled,
+    staleTime: 10_000,
+    retry: false,
+  });
+
+export const BOOKINGS_PAGE_SIZE = 20;
+
+export const useBookings = (status: BookingStatus | "", page: number) =>
+  useQuery({
+    queryKey: ["bookings", status, page],
+    queryFn: () => {
+      const qs = new URLSearchParams({ limit: String(BOOKINGS_PAGE_SIZE), offset: String(page * BOOKINGS_PAGE_SIZE) });
+      if (status) qs.set("status", status);
+      return apiPage<Booking>(`bookings?${qs}`);
+    },
+    placeholderData: (prev) => prev,
+  });
+
+export const useBooking = (id: string) =>
+  useQuery({ queryKey: ["booking", id], queryFn: () => api<Booking>(`bookings/${id}`), retry: false });
+
+/** The tickets of one booking. A booking only has tickets once it is confirmed. */
+export const useBookingTickets = (id: string, enabled: boolean) =>
+  useQuery({ queryKey: ["booking", id, "tickets"], queryFn: () => api<Ticket[]>(`bookings/${id}/tickets`), enabled, retry: false });
+
+/** My tickets for events that have not ended. */
+export const useMyTickets = () => useQuery({ queryKey: ["tickets", "mine"], queryFn: () => api<Ticket[]>("tickets/mine") });

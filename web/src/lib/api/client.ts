@@ -47,7 +47,13 @@ export function safeNext(value: string | null): string | null {
   return value && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\") ? value : null;
 }
 
-type Sent = { method?: string; body?: unknown; form?: FormData };
+/** Where an expired session sends the person. A ticket code is a credential, so it is never copied into that address. */
+export function expiredLoginUrl(pathname: string, search: string): string {
+  const here = /^\/tickets\/[0-9a-f]{64}/.test(pathname) ? "/tickets" : pathname + search;
+  return `/login?reason=expired&next=${encodeURIComponent(here)}`;
+}
+
+type Sent = { method?: string; body?: unknown; form?: FormData; headers?: Record<string, string> };
 
 async function request(path: string, init: Sent): Promise<{ res: Response; data: unknown }> {
   let res: Response;
@@ -55,7 +61,7 @@ async function request(path: string, init: Sent): Promise<{ res: Response; data:
     res = await fetch(`/api/backend/${path}`, {
       method: init.method ?? "GET",
       // A FormData body sets its own content type (with the multipart boundary).
-      headers: init.body !== undefined ? { "content-type": "application/json" } : undefined,
+      headers: init.body !== undefined || init.headers ? { ...(init.body !== undefined ? { "content-type": "application/json" } : {}), ...init.headers } : undefined,
       body: init.form ?? (init.body !== undefined ? JSON.stringify(init.body) : undefined),
     });
   } catch {
@@ -64,15 +70,14 @@ async function request(path: string, init: Sent): Promise<{ res: Response; data:
   const data = await parse(res);
   if (res.status === 401 && typeof window !== "undefined") {
     // The proxy already tried the refresh token once. A 401 here means the session is over.
-    const here = window.location.pathname + window.location.search;
-    window.location.assign(`/login?reason=expired&next=${encodeURIComponent(here)}`);
+    window.location.assign(expiredLoginUrl(window.location.pathname, window.location.search));
   }
   if (!res.ok) throw toError(res, data);
   return { res, data };
 }
 
 /** Calls the backend through the same-origin proxy. Tokens never reach browser JavaScript. */
-export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+export async function api<T>(path: string, init: { method?: string; body?: unknown; headers?: Record<string, string> } = {}): Promise<T> {
   return (await request(path, init)).data as T;
 }
 

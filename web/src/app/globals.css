@@ -223,7 +223,9 @@ h1, h2, h3 { font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
 }
 .icon3d > svg { filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.3)); }
 .icon3d[data-pressed="true"],
-button.icon3d:active {
+button.icon3d:active,
+button:active > .icon3d,
+button[aria-expanded="true"] > .icon3d {
   transform: translateY(2px) scale(0.96);
   filter: brightness(0.93) saturate(1.05);
   box-shadow:
@@ -235,12 +237,16 @@ button.icon3d:active {
 button.icon3d { cursor: pointer; border: 0; padding: 0; }
 @media (hover: hover) {
   button.icon3d:hover:not(:active) { transform: translateY(-1px); }
+  button:hover:not(:active):not([aria-expanded="true"]) > .icon3d { transform: translateY(-1px); filter: brightness(1.03); }
 }
 .icon3d[data-tone="ember"] { --t-hi: #f0705c; --t-mid: #d3362f; --t-lo: #a1171f; --t-glow: 195 40 40; }
 .icon3d[data-tone="gold"] { --t-hi: #eab33d; --t-mid: #b87508; --t-lo: #85540a; --t-glow: 190 120 10; }
 .icon3d[data-tone="moss"] { --t-hi: #5fbf86; --t-mid: #2a8a55; --t-lo: #14603a; --t-glow: 30 120 70; }
 .icon3d[data-tone="sky"] { --t-hi: #6aa0f2; --t-mid: #2f66d6; --t-lo: #1a419c; --t-glow: 40 90 210; }
 .icon3d[data-tone="ink"] { --t-hi: #6a655d; --t-mid: #3b3732; --t-lo: #1d1a17; --t-glow: 30 26 22; }
+/* Quiet: an ivory tile for inactive items on a light page. The icon is muted ink, not white. */
+.icon3d[data-tone="paper"] { --t-hi: #fffdf9; --t-mid: #f4eee2; --t-lo: #e3d9c6; --t-glow: 90 70 40; color: var(--muted); box-shadow: inset 0 1.5px 0 rgb(255 255 255 / 0.9), inset 0 0 0 1px rgb(120 95 60 / 0.14), inset 0 -2px 4px rgb(120 95 60 / 0.12), 0 1px 1px rgb(var(--shadow-color) / 0.1), 0 4px 8px -2px rgb(var(--shadow-color) / 0.12); }
+.icon3d[data-tone="paper"] > svg { filter: none; }
 
 /* ---- Scroll reveal: cards slide in once, the first time they are seen ---------------------- */
 /* Only hides content when scripts run and motion is welcome; otherwise everything is just visible. */
@@ -343,3 +349,65 @@ button.icon3d { cursor: pointer; border: 0; padding: 0; }
 @media (prefers-reduced-motion: reduce) {
   .auth-photo-in, .auth-enter .auth-card-in, .auth-enter .auth-back-in, .auth-enter .auth-caption-in, .auth-enter .auth-stagger > * > * { animation: none; }
 }
+
+/* ---- Home: the frosted stat strip and the page entrance ------------------------------------- */
+/* Frosted glass only here. About 70% dark so the white text stay AA over the brightest photo pixels;
+   solid where blur is unsupported or the visitor asked for less transparency. */
+.hero-glass {
+  background: rgb(20 14 8 / 0.7);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  backdrop-filter: blur(16px) saturate(1.1);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .hero-glass { background: #2a221b; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .hero-glass { background: #2a221b; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+/* Same gentle rise as the sign-in pages: each block of Home, 60ms apart. Plays once, when the page opens. */
+.page-enter > * { animation: auth-rise 480ms var(--ease-calm) backwards; }
+.page-enter > :nth-child(2) { animation-delay: 60ms; }
+.page-enter > :nth-child(3) { animation-delay: 120ms; }
+.page-enter > :nth-child(4) { animation-delay: 180ms; }
+.page-enter > :nth-child(5) { animation-delay: 240ms; }
+@media (prefers-reduced-motion: reduce) {
+  .page-enter > * { animation: none; }
+}
+
+/* ---- Sidebar: slim rail or open with labels -------------------------------------------------- */
+/* The state lives in data-sb on .shell ("expanded", "collapsed", or "auto" when no choice is saved: expanded
+   from 1280px). It is all CSS, so the server's first paint is already right. 250ms, none for reduced motion. */
+.shell { --rail-w: 4.75rem; --rail-gap: 6.25rem; }
+.shell[data-sb="expanded"] { --rail-w: 15.5rem; --rail-gap: 17rem; }
+@media (min-width: 1280px) { .shell[data-sb="auto"] { --rail-w: 15.5rem; --rail-gap: 17rem; } }
+@media (min-width: 1024px) {
+  .shell { transition: padding-left 250ms cubic-bezier(0.4, 0, 0.2, 1); }
+  .rail { width: var(--rail-w); transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1); }
+}
+.rail-head { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+.rail-label, .rail-name { max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; transition: max-width 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 180ms ease-out; }
+.rail-head .rail-label { margin-left: 0; transition: max-width 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 180ms ease-out, margin-left 250ms cubic-bezier(0.4, 0, 0.2, 1); }
+.shell[data-sb="expanded"] .rail-head .rail-label { margin-left: 0.75rem; }
+@media (min-width: 1280px) { .shell[data-sb="auto"] .rail-head .rail-label { margin-left: 0.75rem; } }
+.rail-pill { display: none; }
+.rail-name { flex: 0 1 auto; }
+.rail-item:hover .rail-label { color: #fff; }
+.shell[data-sb="expanded"] .rail-head { flex-direction: row; justify-content: space-between; }
+.shell[data-sb="expanded"] :is(.rail-label, .rail-name) { max-width: 11rem; opacity: 1; }
+.shell[data-sb="expanded"] .rail-pill { display: inline-block; }
+.shell[data-sb="expanded"] :is(.rail-dot, .rail-tip) { display: none; }
+.shell[data-sb="expanded"] .rail-item[aria-current="page"] { background: rgb(255 255 255 / 0.08); }
+.shell[data-sb="expanded"] .rail-item:hover { background: rgb(255 255 255 / 0.05); }
+@media (min-width: 1280px) {
+  .shell[data-sb="auto"] .rail-head { flex-direction: row; justify-content: space-between; }
+  .shell[data-sb="auto"] :is(.rail-label, .rail-name) { max-width: 11rem; opacity: 1; }
+  .shell[data-sb="auto"] .rail-pill { display: inline-block; }
+  .shell[data-sb="auto"] :is(.rail-dot, .rail-tip) { display: none; }
+  .shell[data-sb="auto"] .rail-item[aria-current="page"] { background: rgb(255 255 255 / 0.08); }
+  .shell[data-sb="auto"] .rail-item:hover { background: rgb(255 255 255 / 0.05); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell, .rail, .rail-label, .rail-name { transition: none !important; }
+}
+/* The hover look held still, for showing the state on the design-check page. */
+.icon3d[data-hover="true"] { transform: translateY(-1px); filter: brightness(1.03); }
