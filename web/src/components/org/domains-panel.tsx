@@ -8,7 +8,7 @@ import { useAddEmailDomain, useEmailDomains } from "@/lib/api/hooks";
 import type { Organization } from "@/lib/api/types";
 
 /** The school's email domains. There is no remove in the API, so there is no delete button. */
-export function DomainsPanel({ org }: { org: Organization }) {
+export function DomainsPanel({ org, bare = false }: { org: Organization; bare?: boolean }) {
   const domains = useEmailDomains(org.id, true);
   const add = useAddEmailDomain(org.id);
   const toast = useToast();
@@ -31,14 +31,19 @@ export function DomainsPanel({ org }: { org: Organization }) {
     });
   }
 
+  const Wrap: React.ElementType = bare ? "div" : Card;
+  const wrapProps = bare ? {} : { large: true };
   return (
-    <Card large className="space-y-4">
-      <div>
+    <Wrap {...wrapProps} className="space-y-4">
+      {!bare && <div>
         <h2 className="text-lead font-semibold">School email domains</h2>
         <p className="mt-1 text-small text-muted">
-          Alumni who sign up with an email address on one of these domains are verified automatically. Once a domain is added it can’t be removed here.
+          Alumni who sign up with an email address on one of these domains are verified automatically.
         </p>
-      </div>
+      </div>}
+      <p className="text-small text-muted">
+        Once a domain is added it can’t be removed: the platform has no way to remove one yet. Ask the platform team if one was added by mistake.
+      </p>
       {domains.isError ? (
         <ErrorState message={domains.error.message} onRetry={() => void domains.refetch()} />
       ) : domains.isLoading ? (
@@ -62,6 +67,6 @@ export function DomainsPanel({ org }: { org: Organization }) {
         </div>
         <Button variant="dark" type="submit" loading={add.isPending} className="sm:mt-[26px]">Add domain</Button>
       </form>
-    </Card>
+    </Wrap>
   );
 }

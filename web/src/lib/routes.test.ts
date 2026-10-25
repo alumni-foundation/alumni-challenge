@@ -7,7 +7,7 @@ describe("isPublicPath", () => {
     (p) => expect(isPublicPath(p)).toBe(true),
   );
 
-  it.each(["/home", "/directory", "/alumni/abc", "/connections", "/profile", "/settings", "/onboarding", "/admin", "/admin/reports", "/school/abc", "/partner/abc", "/organizer/abc", "/start", "/bookings", "/bookings/abc", "/tickets"])(
+  it.each(["/home", "/directory", "/alumni/abc", "/connections", "/profile", "/settings", "/onboarding", "/admin", "/admin/reports", "/school/abc", "/partner/abc", "/organizer/abc", "/start", "/bookings", "/bookings/abc", "/tickets", "/messages", "/admin/users"])(
     "asks for a sign-in before %s",
     (p) => expect(isPublicPath(p)).toBe(false),
   );
@@ -59,5 +59,11 @@ describe("worksWithoutProfile", () => {
   it("covers staff areas and Settings, but not member pages", () => {
     expect(["/admin/reports", "/school/abc", "/partner/abc", "/settings"].every(worksWithoutProfile)).toBe(true);
     expect(["/home", "/directory", "/profile", "/connections", "/settings/x"].some(worksWithoutProfile)).toBe(false);
+  });
+});
+
+describe("messages", () => {
+  it("opens without an alumni profile, so staff can see where messaging will be", () => {
+    expect(worksWithoutProfile("/messages")).toBe(true);
   });
 });

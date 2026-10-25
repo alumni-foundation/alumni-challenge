@@ -44,7 +44,7 @@ export const isStaffArea = (pathname: string) =>
  * the account (password, devices, data) and not the member profile.
  */
 export const worksWithoutProfile = (pathname: string) =>
-  isStaffArea(pathname) || pathname === "/settings" || isEventsArea(pathname);
+  isStaffArea(pathname) || pathname === "/settings" || pathname === "/messages" || isEventsArea(pathname);
 
 /**
  * Events, bookings and tickets are about the account, not the alumni profile: staff, and people who have not

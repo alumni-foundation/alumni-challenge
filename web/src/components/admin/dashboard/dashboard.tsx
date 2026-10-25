@@ -3,6 +3,7 @@
 import { ArrowRight, ChevronDown, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { MessagesButton } from "@/components/messages/messages-button";
 import { NotificationBell } from "@/components/shell/notification-bell";
 import { OrgLogo } from "@/components/public/org";
 import { EmptyState, ErrorState, LinkButton } from "@/components/ui";
@@ -118,6 +119,7 @@ export function Dashboard({ scope, org }: { scope: DashboardScope; org?: Organiz
         </div>
         <SearchField />
         {scope.kind === "platform" && <ScopeSelect value={picked} onChange={setPicked} />}
+        <MessagesButton className="hidden lg:grid" />
         <NotificationBell className="hidden lg:block" />
         <LinkButton href={next.href} variant="dark">
           {next.label} <ArrowRight className="size-4" aria-hidden />

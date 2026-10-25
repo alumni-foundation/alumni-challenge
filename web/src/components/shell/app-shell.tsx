@@ -2,7 +2,7 @@
 
 import {
   Building2, CalendarCheck, CalendarDays, Check, ChevronDown, FileText, Globe, GraduationCap, Home, LayoutDashboard, LogOut, Pencil, Repeat, ScrollText,
-  PanelLeftClose, PanelLeftOpen, Search, Settings, ShieldCheck, Ticket, User, UserPlus, Users,
+  PanelLeftClose, PanelLeftOpen, Search, Settings, ShieldCheck, Ticket, User, UserPlus, Users, UsersRound,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui";
 import { Icon3D } from "@/components/ui/icon3d";
 import { Logo } from "./logo";
+import { MessagesButton } from "@/components/messages/messages-button";
 import { NotificationBell } from "./notification-bell";
 
 type NavItem = {
@@ -48,14 +49,16 @@ function navFor(view: StaffView): NavItem[] {
         { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
         { label: "Reports", href: "/admin/reports", icon: FileText },
         { label: "Organizations", href: "/admin/organizations", icon: Building2 },
+        { label: "People", href: "/admin/users", icon: UsersRound },
         { label: "Roles", href: "/admin/roles", icon: ShieldCheck, desktopOnly: true },
-        { label: "Activity log", href: "/admin/activity", icon: ScrollText },
+        { label: "Activity log", href: "/admin/activity", icon: ScrollText, desktopOnly: true },
         MEMBER_VIEW_ITEM,
       ];
     case "moderator":
       return [
         { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
         { label: "Reports", href: "/admin/reports", icon: FileText },
+        { label: "People", href: "/admin/users", icon: UsersRound },
         MEMBER_VIEW_ITEM,
       ];
     case "school":
@@ -403,6 +406,7 @@ function TopBar({ profile }: { profile: Profile | null }) {
       <div className="flex items-center gap-2 px-4 pt-3 sm:px-6 lg:hidden">
         <Brand compact />
         <p className="min-w-0 flex-1 truncate pl-1 text-lead font-semibold">{title}</p>
+        <MessagesButton />
         <NotificationBell />
         <SwitchView />
         <ProfileMenu profile={profile} />
@@ -411,6 +415,7 @@ function TopBar({ profile }: { profile: Profile | null }) {
       <div className="mx-auto hidden h-20 max-w-[1680px] items-center gap-6 px-10 xl:px-14 lg:flex">
         <p className="min-w-0 flex-1 truncate text-heading font-semibold">{title}</p>
         {member && <SearchBox id="top-search" className="w-full max-w-sm" />}
+        {!onDashboard && <MessagesButton />}
         {!onDashboard && <NotificationBell />}
       </div>
     </header>

@@ -1,19 +1,20 @@
 "use client";
 
-import { ChevronRight, Globe, GraduationCap, Pencil, ScrollText, Users } from "lucide-react";
+import { ArrowLeft, CalendarPlus, ChevronRight, Globe, GraduationCap, Pencil, ScrollText, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { BarList } from "@/components/home/bars";
+import { Section as SectionCard, StaffPage } from "@/components/staff/page";
 import { EmptyState, Icon3D, PageHeader, Skeleton } from "@/components/ui";
 import { Dashboard } from "@/components/admin/dashboard/dashboard";
 import { OrgLogo } from "@/components/public/org";
-import { useOrgs, useRoles } from "@/lib/api/hooks";
+import { useOrgMembers, useOrgs, useRoles, useRoster } from "@/lib/api/hooks";
 import type { Organization } from "@/lib/api/types";
 import { ActivityPanel } from "./activity-panel";
 import { DomainsPanel } from "./domains-panel";
 import { EditPanel } from "./edit-panel";
-import { OrgGate, OrgHeader, type OrgKind } from "./gate";
+import { OrgGate, type OrgKind } from "./gate";
 import { RosterPanel } from "./roster-panel";
 import { TeamPanel } from "./team-panel";
 
@@ -32,6 +33,9 @@ function Overview({ org, kind }: { org: Organization; kind: OrgKind }) {
   type Entry = { href: string; title: string; body: string; icon: React.ElementType };
   const links: Entry[] = [];
   if (kind === "school") links.push({ href: `${base}/roster`, title: "Alumni", body: "See who named your school and verify people who are waiting.", icon: GraduationCap });
+  // The organizer area is where events are made. It is another screen's work: until it admits school and
+  // partner admins, this link may show "can't find that organization".
+  links.push({ href: `/organizer/${org.id}`, title: "Create event", body: "Open the organizer area to set up an event for this organization.", icon: CalendarPlus });
   links.push({ href: `${base}/team`, title: "Team", body: "Find someone by email and give them a role, or take a role away.", icon: Users });
   links.push({ href: `${base}/edit`, title: "Edit details and logo", body: "Change the name, description and logo.", icon: Pencil });
   if (kind === "school") links.push({ href: `${base}/email-domains`, title: "Email domains", body: "Verify alumni automatically when they sign up with a school email.", icon: Globe });
@@ -74,20 +78,57 @@ export function OrgSectionPage({ kind, id, section }: { kind: OrgKind; id: strin
         if ((section === "domains" || section === "roster") && kind !== "school") {
           return <EmptyState title="This page is for schools." />;
         }
-        const { title, subtitle } = TITLES[section];
-        return (
-          <div className="max-w-3xl">
-            <OrgHeader org={org} title={title} subtitle={org.name} back={{ href: `/${kind}/${org.id}`, label: "Overview" }} />
-            <p className="-mt-3 mb-6 text-small text-muted">{subtitle}</p>
-            {section === "edit" && <EditPanel org={org} />}
-            {section === "domains" && <DomainsPanel org={org} />}
-            {section === "team" && <TeamPanel org={org} />}
-            {section === "roster" && <RosterPanel org={org} />}
-            {section === "activity" && <ActivityPanel />}
-          </div>
-        );
+        return <SubPage org={org} kind={kind} section={section} />;
       }}
     </OrgGate>
+  );
+}
+
+const ICON: Record<Exclude<Section, "overview">, React.ElementType> = {
+  edit: Pencil,
+  domains: Globe,
+  team: Users,
+  roster: GraduationCap,
+  activity: ScrollText,
+};
+
+function SubPage({ org, kind, section }: { org: Organization; kind: OrgKind; section: Exclude<Section, "overview"> }) {
+  const { title, subtitle } = TITLES[section];
+  const all = useRoster(org.id, { unverifiedOnly: false, year: "" }, 0);
+  const waiting = useRoster(org.id, { unverifiedOnly: true, year: "" }, 0);
+  const team = useOrgMembers(org.id, 0);
+  const tiles =
+    section === "roster"
+      ? [
+          { label: "Alumni who named your school", value: all.data?.total ?? "–" },
+          { label: "Waiting for verification", value: waiting.data?.total ?? "–", gold: (waiting.data?.total ?? 0) > 0 },
+        ]
+      : section === "team"
+        ? [{ label: "People with a role", value: team.data?.total ?? "–" }]
+        : undefined;
+  return (
+    <StaffPage
+      title={title}
+      subtitle={
+        <span className="flex flex-wrap items-center gap-2">
+          <OrgLogo org={org} size={28} /> <span>{org.name}</span>
+        </span>
+      }
+      tiles={tiles}
+      actions={
+        <Link href={`/${kind}/${org.id}`} className="inline-flex min-h-11 items-center gap-1.5 text-small text-muted hover:text-ink">
+          <ArrowLeft className="size-4" aria-hidden /> Overview
+        </Link>
+      }
+    >
+      <SectionCard icon={ICON[section]} tone={section === "roster" ? "gold" : section === "domains" ? "moss" : section === "team" ? "sky" : section === "edit" ? "ember" : "ink"} title={title} hint={subtitle}>
+        {section === "edit" && <EditPanel org={org} bare />}
+        {section === "domains" && <DomainsPanel org={org} bare />}
+        {section === "team" && <TeamPanel org={org} bare />}
+        {section === "roster" && <RosterPanel org={org} />}
+        {section === "activity" && <ActivityPanel />}
+      </SectionCard>
+    </StaffPage>
   );
 }
 

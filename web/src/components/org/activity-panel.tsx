@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Pager } from "@/components/staff/page";
 import { Row, RowList } from "@/components/staff/rows";
-import { Button, EmptyState, ErrorState, Skeleton } from "@/components/ui";
+import { EmptyState, ErrorState, Field, Select, Skeleton } from "@/components/ui";
 import { ApiError } from "@/lib/api/client";
 import { AUDIT_PAGE_SIZE, useAuditLog, useMemberIndex, useOrgs } from "@/lib/api/hooks";
 import type { AuditLogEntry, Role } from "@/lib/api/types";
@@ -30,9 +31,13 @@ const str = (v: unknown) => (typeof v === "string" ? v : v == null ? "" : String
  */
 export function ActivityPanel() {
   const [page, setPage] = useState(0);
+  const [kind, setKind] = useState("all");
   const log = useAuditLog(page);
-  const entries = log.data ?? [];
-  const members = useMemberIndex(entries.length > 0);
+  const loaded = log.data ?? [];
+  // The API has no filters, so this narrows the entries on the page you are looking at.
+  const entries = loaded.filter((e) => kind === "all" || e.action === kind);
+  const kinds = [...new Set(loaded.map((e) => e.action))].sort();
+  const members = useMemberIndex(loaded.length > 0);
   const schools = useOrgs("school");
   const partners = useOrgs("partner");
 
@@ -65,8 +70,18 @@ export function ActivityPanel() {
 
   return (
     <div className="space-y-4">
+      {kinds.length > 1 && (
+        <div className="w-full sm:w-72">
+          <Field label="Show" htmlFor="audit-kind">
+            <Select id="audit-kind" value={kind} onChange={(e) => setKind(e.target.value)}>
+              <option value="all">Everything on this page</option>
+              {kinds.map((k) => <option key={k} value={k}>{cap(ACTIONS[k] ?? auditWords(k, "")).trim()}</option>)}
+            </Select>
+          </Field>
+        </div>
+      )}
       {entries.length === 0 ? (
-        <EmptyState title={page === 0 ? "Nothing recorded yet" : "No more entries"} body={page === 0 ? "Admin actions will show up here." : undefined} />
+        <EmptyState title={loaded.length > 0 ? "Nothing of that kind on this page" : page === 0 ? "Nothing recorded yet" : "No more entries"} body={page === 0 ? "Admin actions will show up here." : undefined} />
       ) : (
         <RowList label="Activity">
           {entries.map((e) => (
@@ -83,13 +98,7 @@ export function ActivityPanel() {
           ))}
         </RowList>
       )}
-      {(page > 0 || entries.length === AUDIT_PAGE_SIZE) && (
-        <nav aria-label="Pages" className="flex items-center justify-between gap-3">
-          <Button variant="secondary" disabled={page === 0 || log.isFetching} onClick={() => setPage((p) => p - 1)}>Newer</Button>
-          <span className="text-small text-muted">Page {page + 1}</span>
-          <Button variant="secondary" disabled={entries.length < AUDIT_PAGE_SIZE || log.isFetching} onClick={() => setPage((p) => p + 1)}>Older</Button>
-        </nav>
-      )}
+      <Pager page={page} hasNext={loaded.length === AUDIT_PAGE_SIZE} onPage={(p) => { setPage(p); setKind("all"); }} busy={log.isFetching} prevLabel="Newer" nextLabel="Older" />
     </div>
   );
 }

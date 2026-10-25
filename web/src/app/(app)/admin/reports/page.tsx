@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Alert, Badge, Button, Card, EmptyState, ErrorState, PageHeader, Skeleton, Tabs, useToast } from "@/components/ui";
+import { AccountActions } from "@/components/admin/account-actions";
+import { Pager, StaffPage } from "@/components/staff/page";
+import { Alert, Badge, Button, Card, EmptyState, ErrorState, Skeleton, Tabs, useToast } from "@/components/ui";
 import { api } from "@/lib/api/client";
 import { friendlyError } from "@/lib/api/messages";
 import { REPORTS_PAGE_SIZE, useReports, useRoles, useWrite } from "@/lib/api/hooks";
@@ -45,7 +47,7 @@ function ReportCard({ report, onChange, busy }: { report: Report; onChange: (sta
         {report.reviewed_by ? " · taken on by a moderator" : " · not reviewed yet"}
         {report.resolved_at && <> · closed {formatDate(report.resolved_at)}</>}
       </p>
-      <div className="flex flex-col gap-2 border-t border-line pt-3 sm:flex-row sm:flex-wrap">
+      <div className="flex flex-col gap-2 border-t border-line pt-3 sm:flex-row sm:flex-wrap sm:items-center">
         {isProfile && active ? (
           <Link
             href={`/alumni/${report.target_id}?report=${report.id}`}
@@ -55,6 +57,12 @@ function ReportCard({ report, onChange, busy }: { report: Report; onChange: (sta
           </Link>
         ) : (
           !isProfile && <span className="self-center text-small text-muted">This kind of report has no page to open yet.</span>
+        )}
+        {isProfile && active && (
+          <AccountActions
+            name="the reported person" only="suspend"
+            resolveUserId={async () => (await api<{ user_id: string }>(`alumni/${report.target_id}`)).user_id}
+          />
         )}
         {report.status === "open" && (
           <Button variant="secondary" size="sm" loading={busy === "reviewing"} disabled={busy !== null} onClick={() => onChange("reviewing")}>Start review</Button>
@@ -103,15 +111,14 @@ export default function ReportsPage() {
   const hasNext = items.length === REPORTS_PAGE_SIZE;
 
   return (
-    <div className="max-w-3xl">
-      <PageHeader title="Reports" subtitle="What members have asked us to look at, newest first." />
-      <div className="mb-4">
+    <StaffPage title="Reports" subtitle="What members have asked us to look at, newest first.">
+      <div>
         <Alert tone="info">
           You can open a reported profile only while its report is Open or Reviewing. Once you resolve or dismiss the report, the profile is hidden from you again.
         </Alert>
       </div>
       <Tabs<ReportStatus> pills label="Report status" tabs={TABS} value={status} onChange={(s) => { setStatus(s); setPage(0); }} />
-      <div role="tabpanel" id={`${status}-panel`} aria-labelledby={`${status}-tab`} className="mt-4 space-y-3">
+      <div role="tabpanel" id={`${status}-panel`} aria-labelledby={`${status}-tab`} className="grid gap-3 xl:grid-cols-2 xl:items-start">
         {reports.isError ? (
           <ErrorState message={reports.error.message} onRetry={() => void reports.refetch()} />
         ) : reports.isLoading ? (
@@ -128,14 +135,10 @@ export default function ReportsPage() {
                 onChange={(next) => void change(r, next)}
               />
             ))}
-            <nav aria-label="Pages" className="flex items-center justify-between gap-3 pt-2">
-              <Button variant="secondary" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>Previous</Button>
-              <span className="text-small text-muted">Page {page + 1}</span>
-              <Button variant="secondary" onClick={() => setPage((p) => p + 1)} disabled={!hasNext}>Next</Button>
-            </nav>
+            <div className="xl:col-span-2"><Pager page={page} hasNext={hasNext} onPage={setPage} busy={reports.isFetching} /></div>
           </>
         )}
       </div>
-    </div>
+    </StaffPage>
   );
 }

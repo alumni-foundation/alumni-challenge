@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { PersonCard } from "@/components/member/person-card";
 import { Button, EmptyState, ErrorState, Field, Input, PageHeader, Select, Skeleton, Switch } from "@/components/ui";
-import { NO_FILTERS, PAGE_SIZE, useDirectorySearch, useOrgs, type DirectoryFilters } from "@/lib/api/hooks";
+import { NO_FILTERS, PAGE_SIZE, useConnections, useDirectorySearch, useOrgs, type DirectoryFilters } from "@/lib/api/hooks";
 import { useDebounced } from "@/lib/use-debounced";
 
 /** The API stops counting at 10,000, so that number really means "10,000 or more". */
@@ -31,6 +31,8 @@ function DirectoryView({ initialQuery }: { initialQuery: string }) {
   );
   const results = useDirectorySearch(filters, page);
 
+  const connections = useConnections();
+  const connectedIds = useMemo(() => new Set((connections.data ?? []).filter((c) => c.status === "accepted").map((c) => c.other_user_id)), [connections.data]);
   const schoolName = useMemo(() => new Map((schools.data ?? []).map((s) => [s.id, s.name])), [schools.data]);
   const activeCount = [form.country, form.year, form.skill, form.schoolId].filter(Boolean).length + (form.verifiedOnly ? 1 : 0);
   const anyFilter = activeCount > 0 || form.q.trim() !== "";
@@ -124,7 +126,7 @@ function DirectoryView({ initialQuery }: { initialQuery: string }) {
             <ul className="space-y-3">
               {items.map((p) => (
                 <li key={p.id}>
-                  <PersonCard person={p} schoolName={p.school_id ? schoolName.get(p.school_id) : undefined} />
+                  <PersonCard person={p} connected={connectedIds.has(p.user_id)} schoolName={p.school_id ? schoolName.get(p.school_id) : undefined} />
                 </li>
               ))}
             </ul>

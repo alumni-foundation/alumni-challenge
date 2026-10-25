@@ -3,8 +3,9 @@
 import { Building2, ChevronRight, Handshake, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { StaffPage, SearchBox } from "@/components/staff/page";
 import { Row, RowList } from "@/components/staff/rows";
-import { Alert, Badge, Button, Card, EmptyState, Field, Icon3D, Input, PageHeader, Select, Skeleton, Tabs, Textarea } from "@/components/ui";
+import { Alert, Badge, Button, Card, EmptyState, Field, Icon3D, Input, Select, Skeleton, Tabs, Textarea } from "@/components/ui";
 import { useCreateOrg, useOrgs, useRoles } from "@/lib/api/hooks";
 import type { Organization, OrgType } from "@/lib/api/types";
 import { canManageOrg, isPlatformAdmin } from "@/lib/roles";
@@ -78,6 +79,7 @@ export default function AdminOrganizations() {
   const partners = useOrgs("partner");
   const [filter, setFilter] = useState<"all" | OrgType>("all");
   const [creating, setCreating] = useState(false);
+  const [query, setQuery] = useState("");
 
   const platform = isPlatformAdmin(roles.data);
   const loading = schools.isLoading || partners.isLoading || roles.isLoading;
@@ -86,6 +88,7 @@ export default function AdminOrganizations() {
   const all = [...(schools.data ?? []), ...(partners.data ?? [])]
     .filter((o) => canManageOrg(roles.data, o.id))
     .filter((o) => filter === "all" || o.type === filter)
+    .filter((o) => !query.trim() || `${o.name} ${o.slug}`.toLowerCase().includes(query.trim().toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
   const capped = (schools.data?.length ?? 0) >= 100 || (partners.data?.length ?? 0) >= 100;
 
@@ -95,27 +98,35 @@ export default function AdminOrganizations() {
     { key: "partner", label: "Partners" },
   ];
 
-  return (
-    <div>
-      <PageHeader
-        title="Schools and partners"
-        subtitle={platform ? "Every organization on the platform." : "The organizations you manage."}
-        actions={
-          platform && !creating ? (
-            <Button variant="dark" onClick={() => setCreating(true)}><Plus className="size-4" aria-hidden /> New organization</Button>
-          ) : undefined
-        }
-      />
+  const visible = [...(schools.data ?? []), ...(partners.data ?? [])].filter((o) => canManageOrg(roles.data, o.id));
+  const tiles = loading || failed
+    ? undefined
+    : [
+        { label: "Schools", value: visible.filter((o) => o.type === "school").length, gold: true },
+        { label: "Partners", value: visible.filter((o) => o.type === "partner").length },
+      ];
 
+  return (
+    <StaffPage
+      title="Schools and partners"
+      subtitle={platform ? "Every organization on the platform." : "The organizations you manage."}
+      tiles={tiles}
+      actions={
+        platform && !creating ? (
+          <Button variant="dark" onClick={() => setCreating(true)}><Plus className="size-4" aria-hidden /> New organization</Button>
+        ) : undefined
+      }
+    >
       {platform && creating && (
         <CreateForm onDone={(org) => router.push(`/admin/organizations/${org.id}`)} />
       )}
 
-      {platform && (
-        <div className="mb-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchBox value={query} onChange={setQuery} label="Search organizations" placeholder="Search by name" className="basis-64 sm:w-80 sm:flex-none" />
+        {platform && (
           <Tabs<"all" | OrgType> pills label="Filter by type" value={filter} onChange={setFilter} tabs={FILTERS.map((f) => ({ value: f.key, label: f.label }))} />
-        </div>
-      )}
+        )}
+      </div>
 
       {loading && (
         <div role="status" aria-label="Loading organizations" className="space-y-2">
@@ -125,8 +136,8 @@ export default function AdminOrganizations() {
       {failed && <Alert>We couldn’t load the organizations. Refresh the page to try again.</Alert>}
       {!loading && !failed && all.length === 0 && (
         <EmptyState
-          title={platform ? "No organizations yet" : "You don’t manage any organizations"}
-          body={platform ? "Create the first school or partner to get started." : undefined}
+          title={query.trim() ? "No organization matches your search" : platform ? "No organizations yet" : "You don’t manage any organizations"}
+          body={query.trim() ? "Try a different name." : platform ? "Create the first school or partner to get started." : undefined}
         />
       )}
       {all.length > 0 && (
@@ -144,7 +155,7 @@ export default function AdminOrganizations() {
           ))}
         </RowList>
       )}
-      {capped && <p className="mt-3 text-sm text-muted">Showing the first 100 of each type.</p>}
-    </div>
+      {capped && <p className="text-sm text-muted">Showing the first 100 of each type.</p>}
+    </StaffPage>
   );
 }

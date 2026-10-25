@@ -3,6 +3,7 @@
 import { MailCheck, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Pager, SearchBox } from "@/components/staff/page";
 import { RowList, Row } from "@/components/staff/rows";
 import { Avatar, Badge, Button, EmptyState, ErrorState, Field, Input, Skeleton, Tabs, useToast, VerifiedMark } from "@/components/ui";
 import { api } from "@/lib/api/client";
@@ -25,6 +26,7 @@ export function RosterPanel({ org }: { org: Organization }) {
   const [tab, setTab] = useState<Tab>("waiting");
   const [year, setYear] = useState("");
   const [page, setPage] = useState(0);
+  const [query, setQuery] = useState("");
   const [verifying, setVerifying] = useState<string | null>(null);
   const settledYear = useDebounced(year, 300);
   const filter: RosterFilter = { unverifiedOnly: tab === "waiting", year: settledYear };
@@ -46,9 +48,11 @@ export function RosterPanel({ org }: { org: Organization }) {
     }
   }
 
-  const items = roster.data?.items ?? [];
+  const loaded = roster.data?.items ?? [];
+  // The API has no name search, so this narrows the people on the page you are looking at.
+  const items = loaded.filter((p) => !query.trim() || p.full_name.toLowerCase().includes(query.trim().toLowerCase()));
   const total = roster.data?.total ?? null;
-  const hasNext = total !== null ? (page + 1) * ROSTER_PAGE_SIZE < total : items.length === ROSTER_PAGE_SIZE;
+  const hasNext = total !== null ? (page + 1) * ROSTER_PAGE_SIZE < total : loaded.length === ROSTER_PAGE_SIZE;
 
   return (
     <div className="space-y-4">
@@ -60,10 +64,13 @@ export function RosterPanel({ org }: { org: Organization }) {
         tabs={[{ value: "waiting", label: "Waiting for verification" }, { value: "all", label: "All alumni" }]}
       />
       <div role="tabpanel" id={`${tab}-panel`} aria-labelledby={`${tab}-tab`} className="space-y-4">
-        <div className="max-w-xs">
-          <Field label="Graduation year" htmlFor="roster-year">
-            <Input id="roster-year" type="number" inputMode="numeric" value={year} onChange={(e) => { setYear(e.target.value); setPage(0); }} />
-          </Field>
+        <div className="flex flex-wrap items-end gap-3">
+          <SearchBox value={query} onChange={setQuery} label="Find by name on this page" placeholder="Find by name on this page" className="basis-64 sm:w-80 sm:flex-none" />
+          <div className="w-44">
+            <Field label="Graduation year" htmlFor="roster-year">
+              <Input id="roster-year" type="number" inputMode="numeric" value={year} onChange={(e) => { setYear(e.target.value); setPage(0); }} />
+            </Field>
+          </div>
         </div>
 
         {roster.isError ? (
@@ -72,6 +79,8 @@ export function RosterPanel({ org }: { org: Organization }) {
           <div className="space-y-3" role="status" aria-label="Loading alumni">
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 rounded-card" />)}
           </div>
+        ) : items.length === 0 && loaded.length > 0 ? (
+          <EmptyState title="No one on this page has that name" body="Try the next page, or clear the box." />
         ) : items.length === 0 ? (
           <EmptyState
             title={tab === "waiting" ? "No one is waiting for verification." : "No alumni have named this school yet."}
@@ -114,11 +123,7 @@ export function RosterPanel({ org }: { org: Organization }) {
                   );
                 })}
             </RowList>
-            <nav aria-label="Pages" className="flex items-center justify-between gap-3">
-              <Button variant="secondary" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>Previous</Button>
-              <span className="text-small text-muted">Page {page + 1}</span>
-              <Button variant="secondary" onClick={() => setPage((p) => p + 1)} disabled={!hasNext}>Next</Button>
-            </nav>
+            <Pager page={page} hasNext={hasNext} onPage={setPage} busy={roster.isFetching} />
           </>
         )}
       </div>

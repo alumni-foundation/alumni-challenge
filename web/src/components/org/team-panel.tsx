@@ -16,7 +16,7 @@ import { formatDate } from "@/lib/utils";
 const ORG_ADMIN_ROLES: Role[] = ["school_admin", "partner_admin"];
 
 /** The email lookup: it can only ever find people who already belong to THIS organization. */
-function Lookup({ org, allowed }: { org: Organization; allowed: Role[] }) {
+function Lookup({ org, allowed, bare }: { org: Organization; allowed: Role[]; bare: boolean }) {
   const toast = useToast();
   const [email, setEmail] = useState("");
   const [checked, setChecked] = useState<string | null>(null);
@@ -52,10 +52,11 @@ function Lookup({ org, allowed }: { org: Organization; allowed: Role[] }) {
   const offered = allowed.filter((r) => !held.has(r));
   const chosen = offered.includes(role) ? role : offered[0];
 
+  const Wrap: React.ElementType = bare ? "div" : Card;
   return (
-    <Card large className="space-y-4">
+    <Wrap {...(bare ? {} : { large: true })} className="space-y-4">
       <div>
-        <h2 className="text-lead font-semibold">Find someone by email</h2>
+        <h3 className="text-lead font-semibold">Find someone by email</h3>
         <p className="mt-1 text-small text-muted">To give someone a role, look them up by email. You can only find people who already belong to {org.name}.</p>
       </div>
       <form onSubmit={find} className="flex flex-col gap-3 sm:flex-row sm:items-start" noValidate>
@@ -113,12 +114,12 @@ function Lookup({ org, allowed }: { org: Organization; allowed: Role[] }) {
           )}
         </div>
       )}
-    </Card>
+    </Wrap>
   );
 }
 
 /** Who holds a role in this organization, with a way to give and to take away roles. */
-export function TeamPanel({ org }: { org: Organization }) {
+export function TeamPanel({ org, bare = false }: { org: Organization; bare?: boolean }) {
   const toast = useToast();
   const me = useMe();
   const roles = useRoles();
@@ -142,10 +143,10 @@ export function TeamPanel({ org }: { org: Organization }) {
 
   return (
     <div className="space-y-6">
-      {allowed.length > 0 && <Lookup org={org} allowed={allowed} />}
+      {allowed.length > 0 && <Lookup org={org} allowed={allowed} bare={bare} />}
 
       <section aria-label="People with a role" className="space-y-3">
-        <h2 className="text-lead font-semibold">People with a role{total !== null ? ` (${total})` : ""}</h2>
+        <h3 className="text-lead font-semibold">People with a role{total !== null ? ` (${total})` : ""}</h3>
         {members.isError ? (
           <ErrorState message={members.error.message} onRetry={() => void members.refetch()} />
         ) : members.isLoading ? (

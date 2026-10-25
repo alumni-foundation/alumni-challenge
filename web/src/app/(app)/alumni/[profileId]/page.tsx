@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Ban, Flag, Gavel, Pencil, RotateCcw, ShieldCheck, ShieldOff, UserCheck, UserMinus, UserPlus, UserX, X } from "lucide-react";
 import Link from "next/link";
+import { MessageButton } from "@/components/messages/message-button";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import {
@@ -113,6 +114,7 @@ function ProfileView() {
     relationship = (
       <>
         <Badge tone="ok">Connected</Badge>
+        <MessageButton size="md" />
         <Button variant="secondary" onClick={() => setDialog("remove")}><UserMinus className="size-4" aria-hidden /> Remove connection</Button>
       </>
     );

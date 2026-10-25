@@ -7,7 +7,7 @@ import type { Organization } from "@/lib/api/types";
 import { LogoEditor } from "./logo-editor";
 
 /** Name, description and logo. The web address name can't change once it exists. */
-export function EditPanel({ org }: { org: Organization }) {
+export function EditPanel({ org, bare = false }: { org: Organization; bare?: boolean }) {
   const update = useUpdateOrg(org.id);
   const toast = useToast();
   const [name, setName] = useState(org.name);
@@ -27,14 +27,16 @@ export function EditPanel({ org }: { org: Organization }) {
     );
   }
 
+  const Wrap: React.ElementType = bare ? "div" : Card;
+  const wrapProps = bare ? {} : { large: true };
   return (
-    <div className="space-y-6">
-      <Card large>
-        <h2 className="mb-4 text-heading">Logo</h2>
+    <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+      <Wrap {...wrapProps}>
+        <h3 className="mb-4 text-heading">Logo</h3>
         <LogoEditor org={org} />
-      </Card>
-      <Card large>
-        <h2 className="text-heading">Details</h2>
+      </Wrap>
+      <Wrap {...wrapProps}>
+        <h3 className="text-heading">Details</h3>
         <form onSubmit={submit} className="mt-4 space-y-4" noValidate>
           <Field label="Name" htmlFor="d-name" error={nameError ?? server.name}>
             <Input id="d-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={255} />
@@ -46,7 +48,7 @@ export function EditPanel({ org }: { org: Organization }) {
           {update.isError && Object.keys(server).length === 0 && <Alert>{update.error.message}</Alert>}
           <Button variant="dark" type="submit" loading={update.isPending} disabled={!dirty}>Save changes</Button>
         </form>
-      </Card>
+      </Wrap>
     </div>
   );
 }

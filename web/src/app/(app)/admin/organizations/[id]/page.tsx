@@ -1,34 +1,75 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Globe, GraduationCap, Pencil, ScrollText, Users } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { DomainsPanel } from "@/components/org/domains-panel";
 import { EditPanel } from "@/components/org/edit-panel";
-import { OrgGate, OrgHeader, type OrgKind } from "@/components/org/gate";
+import { OrgGate, type OrgKind } from "@/components/org/gate";
+import { RosterPanel } from "@/components/org/roster-panel";
 import { TeamPanel } from "@/components/org/team-panel";
-import { Skeleton } from "@/components/ui";
-import { useOrg } from "@/lib/api/hooks";
+import { OrgLogo } from "@/components/public/org";
+import { Section, StaffPage } from "@/components/staff/page";
+import { Badge, LinkButton, Skeleton } from "@/components/ui";
+import { useOrg, useOrgMembers, useRoster } from "@/lib/api/hooks";
+import type { Organization } from "@/lib/api/types";
 
-/** The platform admin's view of one organization: the same tools the organization's own admins get. */
-function Inner({ id, kind }: { id: string; kind: OrgKind }) {
+function Detail({ org }: { org: Organization }) {
+  const school = org.type === "school";
+  const team = useOrgMembers(org.id, 0);
+  const everyone = useRoster(org.id, { unverifiedOnly: false, year: "" }, 0);
+  const waiting = useRoster(org.id, { unverifiedOnly: true, year: "" }, 0);
+  const tiles = [
+    { label: "People with a role", value: team.data?.total ?? "–" },
+    ...(school
+      ? [
+          { label: "Alumni who named this school", value: everyone.data?.total ?? "–" },
+          { label: "Waiting for verification", value: waiting.data?.total ?? "–", gold: (waiting.data?.total ?? 0) > 0 },
+        ]
+      : []),
+  ];
+
   return (
-    <OrgGate id={id} kind={kind}>
-      {(org) => (
-        <div className="max-w-3xl">
-          <Link href="/admin/organizations" className="mb-3 inline-flex min-h-11 items-center gap-1.5 text-small text-muted hover:text-ink">
+    <StaffPage
+      title={org.name}
+      subtitle={
+        <span className="flex flex-wrap items-center gap-2">
+          <OrgLogo org={org} size={28} />
+          <Badge tone={school ? "brand" : "gold"}>{school ? "School" : "Partner"}</Badge>
+          <span>{org.slug}</span>
+        </span>
+      }
+      tiles={tiles}
+      actions={
+        <>
+          <Link href="/admin/organizations" className="inline-flex min-h-11 items-center gap-1.5 text-small text-muted hover:text-ink">
             <ArrowLeft className="size-4" aria-hidden /> Schools and partners
           </Link>
-          <OrgHeader org={org} />
-          <div className="space-y-6">
-            <EditPanel key={`${org.id}-${org.name}-${org.description ?? ""}`} org={org} />
-            <TeamPanel org={org} />
-            {org.type === "school" && <DomainsPanel org={org} />}
-            <Link href="/admin/activity" className="inline-flex min-h-11 items-center text-small font-medium text-brand-ink hover:underline">See the activity log</Link>
-          </div>
-        </div>
+          <LinkButton href="/admin/activity" variant="secondary"><ScrollText className="size-4" aria-hidden /> Activity log</LinkButton>
+        </>
+      }
+    >
+      <Section icon={Pencil} tone="ember" title="Details and logo" hint="What visitors see on the public page.">
+        <EditPanel key={`${org.id}-${org.name}-${org.description ?? ""}`} org={org} bare />
+      </Section>
+
+      <div className="grid items-start gap-5 xl:grid-cols-2">
+        <Section icon={Users} tone="sky" title="Team" hint="Who can help run this organization.">
+          <TeamPanel org={org} bare />
+        </Section>
+        {school && (
+          <Section icon={Globe} tone="moss" title="Email domains" hint="Alumni with these email addresses are verified automatically.">
+            <DomainsPanel org={org} bare />
+          </Section>
+        )}
+      </div>
+
+      {school && (
+        <Section icon={GraduationCap} tone="gold" title="Alumni" hint="Everyone who named this school, and who is waiting to be verified.">
+          <RosterPanel org={org} />
+        </Section>
       )}
-    </OrgGate>
+    </StaffPage>
   );
 }
 
@@ -36,5 +77,6 @@ export default function AdminOrgDetail() {
   const { id } = useParams<{ id: string }>();
   const org = useOrg(id);
   if (org.isLoading) return <Skeleton className="mx-auto h-48 max-w-3xl rounded-card" />;
-  return <Inner id={id} kind={org.data?.type ?? "school"} />;
+  const kind: OrgKind = org.data?.type ?? "school";
+  return <OrgGate id={id} kind={kind}>{(o) => <Detail org={o} />}</OrgGate>;
 }

@@ -96,8 +96,12 @@ account menu (My bookings, My tickets), plain public header (Events link).
 
 - **Payment:** `docs/events-api.md` has no payment endpoints yet (slice 5.5). A paid booking shows the hold, the
   amount, and a clearly labelled placeholder "Payment instructions will appear here". Do not invent steps.
-- **No chat/messages button** in the live top bar (no messaging backend). The message icon and the bell exist,
-  with default/hover/pressed/badge states, on `/design-check` only.
+- **Chat icon:** the top bar has a chat icon next to the bell (`components/messages/messages-button.tsx`) and
+  there are **Message** pills on the profile page and on directory cards for connected people. They open
+  `/messages`, which shows "Messaging is coming soon" with a disabled composer, because there is no messaging
+  backend. Real people never see conversations: the page passes an empty list. Sample conversations live in
+  `components/messages/sample.ts` for `/design-check` and tests only. What the backend would need is in
+  `web/MESSAGING_API_WISHLIST.md`.
 - **Bell** shows connection requests waiting for me, through `useNotifications()` which returns a normalised list;
   when a notifications API exists only that hook's source changes. Accept/Decline work in the panel.
 - **Who's going and Connect on events** are not built (backend slice 5.3). Participants are sent with `listed: true`

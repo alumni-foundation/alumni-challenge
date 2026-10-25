@@ -2,6 +2,8 @@
 
 import { Bell, Compass, HeartHandshake, MessageCircle, Search, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { useState } from "react";
+import { MessagesView } from "@/components/messages/messages-view";
+import { SAMPLE_CONVERSATIONS, SAMPLE_MESSAGES } from "@/components/messages/sample";
 import { DashboardBody } from "@/components/admin/dashboard/parts";
 import { EMPTY_FIXTURE, MODERATOR_FIXTURE, PLATFORM_FIXTURE, SCHOOL_FIXTURE } from "@/components/admin/dashboard/fixtures";
 import type { OverviewPeriod } from "@/lib/admin-overview";
@@ -23,7 +25,7 @@ const GLYPHS = [Search, HeartHandshake, Trophy, ShieldCheck, Compass];
 function TopBarIcons() {
   const ICONS = [
     { name: "Notifications (bell)", icon: Bell },
-    { name: "Messages (not built yet)", icon: MessageCircle },
+    { name: "Messages (chat icon)", icon: MessageCircle },
   ];
   const states: { label: string; hover?: boolean; pressed?: boolean; count?: number; dot?: boolean }[] = [
     { label: "Default" },
@@ -36,7 +38,7 @@ function TopBarIcons() {
   return (
     <section className="space-y-4">
       <h3 className="text-heading">Top-bar icon buttons</h3>
-      <p className="text-small text-ink">The bell is live. The message button is shown here only: there is no messaging backend yet, so it is not in the app.</p>
+      <p className="text-small text-ink">Both are in the top bar. The chat icon opens /messages, which says messaging is coming (there is no messaging backend yet), so it never shows a count today.</p>
       {ICONS.map(({ name, icon }) => (
         <div key={name} className="space-y-2">
           <p className="text-small font-semibold">{name}</p>
@@ -75,6 +77,12 @@ function Theme({ theme }: { theme: "light" }) {
       </section>
 
       <TopBarIcons />
+      <section className="space-y-4">
+        <h3 className="text-heading">Messages screen (made-up sample conversations, this page only)</h3>
+        <MessagesView conversations={SAMPLE_CONVERSATIONS} messages={SAMPLE_MESSAGES} />
+        <h3 className="text-heading">Messages screen as real people see it today</h3>
+        <MessagesView conversations={[]} />
+      </section>
 
       <section className="space-y-3">
         <h3 className="text-heading">Type</h3>
