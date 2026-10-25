@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -341,3 +342,25 @@ async def test_an_older_demo_event_that_people_booked_is_not_pulled_out_from_und
 
     still = list(await db_session.scalars(select(Event).where(Event.title == demo_events.GOLF)))
     assert [e.id for e in still] == [golf.id]
+
+
+async def test_demo_members_signed_up_spread_over_the_last_sixty_days_never_in_the_future(
+    db_session: AsyncSession,
+) -> None:
+    await demo.seed_demo(db_session, password=PASSWORD)
+    await demo.seed_demo(db_session, password=PASSWORD)  # a rerun keeps them spread
+
+    stmt = (
+        select(User.created_at, AlumniProfile.created_at)
+        .join(AlumniProfile, AlumniProfile.user_id == User.id)
+        .where(User.email.like("%alumni%"))
+    )
+    rows = (await db_session.execute(stmt)).all()
+    now = datetime.now(UTC)
+
+    assert len(rows) >= 30
+    assert all(now - timedelta(days=60) <= u <= now for u, _ in rows)
+    assert all(u == p for u, p in rows)
+    days = {(now - u).days for u, _ in rows}
+    assert len(days) >= 20  # not all on one day
+    assert sum(1 for u, _ in rows if now - u <= timedelta(days=30)) not in (0, len(rows))
