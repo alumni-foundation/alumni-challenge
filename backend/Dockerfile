@@ -44,4 +44,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 
 # --no-access-log: the app logs each request itself (path only), and uvicorn's own access
 # log would print query strings, which can carry short-lived signed-link tokens.
-CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY} --no-access-log"]
+# --timeout-keep-alive 75: uvicorn's default of 5 s equals many clients' idle limit, and a client that
+# reuses a connection the instant the server closes it gets a dropped request. Longer than any proxy.
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY} --timeout-keep-alive 75 --no-access-log"]
