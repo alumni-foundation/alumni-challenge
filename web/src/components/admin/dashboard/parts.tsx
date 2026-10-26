@@ -124,7 +124,7 @@ export function PeriodToggle({ value, onChange }: { value: OverviewPeriod; onCha
           aria-pressed={value === p.value}
           onClick={() => onChange(p.value)}
           className={cn(
-            "h-9 rounded-full px-4 text-small font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+            "h-11 rounded-full px-4 text-small sm:h-9 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
             value === p.value ? "bg-ink text-white" : "text-muted hover:text-ink",
           )}
         >

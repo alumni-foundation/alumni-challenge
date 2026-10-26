@@ -91,3 +91,54 @@ school, and is then served from the cache for a minute. The slowest part is the 
 which reads every member once. No new index was needed: the counts use the indexes that exist
 (`users` by status and creation date, profiles by user, connections by user, bookings by payment
 state, events by organization). Add one if a second measurement on real data says otherwise.
+
+## `GET /api/v1/users`
+
+The accounts on the platform, for the admin users screen. **Platform admins only** (`admin`,
+`super_admin`). Moderators, school and partner admins and everyone else get `403`; not signed in
+is `401`.
+
+Query:
+
+| Parameter | Meaning |
+|---|---|
+| `q` | Part of a person's name or email, case-insensitive. `%` and `_` are plain characters, not wildcards. Up to 100 characters. |
+| `status` | `active` or `suspended`. Anything else (including `deleted`) is `422`. Left out, both are listed. |
+| `limit` | 1 to 100, default 50 (`422` outside that range). |
+| `offset` | 0 or more, default 0. |
+
+Newest account first. The total number of matches is in the `X-Total-Count` header, as in the
+organization members and roster lists. Deleted accounts are never listed.
+
+```
+[
+  {
+    "id": "...",
+    "email": "ada@example.com",
+    "full_name": "Ada Lovelace",          // from the alumni profile, null if there is none (staff)
+    "status": "active",                   // or "suspended"
+    "roles": ["moderator", "school_admin"], // active roles only, sorted, no repeats
+    "created_at": "2026-10-01T09:30:00Z"
+  }
+]
+```
+
+Nothing else is returned: no password hash, token, session, profile details or role scope.
+`roles` lists role names only, so it does not say which organization a school or partner role is
+for. Use `GET /api/v1/organizations/{id}/members` for that.
+
+To suspend or reactivate someone from this list use the existing `POST /api/v1/users/{id}/suspend`
+and `POST /api/v1/users/{id}/reactivate` (each takes a `reason`).
+
+## `DELETE /api/v1/organizations/{organization_id}/email-domains/{domain_id}`
+
+Stop using an email domain for automatic verification. Same permission as adding a domain
+(`POST` on the same path): a platform admin, or the admin of that school (`403` for anyone else,
+including another school's admin; `401` when not signed in). Answers `204` with no body.
+
+* `404` if the domain does not exist **or belongs to a different organization**, even for a
+  platform admin. Nothing is deleted in that case. `404` also if the organization is unknown.
+* The removal is written to the audit log as `organization.email_domain.remove`, with the
+  organization id and the domain.
+* Alumni who were already verified through the domain stay verified; only new verifications
+  stop. The domain can be added again afterwards.

@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, ChevronRight, Handshake, Plus } from "lucide-react";
+import { Building2, ChevronRight, Handshake, Plus, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Row, RowList } from "@/components/staff/rows";
@@ -78,6 +78,7 @@ export default function AdminOrganizations() {
   const partners = useOrgs("partner");
   const [filter, setFilter] = useState<"all" | OrgType>("all");
   const [creating, setCreating] = useState(false);
+  const [text, setText] = useState("");
 
   const platform = isPlatformAdmin(roles.data);
   const loading = schools.isLoading || partners.isLoading || roles.isLoading;
@@ -86,6 +87,7 @@ export default function AdminOrganizations() {
   const all = [...(schools.data ?? []), ...(partners.data ?? [])]
     .filter((o) => canManageOrg(roles.data, o.id))
     .filter((o) => filter === "all" || o.type === filter)
+    .filter((o) => !text.trim() || `${o.name} ${o.slug}`.toLowerCase().includes(text.trim().toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
   const capped = (schools.data?.length ?? 0) >= 100 || (partners.data?.length ?? 0) >= 100;
 
@@ -111,11 +113,17 @@ export default function AdminOrganizations() {
         <CreateForm onDone={(org) => router.push(`/admin/organizations/${org.id}`)} />
       )}
 
+      <div className="mb-4 space-y-3">
+        <div className="relative max-w-md">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
+          <Input type="search" aria-label="Search organizations" placeholder="Search by name" value={text} onChange={(e) => setText(e.target.value)} className="pl-10" />
+        </div>
       {platform && (
-        <div className="mb-4">
+        <div>
           <Tabs<"all" | OrgType> pills label="Filter by type" value={filter} onChange={setFilter} tabs={FILTERS.map((f) => ({ value: f.key, label: f.label }))} />
         </div>
       )}
+      </div>
 
       {loading && (
         <div role="status" aria-label="Loading organizations" className="space-y-2">
@@ -125,8 +133,8 @@ export default function AdminOrganizations() {
       {failed && <Alert>We couldn’t load the organizations. Refresh the page to try again.</Alert>}
       {!loading && !failed && all.length === 0 && (
         <EmptyState
-          title={platform ? "No organizations yet" : "You don’t manage any organizations"}
-          body={platform ? "Create the first school or partner to get started." : undefined}
+          title={text.trim() || filter !== "all" ? "No organization matches." : platform ? "No organizations yet" : "You don’t manage any organizations"}
+          body={text.trim() || filter !== "all" ? "Try a different name or type." : platform ? "Create the first school or partner to get started." : undefined}
         />
       )}
       {all.length > 0 && (

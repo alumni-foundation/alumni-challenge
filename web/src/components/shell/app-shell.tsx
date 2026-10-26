@@ -1,93 +1,31 @@
 "use client";
 
-import {
-  Building2, CalendarCheck, CalendarDays, Check, ChevronDown, FileText, Globe, GraduationCap, Home, LayoutDashboard, LogOut, Pencil, Repeat, ScrollText,
-  PanelLeftClose, PanelLeftOpen, Search, Settings, ShieldCheck, Ticket, User, UserPlus, Users,
-} from "lucide-react";
+import { CalendarCheck, ChevronDown, Ellipsis, LogOut, PanelLeftClose, PanelLeftOpen, Search, Settings, Ticket, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { authCall } from "@/lib/api/client";
 import { useConnections, useMe, useOrgs, useRoles } from "@/lib/api/hooks";
-import type { Organization, Profile } from "@/lib/api/types";
-import { currentViewKey, roleLabel, viewsFor, type StaffView } from "@/lib/roles";
+import type { Profile } from "@/lib/api/types";
+import { navGroupsFor, type NavGroup, type NavItem } from "@/lib/nav";
+import { topRoleLabel } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-import { Avatar } from "@/components/ui";
+import { Avatar, Dialog } from "@/components/ui";
 import { Icon3D } from "@/components/ui/icon3d";
-import { Logo } from "./logo";
+import { Logo, LogoTile } from "./logo";
+import { MessagesLink } from "./messages-link";
 import { NotificationBell } from "./notification-bell";
 
-type NavItem = {
-  label: string;
-  href: string;
-  icon: React.ElementType;
-  /** Other path prefixes that should highlight this item (a profile page belongs to Directory). */
-  also?: string[];
-  /** Left out of the phone tab bar, which has room for five. Still reachable from the dashboard. */
-  desktopOnly?: boolean;
-};
-
-const MEMBER_NAV: NavItem[] = [
-  { label: "Home", href: "/home", icon: Home },
-  { label: "Directory", href: "/directory", icon: Users, also: ["/alumni"] },
-  { label: "Events", href: "/events", icon: CalendarDays, also: ["/bookings", "/tickets"] },
-  { label: "Connections", href: "/connections", icon: UserPlus },
-  { label: "My profile", href: "/profile", icon: User },
-  { label: "Settings", href: "/settings", icon: Settings, desktopOnly: true },
-];
-const MEMBER_VIEW_ITEM: NavItem = { label: "Member view", href: "/home", icon: Home };
-
-/** What the navigation shows in each view. School and partner screens add their own items as they are built. */
-function navFor(view: StaffView): NavItem[] {
-  switch (view.kind) {
-    case "member":
-      return MEMBER_NAV;
-    case "platform":
-      return [
-        { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-        { label: "Reports", href: "/admin/reports", icon: FileText },
-        { label: "Organizations", href: "/admin/organizations", icon: Building2 },
-        { label: "Roles", href: "/admin/roles", icon: ShieldCheck, desktopOnly: true },
-        { label: "Activity log", href: "/admin/activity", icon: ScrollText },
-        MEMBER_VIEW_ITEM,
-      ];
-    case "moderator":
-      return [
-        { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-        { label: "Reports", href: "/admin/reports", icon: FileText },
-        MEMBER_VIEW_ITEM,
-      ];
-    case "school":
-      return [
-        { label: "Overview", href: view.href, icon: Building2 },
-        { label: "Alumni", href: `${view.href}/roster`, icon: GraduationCap },
-        { label: "Team", href: `${view.href}/team`, icon: Users },
-        { label: "Activity", href: `${view.href}/activity`, icon: ScrollText },
-        { label: "Edit", href: `${view.href}/edit`, icon: Pencil, desktopOnly: true },
-        { label: "Email domains", href: `${view.href}/email-domains`, icon: Globe, desktopOnly: true },
-        MEMBER_VIEW_ITEM,
-      ];
-    case "organizer":
-      return [
-        { label: "Dashboard", href: view.href, icon: LayoutDashboard },
-        { label: "Events", href: "/events", icon: CalendarDays, also: ["/bookings", "/tickets"] },
-        MEMBER_VIEW_ITEM,
-      ];
-    case "sports":
-      return [
-        { label: "Events", href: "/events", icon: CalendarDays, also: ["/bookings", "/tickets"] },
-        MEMBER_VIEW_ITEM,
-      ];
-    case "partner":
-      return [
-        { label: "Overview", href: view.href, icon: Building2 },
-        { label: "Team", href: `${view.href}/team`, icon: Users },
-        { label: "Activity", href: `${view.href}/activity`, icon: ScrollText },
-        { label: "Edit", href: `${view.href}/edit`, icon: Pencil, desktopOnly: true },
-        MEMBER_VIEW_ITEM,
-      ];
-  }
+/** Every link the person's roles allow, in groups: Member, Platform, Moderation, then one group per school or partner. */
+function useGroups(): NavGroup[] {
+  const roles = useRoles();
+  const schools = useOrgs("school");
+  const partners = useOrgs("partner");
+  return useMemo(() => {
+    const names = new Map([...(schools.data ?? []), ...(partners.data ?? [])].map((o) => [o.id, o.name]));
+    return navGroupsFor(roles.data, (id) => names.get(id));
+  }, [roles.data, schools.data, partners.data]);
 }
 
 function useIsActive() {
@@ -140,82 +78,9 @@ function useDismiss(open: boolean, onClose: () => void) {
 
 const menuItem = "flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-small text-ink hover:bg-sunken";
 
-function viewLabel(v: StaffView, orgs: Map<string, Organization>): string {
-  if (v.kind === "member") return "Member view";
-  if (v.kind === "moderator") return "Moderator";
-  if (v.kind === "sports") return `${roleLabel(v.role)} · ${(v.organizationId && orgs.get(v.organizationId)?.name) || "your organization"}`;
-  if (v.kind === "platform") return roleLabel(v.role);
-  const name = (v.organizationId && orgs.get(v.organizationId)?.name) || "your organization";
-  return `${roleLabel(v.role)} · ${name}`;
-}
-
-function useViews() {
-  const roles = useRoles();
-  const pathname = usePathname();
-  const schools = useOrgs("school");
-  const partners = useOrgs("partner");
-  const views = useMemo(() => viewsFor(roles.data), [roles.data]);
-  const orgs = useMemo(
-    () => new Map([...(schools.data ?? []), ...(partners.data ?? [])].map((o) => [o.id, o])),
-    [schools.data, partners.data],
-  );
-  const current = views.find((v) => v.key === currentViewKey(pathname, views)) ?? views[0];
-  return { views, orgs, current };
-}
-
 type Placement = "down" | "rail";
 const menuPlace = (p: Placement, w: string) =>
   p === "rail" ? `absolute bottom-0 left-full z-40 ml-3 ${w}` : `absolute right-0 top-full z-40 mt-2 ${w}`;
-
-function SwitchView({ placement = "down" }: { placement?: Placement }) {
-  const [open, setOpen] = useState(false);
-  const ref = useDismiss(open, () => setOpen(false));
-  const router = useRouter();
-  const { views, orgs, current } = useViews();
-  if (views.length < 2) return null;
-
-  return (
-    <div ref={ref} className={cn("relative", placement === "rail" && "w-full")}>
-      <button
-        type="button"
-        aria-label="Switch view"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className={
-          placement === "rail"
-            ? "flex h-11 w-full items-center gap-3 rounded-2xl bg-white/10 px-[14px] text-white transition-colors hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white"
-            : "inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full border border-line-strong bg-surface px-3.5 text-small font-medium hover:bg-sunken"
-        }
-      >
-        <Repeat className={cn("size-4", placement === "rail" ? "text-white" : "text-muted")} aria-hidden />
-        {placement === "down" && <span aria-hidden className="hidden sm:inline">Switch view</span>}
-        {placement === "rail" && <span className="rail-label text-small font-medium" aria-hidden>Switch view</span>}
-        {placement === "down" && <ChevronDown className={cn("size-3.5 text-muted transition-transform", open && "rotate-180")} aria-hidden />}
-      </button>
-      {open && (
-        <div role="menu" aria-label="Switch view" className={cn(menuPlace(placement, "w-72 max-w-[calc(100vw-2rem)]"), "rounded-xl border border-line bg-surface p-2 shadow-lifted motion-rise")}>
-          <p className="px-3 pb-1 pt-2 text-caption font-medium uppercase tracking-wide text-muted">View as</p>
-          {views.map((v) => (
-            <button
-              key={v.key}
-              role="menuitem"
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                router.push(v.href);
-              }}
-              className={menuItem}
-            >
-              <span className="flex-1">{viewLabel(v, orgs)}</span>
-              {v.key === current.key && <Check className="size-4 text-brand-ink" aria-label="Current view" />}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function ProfileMenu({ profile, placement = "down" }: { profile: Profile | null; placement?: Placement }) {
   const me = useMe();
@@ -223,8 +88,7 @@ function ProfileMenu({ profile, placement = "down" }: { profile: Profile | null;
   const ref = useDismiss(open, () => setOpen(false));
   const roles = useRoles();
   const signOut = useSignOut();
-  const top = viewsFor(roles.data).at(-1);
-  const roleName = viewsFor(roles.data).length > 1 && top ? roleLabel(top.role) : "Alumni member";
+  const roleName = topRoleLabel(roles.data);
 
   return (
     <div ref={ref} className={cn("relative", placement === "rail" && "w-full")}>
@@ -268,7 +132,7 @@ function ProfileMenu({ profile, placement = "down" }: { profile: Profile | null;
           <Link role="menuitem" href="/settings" onClick={() => setOpen(false)} className={menuItem}>
             <Settings className="size-4" aria-hidden /> Settings
           </Link>
-          <button role="menuitem" type="button" onClick={signOut} className={cn(menuItem, "text-brand-ink hover:bg-brand-soft")}>
+          <button role="menuitem" type="button" onClick={signOut} className={cn(menuItem, "text-danger-ink hover:bg-danger-soft")}>
             <LogOut className="size-4" aria-hidden /> Log out
           </button>
         </div>
@@ -280,7 +144,7 @@ function ProfileMenu({ profile, placement = "down" }: { profile: Profile | null;
 function Brand({ compact = false, light = false, label = false }: { compact?: boolean; light?: boolean; label?: boolean }) {
   return (
     <Link href="/start" className="flex min-h-11 shrink-0 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink" aria-label="Alumni Challenge home">
-      <Logo size={compact ? 32 : 36} tone={light ? "light" : "dark"} />
+      {light ? <LogoTile size={40} /> : <Logo variant="mark" size={compact ? 36 : 40} />}
       {label && <span className="rail-label whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.12em] text-white" aria-hidden>Alumni Challenge</span>}
     </Link>
   );
@@ -359,8 +223,7 @@ const useWide = () => useSyncExternalStore(subscribeWide, () => window.matchMedi
 function Rail({ profile, expanded, onToggle }: { profile: Profile | null; expanded: boolean; onToggle: () => void }) {
   const incoming = useIncomingCount();
   const isActive = useIsActive();
-  const { current } = useViews();
-  const items = navFor(current);
+  const groups = useGroups();
   const Toggle = expanded ? PanelLeftClose : PanelLeftOpen;
   return (
     <aside className="rail fixed bottom-3 left-3 top-3 z-30 hidden flex-col rounded-[28px] bg-side px-4 py-4 shadow-lifted lg:flex">
@@ -377,12 +240,17 @@ function Rail({ profile, expanded, onToggle }: { profile: Profile | null; expand
         </button>
       </div>
       <nav aria-label="Main" className="mt-4 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-clip py-1">
-        {items.map((item) => (
-          <RailItem key={item.href + item.label} item={item} active={isActive(item)} badge={item.href === "/connections" ? incoming : undefined} />
+        {groups.map((g, i) => (
+          <div key={g.key} role="group" aria-label={g.title} className="flex flex-col gap-2">
+            {i > 0 && <hr className="rail-group-rule mx-2 my-1 border-white/15" />}
+            <p className="rail-group-title truncate px-1 pb-0.5 pt-3 text-caption font-semibold uppercase tracking-wide text-white/80">{g.title}</p>
+            {g.items.map((item) => (
+              <RailItem key={item.href + item.label} item={item} active={isActive(item)} badge={item.href === "/connections" ? incoming : undefined} />
+            ))}
+          </div>
         ))}
       </nav>
       <div className="mt-3 flex flex-col gap-3">
-        <SwitchView placement="rail" />
         <ProfileMenu profile={profile} placement="rail" />
       </div>
     </aside>
@@ -392,10 +260,11 @@ function Rail({ profile, expanded, onToggle }: { profile: Profile | null; expand
 /** The quiet bar over the page: its title and the search. On phones it also holds the logo, view switcher and account menu. */
 function TopBar({ profile }: { profile: Profile | null }) {
   const isActive = useIsActive();
-  const { current } = useViews();
-  const title = navFor(current).find(isActive)?.label ?? "";
-  const member = current.kind === "member";
+  const groups = useGroups();
   const pathname = usePathname();
+  const title = pathname.startsWith("/messages") ? "Messages" : (groups.flatMap((g) => g.items).find(isActive)?.label ?? "");
+  // The search finds alumni, so it belongs on the member pages and not over the staff screens.
+  const member = groups[0].items.some(isActive) || pathname.startsWith("/messages");
   // The dashboards draw their own bell in their header row, so the bar does not repeat it on wide screens.
   const onDashboard = /^\/(admin|(school|partner|organizer)\/[^/]+)$/.test(pathname);
   return (
@@ -403,48 +272,93 @@ function TopBar({ profile }: { profile: Profile | null }) {
       <div className="flex items-center gap-2 px-4 pt-3 sm:px-6 lg:hidden">
         <Brand compact />
         <p className="min-w-0 flex-1 truncate pl-1 text-lead font-semibold">{title}</p>
+        <MessagesLink />
         <NotificationBell />
-        <SwitchView />
         <ProfileMenu profile={profile} />
       </div>
       {member && <div className="px-4 pb-1 pt-2 sm:px-6 lg:hidden"><SearchBox id="top-search-phone" className="w-full" /></div>}
       <div className="mx-auto hidden h-20 max-w-[1680px] items-center gap-6 px-10 xl:px-14 lg:flex">
         <p className="min-w-0 flex-1 truncate text-heading font-semibold">{title}</p>
         {member && <SearchBox id="top-search" className="w-full max-w-sm" />}
-        {!onDashboard && <NotificationBell />}
+        {!onDashboard && (
+          <div className="flex items-center gap-1">
+            <MessagesLink />
+            <NotificationBell />
+          </div>
+        )}
       </div>
     </header>
   );
 }
 
-/** Phone: the same items as tabs along the bottom, big enough to tap, clear of the home indicator. */
+/** Phone: five tabs along the bottom and a More tab that opens everything else, in the same groups as the sidebar. */
 function PhoneTabs() {
   const incoming = useIncomingCount();
   const isActive = useIsActive();
-  const { current } = useViews();
-  const tabs = navFor(current).filter((i) => !i.desktopOnly);
+  const groups = useGroups();
+  const [more, setMore] = useState(false);
+  const all = groups.flatMap((g) => g.items);
+  // Home, Directory, Events and Connections for everyone; the fifth is the staff landing page, or My profile for members.
+  const member = groups[0].items;
+  const fifth = groups[1]?.items[0] ?? member.find((i) => i.href === "/profile");
+  const tabs = [...member.filter((i) => ["/home", "/directory", "/events", "/connections"].includes(i.href)), ...(fifth ? [fifth] : [])];
+  const hidden = all.length > tabs.length;
+  const moreActive = hidden && all.some((i) => isActive(i) && !tabs.includes(i));
+
+  const tabClass = "relative flex min-h-[4.25rem] flex-1 flex-col items-center justify-center gap-1 px-0.5 pb-1 pt-1.5 text-[11px] leading-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ink";
   return (
-    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 flex items-stretch justify-around border-t border-line bg-surface pb-[env(safe-area-inset-bottom,0px)] lg:hidden">
-      {tabs.map((item) => {
-        const active = isActive(item);
-        const badge = item.href === "/connections" ? incoming : 0;
-        return (
-          <Link
-            key={item.href + item.label}
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            aria-label={badge ? `${item.label}, ${badge} waiting` : undefined}
-            className="relative flex min-h-[4.25rem] flex-1 flex-col items-center justify-center gap-1 px-0.5 pb-1 pt-1.5 text-[11px] leading-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ink"
-          >
-            <Icon3D icon={item.icon} tone={active ? "ember" : "paper"} size="sm" />
-            <span className={cn("max-w-full truncate", active ? "font-semibold text-ink" : "text-muted")}>{item.label === "My profile" ? "Profile" : item.label}</span>
-            {badge > 0 && (
-              <span className="absolute right-[calc(50%-26px)] top-1 flex size-4 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white" aria-hidden>{badge}</span>
-            )}
-          </Link>
-        );
-      })}
-    </nav>
+    <>
+      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 flex items-stretch justify-around border-t border-line bg-surface pb-[env(safe-area-inset-bottom,0px)] lg:hidden">
+        {tabs.map((item) => {
+          const active = isActive(item);
+          const badge = item.href === "/connections" ? incoming : 0;
+          return (
+            <Link
+              key={item.href + item.label}
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              aria-label={badge ? `${item.label}, ${badge} waiting` : undefined}
+              className={tabClass}
+            >
+              <Icon3D icon={item.icon} tone={active ? "ember" : "paper"} size="sm" />
+              <span className={cn("max-w-full truncate", active ? "font-semibold text-ink" : "text-muted")}>{item.label === "My profile" ? "Profile" : item.label}</span>
+              {badge > 0 && (
+                <span className="absolute right-[calc(50%-26px)] top-1 flex size-4 items-center justify-center rounded-full bg-brand text-[10px] font-bold text-white" aria-hidden>{badge}</span>
+              )}
+            </Link>
+          );
+        })}
+        {hidden && (
+          <button type="button" aria-haspopup="dialog" aria-expanded={more} onClick={() => setMore(true)} className={tabClass}>
+            <Icon3D icon={Ellipsis} tone={moreActive ? "ember" : "paper"} size="sm" />
+            <span className={cn("max-w-full truncate", moreActive ? "font-semibold text-ink" : "text-muted")}>More</span>
+          </button>
+        )}
+      </nav>
+      <Dialog open={more} onClose={() => setMore(false)} title="More">
+        <nav aria-label="All pages" className="space-y-5 pb-2">
+          {groups.map((g) => (
+            <div key={g.key} role="group" aria-label={g.title}>
+              <p className="px-1 pb-1 text-caption font-semibold uppercase tracking-wide text-muted">{g.title}</p>
+              <ul>
+                {g.items.map((item) => (
+                  <li key={item.href + item.label}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setMore(false)}
+                      aria-current={isActive(item) ? "page" : undefined}
+                      className={cn("flex min-h-11 items-center gap-3 rounded-lg px-2 text-body hover:bg-sunken", isActive(item) && "font-semibold text-brand-ink")}
+                    >
+                      <item.icon className="size-5 shrink-0" aria-hidden /> {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
+      </Dialog>
+    </>
   );
 }
 

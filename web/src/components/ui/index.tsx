@@ -26,7 +26,7 @@ const VARIANTS = {
   // Quiet: no fill to compete with the primary, just a fine line.
   secondary: "border border-line-strong bg-transparent text-ink hover:bg-sunken",
   ghost: "text-muted hover:bg-sunken hover:text-ink",
-  danger: "border border-brand/40 bg-surface text-brand-ink hover:bg-brand-soft",
+  danger: "border border-danger/40 bg-surface text-danger-ink hover:bg-danger-soft",
 };
 // 44px tall on phones is the minimum comfortable touch target; "sm" is for dense desktop rows.
 const SIZES: Record<ButtonSize, string> = {
@@ -65,7 +65,7 @@ export function LinkButton({ href, variant = "primary", size = "md", className, 
 
 // 16px text on phones stops iOS from zooming into the field when it is focused.
 const fieldClass =
-  "w-full rounded-control border border-line-strong bg-surface px-3.5 text-body text-ink placeholder:text-faint transition-colors focus:border-brand-ink focus:outline-none focus:ring-2 focus:ring-brand-ink/20 disabled:bg-sunken disabled:text-faint aria-[invalid=true]:border-brand-ink sm:text-small";
+  "w-full rounded-control border border-line-strong bg-surface px-3.5 text-body text-ink placeholder:text-faint transition-colors focus:border-brand-ink focus:outline-none focus:ring-2 focus:ring-brand-ink/20 disabled:bg-sunken disabled:text-faint aria-[invalid=true]:border-danger sm:text-small";
 export const Input = (p: React.ComponentProps<"input">) => (
   <input {...p} className={cn(fieldClass, "h-11", p.className)} />
 );
@@ -111,7 +111,7 @@ export function Field({ label, error, hint, htmlFor, children }: {
       <label htmlFor={htmlFor} className="block text-small font-medium text-ink">{label}</label>
       {control}
       {error ? (
-        <p id={msgId} className="text-small text-brand-ink" role="alert">{error}</p>
+        <p id={msgId} className="text-small text-danger-ink" role="alert">{error}</p>
       ) : hint ? (
         <p id={msgId} className="text-caption text-muted">{hint}</p>
       ) : null}
@@ -169,7 +169,7 @@ export function IconChip({ icon: Icon, tone = "brand", size = 40 }: {
   );
 }
 
-export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "ok" | "warn" | "brand" | "gold" | "blue"; children: React.ReactNode }) {
+export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "ok" | "warn" | "brand" | "gold" | "blue" | "danger"; children: React.ReactNode }) {
   const tones = {
     neutral: "bg-sunken text-muted",
     ok: "bg-ok-soft text-ok",
@@ -177,6 +177,7 @@ export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "ok" 
     brand: "bg-brand-soft text-brand-ink",
     gold: "bg-gold-soft text-gold",
     blue: "bg-verified-soft text-verified",
+    danger: "bg-danger-soft text-danger-ink",
   };
   return <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-caption font-medium ring-1 ring-inset ring-current/10", tones[tone])}>{children}</span>;
 }
@@ -242,13 +243,13 @@ export const Skeleton = ({ className }: { className?: string }) => (
 
 export function Alert({ children, tone = "error" }: { children: React.ReactNode; tone?: "error" | "info" | "ok" | "warn" }) {
   const tones = {
-    error: "border-brand/30 bg-brand-soft text-ink",
+    error: "border-danger/30 bg-danger-soft text-ink",
     warn: "border-warn/30 bg-warn-soft text-ink",
     info: "border-line bg-sunken text-ink",
     ok: "border-ok/30 bg-ok-soft text-ink",
   };
   const icons = { error: AlertCircle, warn: AlertCircle, info: Info, ok: CheckCircle2 };
-  const iconTone = { error: "text-brand-ink", warn: "text-warn", info: "text-muted", ok: "text-ok" };
+  const iconTone = { error: "text-danger-ink", warn: "text-warn", info: "text-muted", ok: "text-ok" };
   const Icon = icons[tone];
   return (
     <div role={tone === "error" ? "alert" : "status"} className={cn("flex gap-2.5 rounded-xl border px-3.5 py-3 text-small", tones[tone])}>

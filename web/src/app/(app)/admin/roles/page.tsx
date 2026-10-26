@@ -72,7 +72,7 @@ export default function PlatformRolesPage() {
 
       <div className="mt-4 space-y-2 text-small text-muted">
         <p>{isSuperAdmin(roles.data) ? "As a super admin you can give any platform role." : "As an admin you can give the moderator role."} Nobody can change their own roles, and the last super admin can never be removed.</p>
-        <p>Staff accounts usually have no public profile, so they won’t show up when you search by name. Paste their user ID instead.</p>
+        <p>Staff accounts usually have no public profile, so they won’t show up when you search by name. Paste their account ID instead.</p>
       </div>
 
       <ConfirmDialog

@@ -187,3 +187,25 @@ The reference images the user gave are in the same parent folder (`landing page.
 (seed writes `var/`), set the demo accounts' password hash to the shared password, run uvicorn on 8001, build the web app
 (`npm run build`, copy `.next/static` and `public` into `.next/standalone`), then `API_URL=http://localhost:8001 PORT=3200 node server.js`.
 
+
+## 9. Sidebar, users page, messaging mock-up (added after Screen 6)
+
+- **One sidebar, no "Switch view".** `lib/nav.ts` (`navGroupsFor`) builds the groups from the person's roles: Member (always), Platform
+  (admin, super admin), Moderation (moderator; admins get the Reports link there), then one group per school or partner they run or whose
+  events they manage, titled with its name. `lib/roles.ts` keeps `landingFor` for the page after sign-in. Phones: five tabs plus **More**
+  (a sheet with every group). `viewsFor`, `currentViewKey` and `SwitchView` are gone.
+- **/admin/users** (platform admin): `GET /users?q=&status=&limit=&offset=` with Suspend/Reactivate through `ReasonDialog`. **Remove** on email
+  domains calls `DELETE /organizations/{id}/email-domains/{domain_id}`. Neither is in `schema.d.ts` yet: `UserListItem` is written by hand in
+  `lib/api/types.ts` (TODO: regenerate). A 405 or bare 404 shows the notice or switches the button off (`isMissingEndpoint`).
+- **Messaging is layout only**: chat icon in the top bar, `/messages`, and a Message button for connected people on profiles and directory cards.
+  Shapes the backend would need: `MESSAGING_API_WISHLIST.md`.
+- **No event editor**: "Create event" on the school and partner overview is shown disabled ("Coming soon"). The report API takes only a status, so a dismissal cannot carry a note.
+
+## 10. Real logo and brand colours
+
+- **Logo files** are in `public/brand/` (supplied as is; never redraw or recolour them). `components/shell/logo.tsx`: `<Logo variant="full|mark">`
+  for light backgrounds, `<LogoTile>` (mark on a white rounded tile) on dark ones such as the sidebar and the landing hero. `next.config.ts`
+  allows `/brand/**` for `next/image`. Favicon, icon, apple-icon and the share images live in `src/app/` (copies of the brand files, one source each);
+  set `NEXT_PUBLIC_SITE_URL` so share links are absolute.
+- **Colours**: `--brand` is the logo blue `#0173a8` (white text 5.2:1), `--brand-ink` is the blue for text, `--brand-light` is for glows only.
+  Red is now `--danger*` and is only for errors and destructive actions. Yellow `#fece01` is `--gold-fill` (fills, with ink text). The sidebar `--side` is a navy.

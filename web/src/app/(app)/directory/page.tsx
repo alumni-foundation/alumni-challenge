@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { PersonCard } from "@/components/member/person-card";
 import { Button, EmptyState, ErrorState, Field, Input, PageHeader, Select, Skeleton, Switch } from "@/components/ui";
-import { NO_FILTERS, PAGE_SIZE, useDirectorySearch, useOrgs, type DirectoryFilters } from "@/lib/api/hooks";
+import { NO_FILTERS, PAGE_SIZE, useConnections, useDirectorySearch, useOrgs, type DirectoryFilters } from "@/lib/api/hooks";
 import { useDebounced } from "@/lib/use-debounced";
 
 /** The API stops counting at 10,000, so that number really means "10,000 or more". */
@@ -17,6 +17,12 @@ function DirectoryView({ initialQuery }: { initialQuery: string }) {
   const [page, setPage] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const schools = useOrgs("school");
+  const connections = useConnections();
+  // People I am connected with get a Message button on their card.
+  const connectedProfiles = useMemo(
+    () => new Set((connections.data ?? []).filter((c) => c.status === "accepted" && c.other_profile_id).map((c) => c.other_profile_id)),
+    [connections.data],
+  );
 
   // Typing waits until it pauses; the dropdown and the switch apply straight away.
   // The object must only change when a value does, or the timer would restart on every render.
@@ -76,7 +82,7 @@ function DirectoryView({ initialQuery }: { initialQuery: string }) {
         </div>
 
         {showFilters && (
-          <fieldset id="directory-filters" className="grid gap-4 rounded-card border border-line bg-surface p-4 sm:grid-cols-2">
+          <fieldset id="directory-filters" className="grid min-w-0 gap-4 rounded-[1.75rem] border border-line bg-surface p-5 shadow-resting sm:grid-cols-2">
             <legend className="sr-only">Filters</legend>
             <Field label="Country" htmlFor="f-country">
               <Input id="f-country" value={form.country} onChange={(e) => change({ country: e.target.value })} />
@@ -124,7 +130,7 @@ function DirectoryView({ initialQuery }: { initialQuery: string }) {
             <ul className="space-y-3">
               {items.map((p) => (
                 <li key={p.id}>
-                  <PersonCard person={p} schoolName={p.school_id ? schoolName.get(p.school_id) : undefined} />
+                  <PersonCard person={p} schoolName={p.school_id ? schoolName.get(p.school_id) : undefined} connected={connectedProfiles.has(p.id)} />
                 </li>
               ))}
             </ul>

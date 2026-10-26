@@ -50,7 +50,7 @@ export function SlotPicker({ slots, value, onChange, error, readOnly = false }: 
           );
         })}
       </ul>
-      {error && <p id="slot-msg" className="text-small text-brand-ink" role="alert">{error}</p>}
+      {error && <p id="slot-msg" className="text-small text-danger-ink" role="alert">{error}</p>}
     </fieldset>
   );
 }

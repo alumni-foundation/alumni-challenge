@@ -89,7 +89,7 @@ export function ProfileRingCard({ profile }: { profile: Profile | null | undefin
                   <ul className="mt-1.5 space-y-0.5">
                     {todo.slice(0, 3).map((i) => (
                       <li key={i.label}>
-                        <Link href="/profile" className="inline-flex min-h-8 items-center gap-2 hover:underline">
+                        <Link href="/profile" className="inline-flex min-h-11 items-center gap-2 hover:underline">
                           <Circle className="size-3 shrink-0 text-faint" aria-hidden /> {i.label}
                         </Link>
                       </li>
@@ -220,7 +220,7 @@ export function PeopleBars({ profile, connections }: { profile: Profile | null |
               const requested = sent.has(x.user_id);
               return (
                 <Bar key={x.id} columns={PEOPLE_COLS}>
-                  <Link href={`/alumni/${x.id}`} className="flex min-w-0 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
+                  <Link href={`/alumni/${x.id}`} className="flex min-h-11 min-w-0 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink">
                     <Avatar name={x.full_name} id={x.id} size={40} />
                     <span className="flex min-w-0 items-center gap-1.5 font-semibold"><span className="truncate">{x.full_name}</span>{x.verification_status === "verified" && <VerifiedMark />}</span>
                   </Link>

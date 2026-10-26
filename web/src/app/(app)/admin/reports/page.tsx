@@ -1,11 +1,12 @@
 "use client";
 
+import { Ban } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { Alert, Badge, Button, Card, EmptyState, ErrorState, PageHeader, Skeleton, Tabs, useToast } from "@/components/ui";
+import { Alert, Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, PageHeader, ReasonDialog, Skeleton, Tabs, useToast } from "@/components/ui";
 import { api } from "@/lib/api/client";
 import { friendlyError } from "@/lib/api/messages";
-import { REPORTS_PAGE_SIZE, useReports, useRoles, useWrite } from "@/lib/api/hooks";
+import { REPORTS_PAGE_SIZE, useProfile, useReports, useRoles, useWrite } from "@/lib/api/hooks";
 import type { Report, ReportStatus } from "@/lib/api/types";
 import { canModerate } from "@/lib/roles";
 import { formatDate } from "@/lib/utils";
@@ -30,8 +31,16 @@ const EMPTY: Record<ReportStatus, string> = {
 };
 
 function ReportCard({ report, onChange, busy }: { report: Report; onChange: (status: ReportStatus) => void; busy: ReportStatus | null }) {
+  const toast = useToast();
   const isProfile = report.target_type === "profile";
   const active = report.status === "open" || report.status === "reviewing";
+  const [dialog, setDialog] = useState<"dismiss" | "suspend" | null>(null);
+  // A moderator can open the reported profile while its report is open or being reviewed; that gives the account to suspend.
+  const profile = useProfile(report.target_id, isProfile && active);
+  const suspend = useWrite(
+    ({ userId, reason }: { userId: string; reason: string }) => api(`users/${userId}/suspend`, { method: "POST", body: { reason } }),
+    [["reports"], ["audit"]],
+  );
   return (
     <Card large className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -62,10 +71,43 @@ function ReportCard({ report, onChange, busy }: { report: Report; onChange: (sta
         {active && (
           <>
             <Button variant="dark" size="sm" loading={busy === "resolved"} disabled={busy !== null} onClick={() => onChange("resolved")}>Resolve</Button>
-            <Button variant="ghost" size="sm" loading={busy === "dismissed"} disabled={busy !== null} onClick={() => onChange("dismissed")}>Dismiss</Button>
+            <Button variant="ghost" size="sm" loading={busy === "dismissed"} disabled={busy !== null} onClick={() => setDialog("dismiss")}>Dismiss</Button>
           </>
         )}
+        {isProfile && active && (
+          <Button
+            variant="danger"
+            size="sm"
+            disabled={!profile.data}
+            title={profile.data ? undefined : profile.isError ? "This profile can’t be opened, so it can’t be suspended from here." : "Loading the reported profile…"}
+            onClick={() => setDialog("suspend")}
+          >
+            <Ban className="size-4" aria-hidden /> Suspend account
+          </Button>
+        )}
       </div>
+
+      <ConfirmDialog
+        open={dialog === "dismiss"}
+        title="Dismiss this report?"
+        body="It moves to Dismissed and the profile is hidden from you again. The system keeps no written note with a dismissal, only the status."
+        confirmLabel="Dismiss report"
+        onClose={() => setDialog(null)}
+        onConfirm={async () => onChange("dismissed")}
+      />
+      <ReasonDialog
+        open={dialog === "suspend"}
+        title={`Suspend ${profile.data?.full_name ?? "this account"}?`}
+        body="They will be signed out and their profile hidden. The report stays open until you resolve it. Say why, so the activity log explains it."
+        confirmLabel="Suspend account"
+        danger
+        onClose={() => setDialog(null)}
+        onSubmit={async (reason) => {
+          if (!profile.data) return;
+          await suspend.mutateAsync({ userId: profile.data.user_id, reason });
+          toast("Account suspended.");
+        }}
+      />
     </Card>
   );
 }

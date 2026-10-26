@@ -44,7 +44,7 @@ export const isStaffArea = (pathname: string) =>
  * the account (password, devices, data) and not the member profile.
  */
 export const worksWithoutProfile = (pathname: string) =>
-  isStaffArea(pathname) || pathname === "/settings" || isEventsArea(pathname);
+  isStaffArea(pathname) || pathname === "/settings" || isEventsArea(pathname) || isMessagesArea(pathname);
 
 /**
  * Events, bookings and tickets are about the account, not the alumni profile: staff, and people who have not
@@ -52,3 +52,9 @@ export const worksWithoutProfile = (pathname: string) =>
  */
 export const isEventsArea = (pathname: string) =>
   ["/events", "/bookings", "/tickets"].some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
+/**
+ * Messages is in everyone's top bar, staff included, so it opens without a member profile too. It is a member
+ * page otherwise: signed-in only (it is not in the public lists above).
+ */
+export const isMessagesArea = (pathname: string) => pathname === "/messages" || pathname.startsWith("/messages/");

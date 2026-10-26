@@ -26,6 +26,7 @@ import type {
   Session,
   Ticket,
   User,
+  UserListItem,
 } from "./types";
 
 export const PAGE_SIZE = 20;
@@ -83,8 +84,8 @@ export const useDirectorySearch = (filters: DirectoryFilters, page: number) =>
 export const useBlocked = () =>
   useQuery({ queryKey: ["blocked"], queryFn: () => api<Connection[]>("connections/blocked") });
 
-export const useProfile = (id: string) =>
-  useQuery({ queryKey: ["profile", id], queryFn: () => api<Profile>(`alumni/${id}`), retry: false });
+export const useProfile = (id: string, enabled = true) =>
+  useQuery({ queryKey: ["profile", id], queryFn: () => api<Profile>(`alumni/${id}`), retry: false, enabled });
 
 export const useConnections = () =>
   useQuery({ queryKey: ["connections"], queryFn: () => api<Connection[]>("connections") });
@@ -175,6 +176,37 @@ export const useAddEmailDomain = (orgId: string) =>
     (domain: string) => api<EmailDomain>(`organizations/${orgId}/email-domains`, { method: "POST", body: { domain } }),
     [["domains", orgId], ["audit"]],
   );
+
+export const useRemoveEmailDomain = (orgId: string) =>
+  useWrite(
+    (domainId: string) => api<null>(`organizations/${orgId}/email-domains/${domainId}`, { method: "DELETE" }),
+    [["domains", orgId], ["audit"]],
+  );
+
+/**
+ * True when a call failed because the server has no such endpoint yet (405, or the framework's own bare 404 that has no
+ * application error code), as opposed to "that thing does not exist". Used to switch a button off with an honest tooltip.
+ */
+export const isMissingEndpoint = (e: unknown) =>
+  e instanceof ApiError && (e.status === 405 || (e.status === 404 && e.code === "error"));
+
+export const USERS_PAGE_SIZE = 25;
+export type UserStatusFilter = "" | "active" | "suspended";
+
+/** GET /users (platform admins): search by name or email, filter by status. The total comes from X-Total-Count when sent. */
+export const useUsers = (q: string, status: UserStatusFilter, page: number, enabled = true) =>
+  useQuery({
+    enabled,
+    queryKey: ["users", q, status, page],
+    queryFn: () => {
+      const qs = new URLSearchParams({ limit: String(USERS_PAGE_SIZE), offset: String(page * USERS_PAGE_SIZE) });
+      if (q.trim()) qs.set("q", q.trim());
+      if (status) qs.set("status", status);
+      return apiPage<UserListItem>(`users?${qs.toString()}`);
+    },
+    placeholderData: (prev) => prev,
+    retry: false,
+  });
 
 export const REPORTS_PAGE_SIZE = 25;
 

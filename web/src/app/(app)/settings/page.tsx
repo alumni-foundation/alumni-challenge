@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Ban, KeyRound, LogOut, Monitor } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Row, RowList } from "@/components/staff/rows";
 import { Alert, Badge, Button, Card, ConfirmDialog, ErrorState, LinkButton, PageHeader, Skeleton, useToast } from "@/components/ui";
 import { api, authCall } from "@/lib/api/client";
 import { friendlyError } from "@/lib/api/messages";
@@ -13,7 +14,7 @@ import { formatDate } from "@/lib/utils";
 
 function Section({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
   return (
-    <Card className="space-y-3">
+    <Card large className="space-y-3">
       <h2 className="flex items-center gap-2 text-heading"><Icon className="size-5 text-muted" aria-hidden /> {title}</h2>
       {children}
     </Card>
@@ -84,17 +85,17 @@ export default function SettingsPage() {
         ) : sessions.isLoading ? (
           <Skeleton className="h-20" />
         ) : (
-          <ul className="divide-y divide-line">
+          <RowList label="Devices">
             {sessions.data?.map((s) => (
-              <li key={s.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
+              <Row key={s.id} stack>
+                <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{s.device_label || "Unknown device"}</p>
                   <p className="text-caption text-muted">{s.ip_address ?? "Unknown address"} · Last used {formatDate(s.last_used_at)}</p>
                 </div>
                 <Button variant="secondary" size="sm" className="shrink-0 whitespace-nowrap" onClick={() => setEnding(s)}>Log out this device</Button>
-              </li>
+              </Row>
             ))}
-          </ul>
+          </RowList>
         )}
         <div className="border-t border-line pt-3">
           <Button variant="danger" onClick={logOut}><LogOut className="size-4" aria-hidden /> Log out</Button>

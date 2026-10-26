@@ -85,7 +85,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, label, pills = f
             onKeyDown={(e) => onKey(e, i)}
             className={cn(
               "relative inline-flex shrink-0 items-center gap-2 px-4 text-small font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
-              pills ? "h-10 rounded-full" : "h-11",
+              pills ? "h-11 rounded-full sm:h-10" : "h-11",
               pills ? (active ? "bg-ink text-white" : "text-muted hover:text-ink") : active ? "text-ink" : "text-muted hover:text-ink",
             )}
           >

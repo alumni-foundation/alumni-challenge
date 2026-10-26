@@ -72,61 +72,12 @@ export const assignableRoles = (m: Membership[] = [], org: { id: string; type: "
   return out;
 };
 
-/* ---- Where each kind of person lands, and which views they can switch between ---------- */
+/* ---- Where each kind of person lands, and which organizations they work in ------------------ */
 
-export type ViewKind = "member" | "platform" | "moderator" | "school" | "partner" | "organizer" | "sports";
-
-export type StaffView = {
-  /** Stable key for lists and the remembered choice. */
-  key: string;
-  kind: ViewKind;
-  /** The role that grants this view (alumni for the member view). */
-  role: Role;
-  organizationId: string | null;
-  href: string;
-};
-
-const MEMBER_VIEW: StaffView = { key: "member", kind: "member", role: "alumni", organizationId: null, href: "/home" };
-
-/**
- * Every view this person can open: the member view first, then one per staff role (one per
- * organization for school and partner admins), highest rank first. An event manager gets their
- * organization's dashboard; a sports manager gets Events, which is all the API lets them see.
- */
-export function viewsFor(m: Membership[] = []): StaffView[] {
-  const out: StaffView[] = [MEMBER_VIEW];
-  const platformRole = m.find((x) => x.organization_id === null && x.role === "super_admin")
-    ?? m.find((x) => x.organization_id === null && x.role === "admin");
-  if (platformRole) {
-    out.push({ key: "platform", kind: "platform", role: platformRole.role, organizationId: null, href: "/admin" });
-  }
-  if (m.some((x) => x.role === "moderator")) {
-    out.push({ key: "moderator", kind: "moderator", role: "moderator", organizationId: null, href: "/admin/reports" });
-  }
-  const seen = new Set<string>();
-  for (const [role, kind, base] of [
-    ["school_admin", "school", "/school"],
-    ["partner_admin", "partner", "/partner"],
-  ] as const) {
-    for (const x of m) {
-      if (x.role !== role || !x.organization_id || seen.has(`${kind}:${x.organization_id}`)) continue;
-      seen.add(`${kind}:${x.organization_id}`);
-      out.push({ key: `${kind}:${x.organization_id}`, kind, role, organizationId: x.organization_id, href: `${base}/${x.organization_id}` });
-    }
-  }
-  for (const x of m) {
-    if (!x.organization_id) continue;
-    if (x.role === "event_manager" && !seen.has(`organizer:${x.organization_id}`)) {
-      seen.add(`organizer:${x.organization_id}`);
-      out.push({ key: `organizer:${x.organization_id}`, kind: "organizer", role: x.role, organizationId: x.organization_id, href: `/organizer/${x.organization_id}` });
-    }
-    if (x.role === "sports_manager" && !seen.has(`sports:${x.organization_id}`)) {
-      seen.add(`sports:${x.organization_id}`);
-      out.push({ key: `sports:${x.organization_id}`, kind: "sports", role: x.role, organizationId: x.organization_id, href: "/events" });
-    }
-  }
-  return out;
-}
+/** The distinct organizations where this person holds `role`, in the order the memberships came. */
+export const orgIdsWithRole = (m: Membership[] = [], role: Role): string[] => [
+  ...new Set(m.filter((x) => x.role === role && x.organization_id).map((x) => x.organization_id as string)),
+];
 
 /**
  * The page to open after sign-in. The highest role wins: admin, then moderator, then school
@@ -135,28 +86,16 @@ export function viewsFor(m: Membership[] = []): StaffView[] {
  * sports managers on Events, and everyone else on the member home.
  */
 export function landingFor(m: Membership[] = []): string {
-  const views = viewsFor(m);
-  const first = views.find((v) => v.kind !== "member");
-  if (!first) return MEMBER_VIEW.href;
-  if (first.kind === "school" || first.kind === "partner") {
-    const same = views.filter((v) => v.kind === first.kind);
-    if (same.length > 1) return `/${first.kind}`;
+  if (isPlatformAdmin(m)) return "/admin";
+  if (m.some((x) => x.role === "moderator")) return "/admin/reports";
+  for (const [role, base] of [["school_admin", "/school"], ["partner_admin", "/partner"]] as const) {
+    const ids = orgIdsWithRole(m, role);
+    if (ids.length > 1) return base;
+    if (ids.length === 1) return `${base}/${ids[0]}`;
   }
-  return first.href;
-}
-
-/** The view that matches the current page, so the "Switch view" menu can mark it. */
-export function currentViewKey(pathname: string, views: StaffView[]): string {
-  const staff = views.filter((v) => v.kind !== "member");
-  const match = staff.find((v) => v.kind !== "sports" && (pathname === v.href || pathname.startsWith(`${v.href}/`)));
-  if (match) return match.key;
-  // A sports manager with no other staff role stays in their own navigation on the events pages.
-  const eventsPage = ["/events", "/bookings", "/tickets"].some((p) => pathname === p || pathname.startsWith(`${p}/`));
-  if (eventsPage && staff.length > 0 && staff.every((v) => v.kind === "sports")) return staff[0].key;
-  if (pathname === "/school" || pathname === "/partner") return staff.find((v) => v.kind === pathname.slice(1))?.key ?? "member";
-  // A platform admin or moderator who opens a school or partner page keeps the staff navigation, not the member one.
-  if (pathname.startsWith("/school/") || pathname.startsWith("/partner/")) return staff.find((v) => v.kind === "platform" || v.kind === "moderator")?.key ?? "member";
-  if (pathname.startsWith("/organizer/")) return staff.find((v) => v.kind === "organizer")?.key ?? "member";
-  if (pathname.startsWith("/admin")) return staff.find((v) => v.kind === "platform" || v.kind === "moderator")?.key ?? "member";
-  return "member";
+  // Event and sports managers: whichever role the memberships list first.
+  const manager = m.find((x) => x.organization_id && (x.role === "event_manager" || x.role === "sports_manager"));
+  if (manager?.role === "event_manager") return `/organizer/${manager.organization_id}`;
+  if (manager) return "/events";
+  return "/home";
 }

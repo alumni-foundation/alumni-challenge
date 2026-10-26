@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Membership, Role } from "@/lib/api/types";
-import { currentViewKey, grantablePlatformRoles, isSuperAdmin, landingFor, viewsFor } from "./roles";
+import { grantablePlatformRoles, isSuperAdmin, landingFor, orgIdsWithRole } from "./roles";
 
 const SCHOOL_A = "11111111-1111-4111-8111-111111111111";
 const SCHOOL_B = "22222222-2222-4222-8222-222222222222";
@@ -31,6 +31,11 @@ describe("landingFor", () => {
     expect(landingFor([m("moderator")])).toBe("/admin/reports");
   });
 
+  it("sends a manager with both event and sports roles to whichever is listed first", () => {
+    expect(landingFor([m("sports_manager", SCHOOL_A), m("event_manager", SCHOOL_B)])).toBe("/events");
+    expect(landingFor([m("event_manager", SCHOOL_B), m("sports_manager", SCHOOL_A)])).toBe(`/organizer/${SCHOOL_B}`);
+  });
+
   it("sends a school admin and a partner admin to their own organization", () => {
     expect(landingFor([m("school_admin", SCHOOL_A)])).toBe(`/school/${SCHOOL_A}`);
     expect(landingFor([m("partner_admin", PARTNER)])).toBe(`/partner/${PARTNER}`);
@@ -51,60 +56,10 @@ describe("landingFor", () => {
   });
 });
 
-describe("viewsFor", () => {
-  it("always starts with the member view", () => {
-    expect(viewsFor([]).map((v) => v.key)).toEqual(["member"]);
-    expect(viewsFor([m("event_manager", SCHOOL_A)]).map((v) => v.key)).toEqual(["member", `organizer:${SCHOOL_A}`]);
-    expect(viewsFor([m("sports_manager", SCHOOL_A)]).map((v) => v.key)).toEqual(["member", `sports:${SCHOOL_A}`]);
-  });
-
-  it("lists one entry per staff role and organization, highest first", () => {
-    const keys = viewsFor([
-      m("partner_admin", PARTNER),
-      m("school_admin", SCHOOL_B),
-      m("school_admin", SCHOOL_A),
-      m("moderator"),
-      m("admin"),
-    ]).map((v) => v.key);
-    expect(keys).toEqual(["member", "platform", "moderator", `school:${SCHOOL_B}`, `school:${SCHOOL_A}`, `partner:${PARTNER}`]);
-  });
-
-  it("gives someone who is both admin and super admin a single platform view", () => {
-    const platform = viewsFor([m("admin"), m("super_admin")]).filter((v) => v.kind === "platform");
-    expect(platform).toHaveLength(1);
-    expect(platform[0].role).toBe("super_admin");
-  });
-});
-
-describe("currentViewKey", () => {
-  it("gives event and sports managers their own navigation", () => {
-    const ev = viewsFor([m("event_manager", SCHOOL_A)]);
-    expect(currentViewKey(`/organizer/${SCHOOL_A}`, ev)).toBe(`organizer:${SCHOOL_A}`);
-    const sp = viewsFor([m("sports_manager", SCHOOL_A)]);
-    expect(currentViewKey("/events/abc", sp)).toBe(`sports:${SCHOOL_A}`);
-    expect(currentViewKey("/home", sp)).toBe("member");
-    // A school admin who is also a sports manager keeps the school navigation on the events pages.
-    expect(currentViewKey("/events", viewsFor([m("school_admin", SCHOOL_A), m("sports_manager", SCHOOL_A)]))).toBe("member");
-  });
-
-  it("keeps a platform admin or moderator in their own navigation on school and partner pages", () => {
-    const platform = viewsFor([m("admin")]);
-    expect(currentViewKey(`/school/${SCHOOL_A}/roster`, platform)).toBe("platform");
-    expect(currentViewKey(`/partner/${PARTNER}`, platform)).toBe("platform");
-    expect(currentViewKey(`/school/${SCHOOL_A}`, viewsFor([m("moderator")]))).toBe("moderator");
-    expect(currentViewKey(`/school/${SCHOOL_A}`, viewsFor([m("alumni")]))).toBe("member");
-  });
-
-  const views = viewsFor([m("admin"), m("moderator"), m("school_admin", SCHOOL_A)]);
-
-  it("marks the school view while inside that school", () => {
-    expect(currentViewKey(`/school/${SCHOOL_A}/edit`, views)).toBe(`school:${SCHOOL_A}`);
-  });
-  it("marks the admin area as the platform view", () => {
-    expect(currentViewKey("/admin/organizations", views)).toBe("platform");
-  });
-  it("falls back to the member view everywhere else", () => {
-    expect(currentViewKey("/directory", views)).toBe("member");
+describe("orgIdsWithRole", () => {
+  it("lists each organization once, in membership order", () => {
+    expect(orgIdsWithRole([m("school_admin", SCHOOL_B), m("school_admin", SCHOOL_A), m("school_admin", SCHOOL_B), m("partner_admin", PARTNER)], "school_admin")).toEqual([SCHOOL_B, SCHOOL_A]);
+    expect(orgIdsWithRole([m("admin")], "admin")).toEqual([]);
   });
 });
 
@@ -121,12 +76,5 @@ describe("grantablePlatformRoles", () => {
     expect(grantablePlatformRoles([m("moderator")])).toEqual([]);
     expect(grantablePlatformRoles([m("school_admin", SCHOOL_A)])).toEqual([]);
     expect(grantablePlatformRoles([])).toEqual([]);
-  });
-});
-
-describe("currentViewKey for the school and partner pickers", () => {
-  it("marks the school view on the bare /school picker", () => {
-    const v = viewsFor([m("school_admin", SCHOOL_A), m("school_admin", SCHOOL_B)]);
-    expect(currentViewKey("/school", v)).toBe(`school:${SCHOOL_A}`);
   });
 });

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import {
-  Avatar, Button, Card, ConfirmDialog, EmptyState, ErrorState, PageHeader, Skeleton, Tabs, useToast,
+  Avatar, Button, ConfirmDialog, EmptyState, ErrorState, PageHeader, Skeleton, Tabs, useToast,
 } from "@/components/ui";
+import { Row as BarRow, RowList } from "@/components/staff/rows";
 import { api } from "@/lib/api/client";
 import { friendlyError } from "@/lib/api/messages";
 import { useBlocked, useConnections, useMe, useWrite } from "@/lib/api/hooks";
@@ -23,7 +24,7 @@ const EMPTY: Record<Tab, { title: string; body: string }> = {
 function Row({ c, actions }: { c: Connection; actions: React.ReactNode }) {
   const name = c.other_full_name ?? "Alumni member";
   return (
-    <li className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
+    <BarRow stack>
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Avatar name={name} id={c.other_user_id} size={44} />
         {c.other_profile_id ? (
@@ -33,7 +34,7 @@ function Row({ c, actions }: { c: Connection; actions: React.ReactNode }) {
         )}
       </div>
       <div className="flex gap-2 sm:shrink-0">{actions}</div>
-    </li>
+    </BarRow>
   );
 }
 
@@ -85,7 +86,7 @@ function ConnectionsView() {
       case "received":
         return (
           <>
-            <Button size="sm" loading={accept.isPending && accept.variables === c.id} onClick={() => act(() => accept.mutateAsync(c.id), "You are now connected.")}>Accept</Button>
+            <Button variant="dark" size="sm" loading={accept.isPending && accept.variables === c.id} onClick={() => act(() => accept.mutateAsync(c.id), "You are now connected.")}>Accept</Button>
             <Button variant="secondary" size="sm" loading={decline.isPending && decline.variables === c.id} onClick={() => act(() => decline.mutateAsync(c.id), "Request declined.")}>Decline</Button>
           </>
         );
@@ -100,6 +101,7 @@ function ConnectionsView() {
     <div className="mx-auto max-w-3xl">
       <PageHeader title="Connections" subtitle="The people in your network." />
       <Tabs<Tab>
+        pills
         label="Connections"
         value={tab}
         onChange={setTab}
@@ -120,16 +122,16 @@ function ConnectionsView() {
         ) : rows.length === 0 ? (
           <EmptyState {...EMPTY[tab]} />
         ) : (
-          <Card className="py-0">
+          <>
             {tab === "blocked" && (
-              <p className="border-b border-line py-3 text-small text-muted">
+              <p className="mb-3 text-small text-muted">
                 Unblocking someone does not bring back an old connection. You would need to connect again.
               </p>
             )}
-            <ul className="divide-y divide-line">
+            <RowList label="Connections">
               {rows.map((c) => <Row key={c.id} c={c} actions={actionsFor(c)} />)}
-            </ul>
-          </Card>
+            </RowList>
+          </>
         )}
       </div>
 

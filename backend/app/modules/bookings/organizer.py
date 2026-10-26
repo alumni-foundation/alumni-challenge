@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors.exceptions import ValidationError
 from app.core.rate_limit.limiter import hit
+from app.core.search import escape_like
 from app.modules.audit.service import record as record_audit
 from app.modules.bookings.models import (
     ACTIVE_STATUSES,
@@ -42,10 +43,6 @@ from app.modules.identity.models import User
 CSV_EXPORTS_PER_HOUR = 5
 MESSAGES_PER_HOUR = 5
 _FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")
-
-
-def _escape_like(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def defuse(cell: Any) -> Any:
@@ -155,7 +152,7 @@ async def registrations(
     if slot_id is not None:
         where.append(Booking.slot_id == slot_id)
     if q:
-        like = f"%{_escape_like(q.strip())}%"
+        like = f"%{escape_like(q.strip())}%"
         named = select(BookingParticipant.booking_id).where(
             BookingParticipant.full_name.ilike(like, escape="\\")
         )

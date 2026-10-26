@@ -56,7 +56,7 @@ export function MemberPicker({
         id={id}
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Search by name, or paste a user ID"
+        placeholder="Search by name, or paste an account ID"
         autoComplete="off"
       />
       {isId && (
@@ -70,7 +70,7 @@ export function MemberPicker({
       )}
       {searching && index.isLoading && <Spinner label="Looking through members" />}
       {searching && index.isError && (
-        <p className="mt-2 text-small text-brand-ink" role="alert">Couldn’t load members. Paste a user ID instead.</p>
+        <p className="mt-2 text-small text-danger-ink" role="alert">Couldn’t load members. Paste a user ID instead.</p>
       )}
       {searching && index.data && (
         <ul className="mt-2 overflow-hidden rounded-2xl border border-line-strong">

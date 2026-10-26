@@ -17,7 +17,7 @@ function Segmented<T extends string>({ label, value, options, onChange }: { labe
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "h-9 rounded-full px-4 text-small font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+            "h-11 rounded-full px-4 text-small sm:h-9 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
             value === o.value ? "bg-ink text-white" : "text-ink hover:bg-sunken",
           )}
         >
