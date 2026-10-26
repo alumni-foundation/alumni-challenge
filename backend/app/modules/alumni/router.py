@@ -15,7 +15,10 @@ router = APIRouter(prefix="/alumni", tags=["alumni"])
 
 
 @router.post(
-    "/profile", response_model=schemas.AlumniProfileResponse, status_code=status.HTTP_201_CREATED
+    "/profile",
+    response_model=schemas.AlumniProfileResponse,
+    response_model_exclude_unset=True,
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_profile(
     body: schemas.AlumniProfileCreate,
@@ -38,7 +41,9 @@ async def create_profile(
     return await service.build_profile_response(db, profile=profile, viewer_user_id=current_user.id)
 
 
-@router.patch("/profile", response_model=schemas.AlumniProfileResponse)
+@router.patch(
+    "/profile", response_model=schemas.AlumniProfileResponse, response_model_exclude_unset=True
+)
 async def update_profile(
     body: schemas.AlumniProfileUpdate,
     db: AsyncSession = Depends(get_db_session),
@@ -50,7 +55,9 @@ async def update_profile(
     return await service.build_profile_response(db, profile=profile, viewer_user_id=current_user.id)
 
 
-@router.get("/profile/me", response_model=schemas.AlumniProfileResponse)
+@router.get(
+    "/profile/me", response_model=schemas.AlumniProfileResponse, response_model_exclude_unset=True
+)
 async def get_my_profile(
     db: AsyncSession = Depends(get_db_session),
     current_user: User = Depends(get_current_user),
@@ -59,7 +66,11 @@ async def get_my_profile(
     return await service.build_profile_response(db, profile=profile, viewer_user_id=current_user.id)
 
 
-@router.put("/profile/avatar", response_model=schemas.AlumniProfileResponse)
+@router.put(
+    "/profile/avatar",
+    response_model=schemas.AlumniProfileResponse,
+    response_model_exclude_unset=True,
+)
 async def set_avatar(
     body: schemas.SetAvatarRequest,
     db: AsyncSession = Depends(get_db_session),
@@ -77,7 +88,11 @@ async def set_avatar(
     return await service.build_profile_response(db, profile=profile, viewer_user_id=current_user.id)
 
 
-@router.delete("/profile/avatar", response_model=schemas.AlumniProfileResponse)
+@router.delete(
+    "/profile/avatar",
+    response_model=schemas.AlumniProfileResponse,
+    response_model_exclude_unset=True,
+)
 async def remove_avatar(
     db: AsyncSession = Depends(get_db_session),
     storage: Storage = Depends(get_storage),
@@ -90,7 +105,11 @@ async def remove_avatar(
     return await service.build_profile_response(db, profile=profile, viewer_user_id=current_user.id)
 
 
-@router.put("/profile/skills", response_model=schemas.AlumniProfileResponse)
+@router.put(
+    "/profile/skills",
+    response_model=schemas.AlumniProfileResponse,
+    response_model_exclude_unset=True,
+)
 async def set_my_skills(
     body: schemas.SetTagsRequest,
     db: AsyncSession = Depends(get_db_session),
@@ -101,7 +120,11 @@ async def set_my_skills(
     return await service.build_profile_response(db, profile=profile, viewer_user_id=current_user.id)
 
 
-@router.put("/profile/interests", response_model=schemas.AlumniProfileResponse)
+@router.put(
+    "/profile/interests",
+    response_model=schemas.AlumniProfileResponse,
+    response_model_exclude_unset=True,
+)
 async def set_my_interests(
     body: schemas.SetTagsRequest,
     db: AsyncSession = Depends(get_db_session),
@@ -150,7 +173,9 @@ async def list_directory(
     return page.profiles
 
 
-@router.get("/{profile_id}", response_model=schemas.AlumniProfileResponse)
+@router.get(
+    "/{profile_id}", response_model=schemas.AlumniProfileResponse, response_model_exclude_unset=True
+)
 async def get_profile(
     profile_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
@@ -163,7 +188,11 @@ async def get_profile(
     return await service.build_profile_response(db, profile=profile, viewer_user_id=viewer_id)
 
 
-@router.patch("/{profile_id}/verify", response_model=schemas.AlumniProfileResponse)
+@router.patch(
+    "/{profile_id}/verify",
+    response_model=schemas.AlumniProfileResponse,
+    response_model_exclude_unset=True,
+)
 async def verify_profile(
     profile_id: uuid.UUID,
     body: schemas.VerifyProfileRequest,
@@ -177,7 +206,11 @@ async def verify_profile(
     return await service.build_profile_response(db, profile=profile, viewer_user_id=current_user.id)
 
 
-@router.post("/{profile_id}/vouch", response_model=schemas.AlumniProfileResponse)
+@router.post(
+    "/{profile_id}/vouch",
+    response_model=schemas.AlumniProfileResponse,
+    response_model_exclude_unset=True,
+)
 async def vouch(
     profile_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),

@@ -1,4 +1,3 @@
-import functools
 import uuid
 import uuid as uuid_module
 from datetime import UTC, datetime, timedelta
@@ -17,9 +16,9 @@ from app.modules.identity.security import (
     create_access_token,
     decode_purpose_token,
     generate_refresh_token,
-    hash_password,
+    hash_password_async,
     hash_refresh_token,
-    verify_password,
+    verify_password_async,
 )
 
 settings = get_settings()
@@ -34,7 +33,7 @@ async def register_user(db: AsyncSession, *, email: str, password: str) -> User:
 
     user = User(
         email=email,
-        password_hash=hash_password(password),
+        password_hash=await hash_password_async(password),
         age_confirmed_at=datetime.now(UTC),
     )
     db.add(user)
@@ -62,9 +61,14 @@ def _lockout_key(email: str) -> str:
     return f"login_lockout:{email.lower()}"
 
 
-@functools.cache
-def _dummy_password_hash() -> str:
-    return hash_password("not-anyone's-password")
+_dummy_hash: str | None = None
+
+
+async def _dummy_password_hash() -> str:
+    global _dummy_hash
+    if _dummy_hash is None:
+        _dummy_hash = await hash_password_async("not-anyone's-password")
+    return _dummy_hash
 
 
 async def authenticate_user(db: AsyncSession, *, email: str, password: str) -> User:
@@ -79,9 +83,8 @@ async def authenticate_user(db: AsyncSession, *, email: str, password: str) -> U
     # password is wrong — do not let a client distinguish the two. Hashing takes tens of
     # milliseconds, so an unknown email gets the same work done, or the time taken would
     # give it away.
-    password_ok = verify_password(
-        password, user.password_hash if user is not None else _dummy_password_hash()
-    )
+    stored_hash = user.password_hash if user is not None else await _dummy_password_hash()
+    password_ok = await verify_password_async(password, stored_hash)
     if user is None or not password_ok:
         fail_key = _fail_key(email)
         count = await redis.incr(fail_key)
@@ -280,7 +283,7 @@ async def reset_password(db: AsyncSession, *, token: str, new_password: str) -> 
     if user is None or payload.get("stamp") != str(user.security_stamp):
         raise UnauthorizedError("This reset link is invalid or has already been used.")
 
-    user.password_hash = hash_password(new_password)
+    user.password_hash = await hash_password_async(new_password)
     user.security_stamp = uuid_module.uuid4()
     await db.flush()
     # A stolen or guessed-then-reset password shouldn't leave old
@@ -326,16 +329,16 @@ async def change_password(
         limit=PASSWORD_CHANGE_LIMIT,
         window_seconds=PASSWORD_CHANGE_WINDOW_SECONDS,
     )
-    if not verify_password(current_password, user.password_hash):
+    if not await verify_password_async(current_password, user.password_hash):
         raise ValidationError(
             "Your current password is not correct.", code="invalid_current_password"
         )
-    if verify_password(new_password, user.password_hash):
+    if await verify_password_async(new_password, user.password_hash):
         raise ValidationError(
             "Choose a password you have not been using.", code="password_unchanged"
         )
 
-    user.password_hash = hash_password(new_password)
+    user.password_hash = await hash_password_async(new_password)
     user.security_stamp = uuid_module.uuid4()
 
     keep_hash = hash_refresh_token(keep_refresh_token) if keep_refresh_token else None

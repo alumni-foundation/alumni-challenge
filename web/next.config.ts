@@ -7,7 +7,8 @@ const nextConfig = (phase: string): NextConfig => ({
   output: "standalone",
   pageExtensions: phase === PHASE_DEVELOPMENT_SERVER ? ["tsx", "ts", "jsx", "js", "dev.tsx"] : ["tsx", "ts", "jsx", "js"],
   poweredByHeader: false,
-  images: { formats: ["image/avif", "image/webp"], qualities: [60, 75] },
+  // Event posters come from the API through our own file proxy, so they can be resized like any other picture.
+  images: { formats: ["image/avif", "image/webp"], qualities: [60, 75], localPatterns: [{ pathname: "/api/v1/files/**" }, { pathname: "/brand/**" }] },
   async redirects() {
     // The directory moved from /alumni to /directory. Profiles stay at /alumni/:profileId.
     return [{ source: "/alumni", destination: "/directory", permanent: true }];

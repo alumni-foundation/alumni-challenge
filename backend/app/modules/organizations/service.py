@@ -184,6 +184,26 @@ async def add_email_domain(
     return row
 
 
+async def remove_email_domain(
+    db: AsyncSession, *, organization_id: uuid.UUID, domain_id: uuid.UUID, actor: User
+) -> None:
+    """A domain that belongs to a different organization is reported as not found."""
+    await get_active_organization(db, organization_id=organization_id)
+    row = await db.get(SchoolEmailDomain, domain_id)
+    if row is None or row.organization_id != organization_id:
+        raise NotFoundError("Email domain not found.")
+    await db.delete(row)
+    await db.flush()
+    await record_audit(
+        db,
+        actor_user_id=actor.id,
+        action="organization.email_domain.remove",
+        target_type="school_email_domain",
+        target_id=domain_id,
+        context={"organization_id": str(organization_id), "domain": row.domain},
+    )
+
+
 async def list_email_domains(
     db: AsyncSession, *, organization_id: uuid.UUID
 ) -> list[SchoolEmailDomain]:
