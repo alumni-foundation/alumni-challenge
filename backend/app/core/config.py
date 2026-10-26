@@ -106,7 +106,7 @@ class Settings(BaseSettings):
                 parsed = json.loads(text)
             except json.JSONDecodeError as exc:
                 raise ValueError(
-                    'CORS_ALLOWED_ORIGINS must be a JSON list of origins, or *. '
+                    "CORS_ALLOWED_ORIGINS must be a JSON list of origins, or *. "
                     'Example: ["https://example.org"]'
                 ) from exc
             if not isinstance(parsed, list) or not all(isinstance(item, str) for item in parsed):
