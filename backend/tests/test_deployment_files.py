@@ -15,11 +15,14 @@ DOCKERIGNORE = (BACKEND / ".dockerignore").read_text().splitlines()
 
 
 def _final_stage(text: str) -> str:
-    return text.split("FROM deps AS production", 1)[1]
+    marker = "FROM python:3.12-slim AS production"
+    stage = text.split(marker, 1)[1]
+    # The development stage follows and is not published.
+    return stage.split("\nFROM ", 1)[0]
 
 
 def test_there_is_a_production_target() -> None:
-    assert "FROM deps AS production" in DOCKERFILE
+    assert "FROM python:3.12-slim AS production" in DOCKERFILE
 
 
 def test_the_production_image_does_not_run_as_root() -> None:
@@ -42,8 +45,24 @@ def test_uvicorn_does_not_print_query_strings_because_they_can_hold_signed_link_
 
 
 def test_the_image_checks_its_own_health() -> None:
-    assert "HEALTHCHECK" in _final_stage(DOCKERFILE)
-    assert "/health/live" in _final_stage(DOCKERFILE)
+    stage = _final_stage(DOCKERFILE)
+
+    assert "HEALTHCHECK" in stage
+    assert "/health/live" in stage
+    assert "curl" not in stage
+
+
+def test_the_production_image_ships_only_the_runtime() -> None:
+    stage = _final_stage(DOCKERFILE)
+
+    assert "COPY --from=deps" in stage
+    assert "/app/.venv" in stage
+    assert "app ./app" in stage
+    assert "migrations ./migrations" in stage
+    assert "alembic.ini ./alembic.ini" in stage
+    assert "COPY . ." not in stage
+    assert "/uv" not in stage
+    assert "uv sync" not in stage
 
 
 def test_secrets_data_and_tests_stay_out_of_the_image() -> None:
