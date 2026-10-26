@@ -1,5 +1,7 @@
+import asyncio
 import secrets
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -13,7 +15,9 @@ settings = get_settings()
 # One lane (parallelism=1), not the library default of 4. With four lanes the Argon2 library
 # was seen to return a wrong answer about 2.5% of the time in our Linux container (20 of 800
 # hash-then-verify rounds: some verifies failed on a good hash, some hashes never verified),
-# which shows up as "Invalid email or password" for the right password. One lane: 0 of 800.
+# which shows up as "Invalid email or password" for the right password. One lane: 0 of 800 in
+# that probe, but wrong answers were later seen in full suite runs on that machine even with one
+# lane. Cause there NOT confirmed; GitHub CI never showed it. See DEPLOYMENT.md, step 16.
 # Memory (64 MiB) and time cost (3) are unchanged, so it is as costly to guess; hashes made
 # earlier carry their own parameters and still verify (they are not re-hashed automatically).
 _hasher = PasswordHasher(parallelism=1)
@@ -33,6 +37,36 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
         return _hasher.verify(password_hash, plain_password)
     except VerifyMismatchError:
         return False
+
+
+# Hashing takes about a quarter of a second and 64 MiB. Request handlers use the async versions
+# below, which run it in a small thread pool of their own, so that (1) the event loop keeps
+# serving other requests meanwhile (Argon2's C code lets go of the GIL), and (2) no more than
+# `password_hash_concurrency` hashes run at once, which caps the memory they can take at that
+# many times 64 MiB. A request over the cap waits its turn in the pool's queue; it is never
+# refused. The synchronous functions above are for the command line, the seed and tests.
+_pool: ThreadPoolExecutor | None = None
+
+
+def _hash_pool() -> ThreadPoolExecutor:
+    global _pool
+    if _pool is None:
+        _pool = ThreadPoolExecutor(
+            max_workers=settings.password_hash_concurrency, thread_name_prefix="argon2"
+        )
+    return _pool
+
+
+async def hash_password_async(plain_password: str) -> str:
+    return await asyncio.get_running_loop().run_in_executor(
+        _hash_pool(), hash_password, plain_password
+    )
+
+
+async def verify_password_async(plain_password: str, password_hash: str) -> bool:
+    return await asyncio.get_running_loop().run_in_executor(
+        _hash_pool(), verify_password, plain_password, password_hash
+    )
 
 
 def needs_rehash(password_hash: str) -> bool:

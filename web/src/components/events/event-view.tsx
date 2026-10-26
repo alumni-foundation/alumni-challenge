@@ -115,7 +115,7 @@ export function EventView({ initial, signedIn }: { initial: EventDetail; signedI
             <div className="flex flex-wrap items-center gap-2">
               <Badge>{categoryLabel(event.category)}</Badge>
               <Badge tone={free ? "ok" : "gold"}>{priceText(event.price_minor, event.currency)}</Badge>
-              {event.status === "cancelled" && <Badge tone="brand">Cancelled</Badge>}
+              {event.status === "cancelled" && <Badge tone="danger">Cancelled</Badge>}
             </div>
             <h1 className="text-display">{event.title}</h1>
           </div>

@@ -6,7 +6,7 @@
  * in the app should use a raw colour or a one-off size.
  *
  * Principles: warm and calm, light first. An ivory canvas, deep warm ink, and ONE accent (the
- * school-crest red). Pill buttons, soft layered shadows, large touch targets, 16px text in form
+ * logo blue; red is kept only for errors and destructive actions). Pill buttons, soft layered shadows, large touch targets, 16px text in form
  * fields so phones don't zoom, and motion that never gets in the way. The site is light only and
  * ignores the device's dark setting: there is no dark palette.
  *
@@ -21,13 +21,24 @@
 :root {
   color-scheme: light;
 
-  --brand: #c31e2c;
-  --brand-dark: #9c1620;
-  --brand-soft: #fbe8e4;
-  --brand-ink: #b01a27; /* brand as text on canvas/surface */
+  /* The logo's blue. White text on --brand is 5.2:1; --brand-ink is the blue for text (5.0:1 or more on canvas, surface, sunken
+     and brand-soft); --brand-light is for highlights and glows only, never for text. */
+  --brand: #0173a8;
+  --brand-dark: #015f8a;
+  --brand-soft: #e4f1f8;
+  --brand-ink: #016a9b;
+  --brand-light: #068abb;
 
+  /* Red, for errors and destructive actions only. */
+  --danger: #b01a27;
+  --danger-soft: #fbe8e4;
+  --danger-ink: #b01a27; /* 5.9:1 on surface, 5.2:1 on danger-soft */
+
+  /* The logo's yellow is a fill and a highlight: ink or muted text on it, never yellow text on white. --gold stays a dark
+     amber that is safe for text on the soft yellow and on canvas. */
   --gold: #84600a;
-  --gold-soft: #f8eed7;
+  --gold-soft: #fff3bf;
+  --gold-fill: #fece01; /* ink 11.9:1, muted 5.1:1 on it */
 
   --ink: #1b1713;
   --muted: #5a5248;
@@ -39,8 +50,8 @@
   --surface: #fffdf9; /* cards, sheets, inputs */
   --sunken: #f2ecdf; /* quiet fills inside a surface */
 
-  --side: #17140f; /* the always-dark navigation bar and hero scrims */
-  --side-deep: #0e0c09;
+  --side: #0a2638; /* the always-dark navigation bar: a deep navy from the logo blue. White text on it is 15:1 */
+  --side-deep: #071a27;
 
   --verified: #1d4fd8;
   --verified-soft: #e8effd;
@@ -63,8 +74,13 @@
   --color-brand-dark: var(--brand-dark);
   --color-brand-soft: var(--brand-soft);
   --color-brand-ink: var(--brand-ink);
+  --color-brand-light: var(--brand-light);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-ink: var(--danger-ink);
   --color-gold: var(--gold);
   --color-gold-soft: var(--gold-soft);
+  --color-gold-fill: var(--gold-fill);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
@@ -239,8 +255,10 @@ button.icon3d { cursor: pointer; border: 0; padding: 0; }
   button.icon3d:hover:not(:active) { transform: translateY(-1px); }
   button:hover:not(:active):not([aria-expanded="true"]) > .icon3d { transform: translateY(-1px); filter: brightness(1.03); }
 }
-.icon3d[data-tone="ember"] { --t-hi: #f0705c; --t-mid: #d3362f; --t-lo: #a1171f; --t-glow: 195 40 40; }
-.icon3d[data-tone="gold"] { --t-hi: #eab33d; --t-mid: #b87508; --t-lo: #85540a; --t-glow: 190 120 10; }
+/* "ember" is the brand tile: the logo blue. */
+.icon3d[data-tone="ember"] { --t-hi: #3aa6d6; --t-mid: #0173a8; --t-lo: #015a82; --t-glow: 1 115 168; }
+/* "gold" is the logo yellow, with an ink glyph (white on yellow would be too faint). */
+.icon3d[data-tone="gold"] { --t-hi: #ffe14d; --t-mid: #fece01; --t-lo: #e0b300; --t-glow: 200 160 0; color: var(--ink); }
 .icon3d[data-tone="moss"] { --t-hi: #5fbf86; --t-mid: #2a8a55; --t-lo: #14603a; --t-glow: 30 120 70; }
 .icon3d[data-tone="sky"] { --t-hi: #6aa0f2; --t-mid: #2f66d6; --t-lo: #1a419c; --t-glow: 40 90 210; }
 .icon3d[data-tone="ink"] { --t-hi: #6a655d; --t-mid: #3b3732; --t-lo: #1d1a17; --t-glow: 30 26 22; }
@@ -390,6 +408,10 @@ button.icon3d { cursor: pointer; border: 0; padding: 0; }
 .shell[data-sb="expanded"] .rail-head .rail-label { margin-left: 0.75rem; }
 @media (min-width: 1280px) { .shell[data-sb="auto"] .rail-head .rail-label { margin-left: 0.75rem; } }
 .rail-pill { display: none; }
+/* Group titles show when the sidebar is open; collapsed, a thin rule separates the groups instead. */
+.rail-group-title { display: none; }
+.shell[data-sb="expanded"] .rail-group-title { display: block; }
+.shell[data-sb="expanded"] .rail-group-rule { display: none; }
 .rail-name { flex: 0 1 auto; }
 .rail-item:hover .rail-label { color: #fff; }
 .shell[data-sb="expanded"] .rail-head { flex-direction: row; justify-content: space-between; }
@@ -402,6 +424,8 @@ button.icon3d { cursor: pointer; border: 0; padding: 0; }
   .shell[data-sb="auto"] .rail-head { flex-direction: row; justify-content: space-between; }
   .shell[data-sb="auto"] :is(.rail-label, .rail-name) { max-width: 11rem; opacity: 1; }
   .shell[data-sb="auto"] .rail-pill { display: inline-block; }
+  .shell[data-sb="auto"] .rail-group-title { display: block; }
+  .shell[data-sb="auto"] .rail-group-rule { display: none; }
   .shell[data-sb="auto"] :is(.rail-dot, .rail-tip) { display: none; }
   .shell[data-sb="auto"] .rail-item[aria-current="page"] { background: rgb(255 255 255 / 0.08); }
   .shell[data-sb="auto"] .rail-item:hover { background: rgb(255 255 255 / 0.05); }

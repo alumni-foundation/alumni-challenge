@@ -13,7 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="max-w-md space-y-4">
         <Alert>We couldn’t check your access. Check your connection and try again.</Alert>
-        <Button onClick={() => void roles.refetch()}>Retry</Button>
+        <Button variant="dark" onClick={() => void roles.refetch()}>Retry</Button>
       </div>
     );
   }
@@ -26,5 +26,5 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       />
     );
   }
-  return <div className="max-w-5xl">{children}</div>;
+  return <div>{children}</div>;
 }

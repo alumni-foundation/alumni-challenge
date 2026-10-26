@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Ban, Flag, Gavel, Pencil, RotateCcw, ShieldCheck, ShieldOff, UserCheck, UserMinus, UserPlus, UserX, X } from "lucide-react";
+import { ArrowLeft, Ban, Flag, Gavel, MessageCircle, Pencil, RotateCcw, ShieldCheck, ShieldOff, UserCheck, UserMinus, UserPlus, UserX, X } from "lucide-react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -105,7 +105,7 @@ function ProfileView() {
     );
   } else if (!link) {
     relationship = (
-      <Button loading={connect.isPending} onClick={() => act(() => connect.mutateAsync(p.user_id), "Request sent.")}>
+      <Button variant="dark" loading={connect.isPending} onClick={() => act(() => connect.mutateAsync(p.user_id), "Request sent.")}>
         <UserPlus className="size-4" aria-hidden /> Connect
       </Button>
     );
@@ -113,6 +113,7 @@ function ProfileView() {
     relationship = (
       <>
         <Badge tone="ok">Connected</Badge>
+        <LinkButton href="/messages" variant="dark"><MessageCircle className="size-4" aria-hidden /> Message</LinkButton>
         <Button variant="secondary" onClick={() => setDialog("remove")}><UserMinus className="size-4" aria-hidden /> Remove connection</Button>
       </>
     );
@@ -126,7 +127,7 @@ function ProfileView() {
   } else {
     relationship = (
       <>
-        <Button loading={accept.isPending} onClick={() => act(() => accept.mutateAsync(link.id), "You are now connected.")}>Accept</Button>
+        <Button variant="dark" loading={accept.isPending} onClick={() => act(() => accept.mutateAsync(link.id), "You are now connected.")}>Accept</Button>
         <Button variant="secondary" loading={decline.isPending} onClick={() => act(() => decline.mutateAsync(link.id), "Request declined.")}>Decline</Button>
       </>
     );
@@ -151,7 +152,7 @@ function ProfileView() {
         </div>
       )}
 
-      <Card>
+      <Card large>
         <div className="flex items-start gap-4">
           <Avatar name={p.full_name} id={p.id} size={72} src={p.avatar_url} />
           <div className="min-w-0">
@@ -186,7 +187,7 @@ function ProfileView() {
 
         <div className="mt-6 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:flex-wrap sm:items-center">
           {isMe ? (
-            <LinkButton href="/profile"><Pencil className="size-4" aria-hidden /> Edit profile</LinkButton>
+            <LinkButton href="/profile" variant="dark"><Pencil className="size-4" aria-hidden /> Edit profile</LinkButton>
           ) : myProfile.data === null ? (
             // Staff accounts often have no member profile of their own, so there is nobody to connect as.
             <p className="text-small text-muted">You are viewing this as staff. Create your own member profile to connect, vouch or report as a member.</p>
@@ -207,7 +208,7 @@ function ProfileView() {
       </Card>
 
       {canVerify && (
-        <Card className="mt-4">
+        <Card large className="mt-4">
           <p className="mb-1 flex items-center gap-2 font-semibold"><ShieldCheck className="size-4 text-brand-ink" aria-hidden /> School verification</p>
           <p className="mb-3 text-small text-muted">
             {verified ? "This person is verified. You can take the verification away." : "Confirm that this person went to the school."}
@@ -217,7 +218,7 @@ function ProfileView() {
               <ShieldOff className="size-4" aria-hidden /> Remove verification
             </Button>
           ) : (
-            <Button loading={verify.isPending} onClick={() => act(() => verify.mutateAsync(true), "Verified.")}>
+            <Button variant="dark" loading={verify.isPending} onClick={() => act(() => verify.mutateAsync(true), "Verified.")}>
               <ShieldCheck className="size-4" aria-hidden /> Verify
             </Button>
           )}
@@ -225,7 +226,7 @@ function ProfileView() {
       )}
 
       {(canSuspend || canReactivate) && (
-        <Card className="mt-4 space-y-3">
+        <Card large className="mt-4 space-y-3">
           <p className="flex items-center gap-2 font-semibold"><Gavel className="size-4 text-brand-ink" aria-hidden /> Moderation</p>
           {fromReport && (
             <Alert tone="info">You can see this profile because of an open report. When the report is closed, it will be hidden from you again.</Alert>

@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { Logo } from "@/components/shell/logo";
+import { Logo, LogoTile } from "@/components/shell/logo";
 import { LinkButton } from "@/components/ui";
 import { hasSession } from "@/lib/server/auth";
 import { NavLinks, type NavItem } from "./nav-links";
@@ -35,7 +35,7 @@ export async function PublicHeader({ overlay = false, anchors = { schools: true,
       <header className="absolute inset-x-0 top-0 z-20 text-white">
         <div className="relative flex items-center gap-2 px-4 py-4 sm:gap-3 sm:px-8 sm:py-6 lg:px-12">
           <Link href="/" className="flex min-h-11 items-center gap-2.5" aria-label="Alumni Challenge home">
-            <Logo size={32} tone="light" />
+            <LogoTile size={40} />
             <span className="whitespace-nowrap text-caption font-semibold uppercase tracking-[0.1em] sm:text-body sm:tracking-[0.14em]">Alumni Challenge</span>
           </Link>
           <NavLinks
@@ -67,8 +67,7 @@ export async function PublicHeader({ overlay = false, anchors = { schools: true,
     <header className="border-b border-line bg-canvas">
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-10">
         <Link href="/" className="flex min-h-11 items-center gap-2.5" aria-label="Alumni Challenge home">
-          <Logo size={32} tone="dark" />
-          <span className="hidden font-semibold uppercase tracking-[0.14em] sm:inline">Alumni Challenge</span>
+          <Logo variant="full" size={40} alt="Alumni Challenge" />
         </Link>
         <NavLinks items={LINKS} className="ml-4 hidden gap-1 sm:flex" linkClassName={`inline-flex ${plainLink}`} />
         <div className="ml-auto flex items-center gap-1.5">

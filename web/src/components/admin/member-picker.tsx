@@ -31,7 +31,7 @@ export function MemberPicker({
 
   if (value) {
     return (
-      <div className="flex min-h-11 items-center justify-between gap-2 rounded-control border border-line-strong bg-sunken px-3.5 text-small">
+      <div className="flex min-h-11 items-center justify-between gap-2 rounded-2xl border border-line-strong bg-sunken px-3.5 text-small">
         <span className="truncate font-medium">{value.label}</span>
         <button
           type="button"
@@ -56,24 +56,24 @@ export function MemberPicker({
         id={id}
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Search by name, or paste a user ID"
+        placeholder="Search by name, or paste an account ID"
         autoComplete="off"
       />
       {isId && (
         <button
           type="button"
           onClick={() => onChange({ id: term.toLowerCase(), label: `User ${term.slice(0, 8)}…` })}
-          className="mt-2 min-h-11 w-full rounded-control border border-line-strong px-3.5 py-2 text-left text-small hover:bg-sunken"
+          className="mt-2 min-h-11 w-full rounded-2xl border border-line-strong px-3.5 py-2 text-left text-small hover:bg-sunken"
         >
           Use this user ID
         </button>
       )}
       {searching && index.isLoading && <Spinner label="Looking through members" />}
       {searching && index.isError && (
-        <p className="mt-2 text-small text-brand-ink" role="alert">Couldn’t load members. Paste a user ID instead.</p>
+        <p className="mt-2 text-small text-danger-ink" role="alert">Couldn’t load members. Paste a user ID instead.</p>
       )}
       {searching && index.data && (
-        <ul className="mt-2 overflow-hidden rounded-control border border-line-strong">
+        <ul className="mt-2 overflow-hidden rounded-2xl border border-line-strong">
           {matches.map((p) => (
             <li key={p.user_id}>
               <button

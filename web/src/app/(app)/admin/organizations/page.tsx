@@ -1,14 +1,14 @@
 "use client";
 
-import { Building2, ChevronRight, Handshake, Plus } from "lucide-react";
-import Link from "next/link";
+import { Building2, ChevronRight, Handshake, Plus, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Alert, Badge, Button, Card, EmptyState, Field, IconChip, Input, PageHeader, Select, Spinner, Textarea } from "@/components/ui";
+import { Row, RowList } from "@/components/staff/rows";
+import { Alert, Badge, Button, Card, EmptyState, Field, Icon3D, Input, PageHeader, Select, Skeleton, Tabs, Textarea } from "@/components/ui";
 import { useCreateOrg, useOrgs, useRoles } from "@/lib/api/hooks";
 import type { Organization, OrgType } from "@/lib/api/types";
 import { canManageOrg, isPlatformAdmin } from "@/lib/roles";
-import { cn, slugify } from "@/lib/utils";
+import { slugify } from "@/lib/utils";
 
 const SLUG_OK = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -35,8 +35,8 @@ function CreateForm({ onDone }: { onDone: (org: Organization) => void }) {
   }
 
   return (
-    <Card className="mb-6">
-      <h2 className="font-semibold">New organization</h2>
+    <Card large className="mb-6">
+      <h2 className="text-lead font-semibold">New organization</h2>
       <form onSubmit={submit} className="mt-4 grid gap-4 sm:grid-cols-2" noValidate>
         <Field label="Type" htmlFor="org-type">
           <Select id="org-type" value={type} onChange={(e) => setType(e.target.value as OrgType)}>
@@ -64,7 +64,7 @@ function CreateForm({ onDone }: { onDone: (org: Organization) => void }) {
           <div className="sm:col-span-2"><Alert>{create.error.message}</Alert></div>
         )}
         <div className="sm:col-span-2">
-          <Button type="submit" loading={create.isPending}>Create organization</Button>
+          <Button variant="dark" type="submit" loading={create.isPending}>Create organization</Button>
         </div>
       </form>
     </Card>
@@ -78,6 +78,7 @@ export default function AdminOrganizations() {
   const partners = useOrgs("partner");
   const [filter, setFilter] = useState<"all" | OrgType>("all");
   const [creating, setCreating] = useState(false);
+  const [text, setText] = useState("");
 
   const platform = isPlatformAdmin(roles.data);
   const loading = schools.isLoading || partners.isLoading || roles.isLoading;
@@ -86,6 +87,7 @@ export default function AdminOrganizations() {
   const all = [...(schools.data ?? []), ...(partners.data ?? [])]
     .filter((o) => canManageOrg(roles.data, o.id))
     .filter((o) => filter === "all" || o.type === filter)
+    .filter((o) => !text.trim() || `${o.name} ${o.slug}`.toLowerCase().includes(text.trim().toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
   const capped = (schools.data?.length ?? 0) >= 100 || (partners.data?.length ?? 0) >= 100;
 
@@ -102,7 +104,7 @@ export default function AdminOrganizations() {
         subtitle={platform ? "Every organization on the platform." : "The organizations you manage."}
         actions={
           platform && !creating ? (
-            <Button onClick={() => setCreating(true)}><Plus className="size-4" aria-hidden /> New organization</Button>
+            <Button variant="dark" onClick={() => setCreating(true)}><Plus className="size-4" aria-hidden /> New organization</Button>
           ) : undefined
         }
       />
@@ -111,49 +113,44 @@ export default function AdminOrganizations() {
         <CreateForm onDone={(org) => router.push(`/admin/organizations/${org.id}`)} />
       )}
 
+      <div className="mb-4 space-y-3">
+        <div className="relative max-w-md">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
+          <Input type="search" aria-label="Search organizations" placeholder="Search by name" value={text} onChange={(e) => setText(e.target.value)} className="pl-10" />
+        </div>
       {platform && (
-        <div className="mb-4 flex gap-1" role="tablist" aria-label="Filter by type">
-          {FILTERS.map(({ key, label }) => (
-            <button
-              key={key}
-              role="tab"
-              aria-selected={filter === key}
-              onClick={() => setFilter(key)}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-                filter === key ? "bg-ink text-white" : "text-muted hover:bg-surface hover:text-ink",
-              )}
-            >
-              {label}
-            </button>
-          ))}
+        <div>
+          <Tabs<"all" | OrgType> pills label="Filter by type" value={filter} onChange={setFilter} tabs={FILTERS.map((f) => ({ value: f.key, label: f.label }))} />
         </div>
       )}
+      </div>
 
-      {loading && <Spinner label="Loading organizations" />}
+      {loading && (
+        <div role="status" aria-label="Loading organizations" className="space-y-2">
+          {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-16 rounded-2xl" />)}
+        </div>
+      )}
       {failed && <Alert>We couldn’t load the organizations. Refresh the page to try again.</Alert>}
       {!loading && !failed && all.length === 0 && (
         <EmptyState
-          title={platform ? "No organizations yet" : "You don’t manage any organizations"}
-          body={platform ? "Create the first school or partner to get started." : undefined}
+          title={text.trim() || filter !== "all" ? "No organization matches." : platform ? "No organizations yet" : "You don’t manage any organizations"}
+          body={text.trim() || filter !== "all" ? "Try a different name or type." : platform ? "Create the first school or partner to get started." : undefined}
         />
       )}
       {all.length > 0 && (
-        <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+        <RowList label="Organizations">
           {all.map((o) => (
-            <li key={o.id}>
-              <Link href={`/admin/organizations/${o.id}`} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-canvas">
-                <IconChip icon={o.type === "school" ? Building2 : Handshake} tone={o.type === "school" ? "brand" : "gold"} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold">{o.name}</span>
-                  <span className="block truncate text-sm text-muted">{o.slug}</span>
-                </span>
-                <Badge tone={o.type === "school" ? "brand" : "gold"}>{o.type === "school" ? "School" : "Partner"}</Badge>
-                <ChevronRight className="size-5 shrink-0 text-faint" aria-hidden />
-              </Link>
-            </li>
+            <Row key={o.id} href={`/admin/organizations/${o.id}`}>
+              <Icon3D icon={o.type === "school" ? Building2 : Handshake} tone={o.type === "school" ? "ember" : "gold"} size="sm" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold">{o.name}</span>
+                <span className="block truncate text-small text-muted">{o.slug}</span>
+              </span>
+              <Badge tone={o.type === "school" ? "brand" : "gold"}>{o.type === "school" ? "School" : "Partner"}</Badge>
+              <ChevronRight className="size-5 shrink-0 text-faint" aria-hidden />
+            </Row>
           ))}
-        </ul>
+        </RowList>
       )}
       {capped && <p className="mt-3 text-sm text-muted">Showing the first 100 of each type.</p>}
     </div>

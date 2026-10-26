@@ -42,9 +42,15 @@ function toError(res: Response, data: unknown): ApiError {
   );
 }
 
-/** Only same-site paths are allowed as a "next" target, so a link can't bounce people elsewhere. */
+/**
+ * A "next" target must be a path on this site: one "/" first, then not another "/" or a "\\" (browsers read both as the
+ * start of another site), and no control characters or whitespace anywhere, because the URL parser silently deletes tabs and
+ * line breaks, so "/<TAB>/evil.example" would otherwise become "//evil.example". This is the only check for it; the login
+ * page is the only reader of the value.
+ */
+const SAFE_NEXT = /^\/(?![/\\])[^\s\x00-\x20\x7f-\x9f\\]*$/;
 export function safeNext(value: string | null): string | null {
-  return value && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\") ? value : null;
+  return value !== null && SAFE_NEXT.test(value) ? value : null;
 }
 
 /** Where an expired session sends the person. A ticket code is a credential, so it is never copied into that address. */

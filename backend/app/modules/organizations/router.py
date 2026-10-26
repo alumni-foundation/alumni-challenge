@@ -123,6 +123,26 @@ async def list_email_domains(
     return await service.list_email_domains(db, organization_id=organization_id)
 
 
+@router.delete(
+    "/{organization_id}/email-domains/{domain_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+async def remove_email_domain(
+    organization_id: uuid.UUID,
+    domain_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db_session),
+    admin: User = Depends(require_roles_for_org(Role.SCHOOL_ADMIN, Role.ADMIN, Role.SUPER_ADMIN)),
+) -> Response:
+    """
+    Stop using this domain for automatic verification. Alumni who were already verified
+    through it stay verified. 404 if the domain belongs to a different organization.
+    """
+    await service.remove_email_domain(
+        db, organization_id=organization_id, domain_id=domain_id, actor=admin
+    )
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.post(
     "/{organization_id}/user-lookup",
     response_model=schemas.UserLookupResponse,

@@ -40,7 +40,7 @@ function FieldBlock({ id, label, hint, error, children }: { id: string; label: R
     <div className="space-y-1.5">
       <label htmlFor={id} className="block text-small font-medium text-ink">{label}</label>
       {children}
-      {error ? <p id={`${id}-msg`} className="text-small text-brand-ink" role="alert">{error}</p> : hint ? <p id={`${id}-msg`} className="text-caption text-muted">{hint}</p> : null}
+      {error ? <p id={`${id}-msg`} className="text-small text-danger-ink" role="alert">{error}</p> : hint ? <p id={`${id}-msg`} className="text-caption text-muted">{hint}</p> : null}
     </div>
   );
 }
@@ -304,7 +304,7 @@ export function BookingForm({ event, defaultName, email }: { event: EventDetail;
                 <CheckRow id={`consent-${c.key}`} checked={Boolean(accepted[c.key])} onChange={(v) => { clearError(`consent-${c.key}`); setAccepted((a) => ({ ...a, [c.key]: v })); }} invalid={Boolean(errors[`consent-${c.key}`])} describedBy={errors[`consent-${c.key}`] ? `consent-${c.key}-msg` : undefined}>
                   {c.text}{!c.required && <span className="text-muted"> (optional)</span>}
                 </CheckRow>
-                {errors[`consent-${c.key}`] && <p id={`consent-${c.key}-msg`} className="pl-8 text-small text-brand-ink" role="alert">{errors[`consent-${c.key}`]}</p>}
+                {errors[`consent-${c.key}`] && <p id={`consent-${c.key}-msg`} className="pl-8 text-small text-danger-ink" role="alert">{errors[`consent-${c.key}`]}</p>}
               </div>
             ))}
             {partySize > 1 && (
@@ -312,7 +312,7 @@ export function BookingForm({ event, defaultName, email }: { event: EventDetail;
                 <CheckRow id="others" checked={others} onChange={(v) => { clearError("others"); setOthers(v); }} invalid={Boolean(errors.others)} describedBy={errors.others ? "others-msg" : undefined}>
                   I confirm I may share the other players’ details with the organizers.
                 </CheckRow>
-                {errors.others && <p id="others-msg" className="pl-8 text-small text-brand-ink" role="alert">{errors.others}</p>}
+                {errors.others && <p id="others-msg" className="pl-8 text-small text-danger-ink" role="alert">{errors.others}</p>}
               </div>
             )}
           </fieldset>

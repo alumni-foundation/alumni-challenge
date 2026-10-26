@@ -57,7 +57,7 @@ export function EventCard({ event, ended = false }: { event: EventSummary; ended
           {event.venue_name && <li className="flex items-start gap-2"><MapPin className="mt-0.5 size-4 shrink-0 text-muted" aria-hidden /> <span className="min-w-0">{event.venue_name}</span></li>}
         </ul>
         <div className="mt-auto flex items-center justify-between gap-3 pt-2">
-          <span className={`text-small font-semibold ${seats === "Full" ? "text-brand-ink" : "text-ink"}`}>{ended ? "" : seats}</span>
+          <span className={`text-small font-semibold ${seats === "Full" ? "text-danger-ink" : "text-ink"}`}>{ended ? "" : seats}</span>
           <LinkButton href={`/events/${event.id}`} variant="dark" size="sm" className="relative z-10">View</LinkButton>
         </div>
       </div>
