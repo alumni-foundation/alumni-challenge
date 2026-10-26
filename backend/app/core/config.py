@@ -1,8 +1,9 @@
+import json
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field, PostgresDsn, RedisDsn, SecretStr, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, PostgresDsn, RedisDsn, SecretStr, field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 MIN_DEPLOYED_SECRET_KEY_LENGTH = 32
 # Values that have appeared in .env.example or in docs. Matched case-insensitively.
@@ -45,8 +46,10 @@ class Settings(BaseSettings):
     # Redis
     redis_url: RedisDsn
 
-    # CORS
-    cors_allowed_origins: list[str] = ["http://localhost:3000"]
+    # CORS. Empty or unset allows every origin. A JSON list limits it to those origins.
+    # NoDecode: pydantic-settings would otherwise json.loads the env value before this
+    # validator runs, and an empty Coolify value crashes startup.
+    cors_allowed_origins: Annotated[list[str], NoDecode] = ["*"]
 
     # Used only to build links inside emails (verification, password reset).
     # Never used for redirects or trust decisions — those never depend on this value.
@@ -89,6 +92,27 @@ class Settings(BaseSettings):
     # Signs the QR codes on event tickets. Optional in development and tests (a key is derived
     # from SECRET_KEY); production must set its own, different from SECRET_KEY.
     ticket_signing_key: SecretStr | None = None
+
+    @field_validator("cors_allowed_origins", mode="before")
+    @classmethod
+    def _blank_cors_allows_every_origin(cls, value: object) -> object:
+        if value is None:
+            return ["*"]
+        if isinstance(value, str):
+            text = value.strip()
+            if text in {"", "*"}:
+                return ["*"]
+            try:
+                parsed = json.loads(text)
+            except json.JSONDecodeError as exc:
+                raise ValueError(
+                    'CORS_ALLOWED_ORIGINS must be a JSON list of origins, or *. '
+                    'Example: ["https://example.org"]'
+                ) from exc
+            if not isinstance(parsed, list) or not all(isinstance(item, str) for item in parsed):
+                raise ValueError("CORS_ALLOWED_ORIGINS must be a JSON list of origins, or *.")
+            return parsed
+        return value
 
     @model_validator(mode="after")
     def _check_mail_settings(self) -> "Settings":

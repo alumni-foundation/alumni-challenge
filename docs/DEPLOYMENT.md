@@ -85,7 +85,7 @@ characters and not a placeholder, `STORAGE_BACKEND=r2` with all four storage set
 | `DATABASE_URL` | **yes** | yes | none | `postgresql+asyncpg://user:password@host:5432/dbname`. The password is in it. |
 | `REDIS_URL` | **yes** | yes | none | `redis://host:6379/0`. If Redis has a password it is in the URL. |
 | `FRONTEND_URL` | no | yes | `http://localhost:3000` | The web app's address, no trailing slash. Email links are built from it: `<FRONTEND_URL>/verify-email?token=...` and `<FRONTEND_URL>/reset-password?token=...`. Must be `https://` in production. |
-| `CORS_ALLOWED_ORIGINS` | no | yes | `["http://localhost:3000"]` | JSON list of web app origins allowed to call the API, for example `["https://example.org"]`. |
+| `CORS_ALLOWED_ORIGINS` | no | no | `["*"]` | Empty or unset allows every origin. A JSON list limits it, for example `["https://example.org"]`. |
 | `STORAGE_BACKEND` | no | yes | `local` | `r2` in production. `local` (disk) is refused in production because container disks are wiped on redeploy. |
 | `STORAGE_ENDPOINT_URL` | no | with r2 | none | The R2 S3 endpoint. |
 | `STORAGE_ACCESS_KEY` | **yes** | with r2 | none | R2 access key id. |

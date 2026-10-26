@@ -41,7 +41,7 @@ broken (`backend/app/core/config.py`). Fix the variable; do not work around the 
 | `RESEND_API_KEY` | Secret. Required with `resend` (checked at start). |
 | `MAIL_FROM` | An address on the domain verified with the mail provider. |
 | `FRONTEND_URL` | The web app's address, **starting with `https://`** (checked at start), no trailing slash. Email links are built from it. |
-| `CORS_ALLOWED_ORIGINS` | JSON list of the web app's origins, for example `["https://example.org"]`. |
+| `CORS_ALLOWED_ORIGINS` | Empty or unset allows every origin (`*`). A JSON list limits it, for example `["https://example.org"]`. |
 
 ## Behind a proxy and under load
 
