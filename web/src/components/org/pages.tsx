@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { BarList } from "@/components/home/bars";
-import { Button, EmptyState, Icon3D, PageHeader, Skeleton } from "@/components/ui";
+import { EmptyState, Icon3D, LinkButton, PageHeader, Skeleton } from "@/components/ui";
 import { Dashboard } from "@/components/admin/dashboard/dashboard";
 import { OrgLogo } from "@/components/public/org";
 import { useOrgs, useRoles } from "@/lib/api/hooks";
@@ -43,10 +43,7 @@ function Overview({ org, kind }: { org: Organization; kind: OrgKind }) {
       <section aria-label="Manage" className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lead font-semibold">Manage {org.name}</h2>
-          {/* There is no event editor yet, so the shortcut is shown but off. */}
-          <span title="Coming soon">
-            <Button variant="dark" size="sm" disabled aria-label="Create event, coming soon"><CalendarPlus className="size-4" aria-hidden /> Create event</Button>
-          </span>
+          <LinkButton href={`/admin/events/new?org=${org.id}`} variant="dark" size="sm"><CalendarPlus className="size-4" aria-hidden /> Create event</LinkButton>
         </div>
         {org.description && <p className="whitespace-pre-line text-small text-muted">{org.description}</p>}
         <BarList className="grid gap-3 space-y-0 md:grid-cols-2 xl:grid-cols-3">
