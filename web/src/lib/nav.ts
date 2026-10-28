@@ -32,6 +32,7 @@ const PLATFORM_NAV: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Users", href: "/admin/users", icon: UserCog },
   { label: "Organizations", href: "/admin/organizations", icon: Building2 },
+  { label: "Events", href: "/admin/events", icon: CalendarDays },
   { label: "Roles", href: "/admin/roles", icon: ShieldCheck },
   { label: "Activity log", href: "/admin/activity", icon: ScrollText },
 ];
