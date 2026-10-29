@@ -49,3 +49,11 @@ export type BookingCreate = S["BookingCreate"];
 export type ParticipantInput = S["ParticipantInput"];
 export type AnswerInput = S["AnswerInput"];
 export type Ticket = S["TicketOut"];
+
+/* Creating and running events (the organizer screens). */
+export type EventCreate = S["EventCreate"];
+export type EventUpdate = S["EventUpdate"];
+export type EventCategory = S["EventCategory"];
+export type EventVisibility = S["EventVisibility"];
+export type EventStatus = S["EventStatus"];
+export type SlotUpdate = S["SlotUpdate"];

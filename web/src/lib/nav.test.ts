@@ -23,7 +23,7 @@ describe("navGroupsFor", () => {
   it("shows admins the Platform group and the reports link, super admins the same", () => {
     for (const role of ["admin", "super_admin"] as const) {
       expect(titles([m(role)])).toEqual(["Member", "Platform", "Moderation"]);
-      expect(hrefs([m(role)])).toEqual(expect.arrayContaining(["/admin", "/admin/users", "/admin/organizations", "/admin/roles", "/admin/activity", "/admin/reports"]));
+      expect(hrefs([m(role)])).toEqual(expect.arrayContaining(["/admin", "/admin/users", "/admin/organizations", "/admin/events", "/admin/roles", "/admin/activity", "/admin/reports"]));
     }
   });
 

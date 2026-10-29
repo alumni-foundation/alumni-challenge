@@ -9,8 +9,10 @@ import type {
   BookingStatus,
   Connection,
   EmailDomain,
+  EventCreate,
   EventDetail,
   EventSummary,
+  EventUpdate,
   MemberListItem,
   Membership,
   Organization,
@@ -24,6 +26,7 @@ import type {
   Role,
   RosterItem,
   Session,
+  SlotUpdate,
   Ticket,
   User,
   UserListItem,
@@ -292,3 +295,37 @@ export const useBookingTickets = (id: string, enabled: boolean) =>
 
 /** My tickets for events that have not ended. */
 export const useMyTickets = () => useQuery({ queryKey: ["tickets", "mine"], queryFn: () => api<Ticket[]>("tickets/mine") });
+
+export const MANAGED_EVENTS_PAGE_SIZE = 20;
+
+/** The events this person runs, drafts and cancelled ones included (GET /events?manage=true). */
+export const useManagedEvents = (page: number, enabled = true) =>
+  useQuery({
+    enabled,
+    queryKey: ["events", "manage", page],
+    queryFn: () => apiPage<EventSummary>(`events?manage=true&limit=${MANAGED_EVENTS_PAGE_SIZE}&offset=${page * MANAGED_EVENTS_PAGE_SIZE}`),
+    placeholderData: (prev) => prev,
+    retry: false,
+  });
+
+/** One event for its editor, with whatever state it is in now. No cache: an editor must not start from old data. */
+export const useEventToEdit = (id: string) =>
+  useQuery({ queryKey: ["event", id, "edit"], queryFn: () => api<EventDetail>(`events/${id}`), retry: false, gcTime: 0, staleTime: 0 });
+
+/**
+ * The calls the event editor makes. They are plain functions, not mutations: the editor runs several in a row (save,
+ * then the slot, then publish) and shows the server's own words when one fails.
+ */
+export const eventCalls = {
+  create: (body: EventCreate) => api<EventDetail>("events", { method: "POST", body }),
+  update: (id: string, body: EventUpdate) => api<EventDetail>(`events/${id}`, { method: "PATCH", body }),
+  updateSlot: (id: string, slotId: string, body: SlotUpdate) => api<unknown>(`events/${id}/slots/${slotId}`, { method: "PATCH", body }),
+  get: (id: string) => api<EventDetail>(`events/${id}`),
+  publish: (id: string) => api<EventDetail>(`events/${id}/publish`, { method: "POST" }),
+  close: (id: string) => api<EventDetail>(`events/${id}/close`, { method: "POST" }),
+  reopen: (id: string) => api<EventDetail>(`events/${id}/reopen`, { method: "POST" }),
+  cancel: (id: string, reason: string) => api<EventDetail>(`events/${id}/cancel`, { method: "POST", body: { reason } }),
+  remove: (id: string) => api<null>(`events/${id}`, { method: "DELETE" }),
+  setPoster: (id: string, fileId: string) => api<EventDetail>(`events/${id}/poster`, { method: "PUT", body: { file_id: fileId } }),
+  removePoster: (id: string) => api<EventDetail>(`events/${id}/poster`, { method: "DELETE" }),
+};
