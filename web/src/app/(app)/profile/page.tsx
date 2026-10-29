@@ -75,7 +75,7 @@ function ProfileEditor({ profile }: { profile: Profile }) {
         </div>
       )}
 
-      <Card className="mb-6">
+      <Card large className="mb-6">
         <AvatarEditor profile={profile} />
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4 text-small">
           {verified ? (
@@ -101,7 +101,7 @@ function ProfileEditor({ profile }: { profile: Profile }) {
           >
             Cancel
           </Button>
-          <Button type="submit" loading={busy}>Save</Button>
+          <Button type="submit" variant="dark" loading={busy}>Save</Button>
         </div>
       </form>
     </div>

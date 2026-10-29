@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors.exceptions import ValidationError
 from app.core.rate_limit.limiter import hit
+from app.core.search import escape_like
 from app.modules.audit.service import record as record_audit
 from app.modules.bookings.models import (
     ACTIVE_STATUSES,
@@ -23,8 +24,10 @@ from app.modules.bookings.models import (
     BookingParticipant,
     BookingStatus,
     EventMessage,
+    ManualPaymentState,
     Ticket,
 )
+from app.modules.bookings.payment_view import registration_payment
 from app.modules.bookings.schemas import (
     AnswerOut,
     BookingSlotInfo,
@@ -42,10 +45,6 @@ MESSAGES_PER_HOUR = 5
 _FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")
 
 
-def _escape_like(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-
-
 def defuse(cell: Any) -> Any:
     """A spreadsheet runs text that starts with = + - @ as a formula. Prefix those with an
     apostrophe so they show as plain text. Numbers are left alone."""
@@ -58,7 +57,7 @@ def _org_context(event: Event) -> dict[str, str]:
     return {"organization_id": str(event.organization_id)} if event.organization_id else {}
 
 
-async def _rows(db: AsyncSession, bookings: list[Booking]) -> list[RegistrationRow]:
+async def rows_for(db: AsyncSession, bookings: list[Booking]) -> list[RegistrationRow]:
     if not bookings:
         return []
     ids = [b.id for b in bookings]
@@ -128,6 +127,7 @@ async def _rows(db: AsyncSession, bookings: list[Booking]) -> list[RegistrationR
                     for p in people
                 ],
                 answers=answers_by_booking[b.id],
+                payment=registration_payment(b),
             )
         )
     return out
@@ -138,6 +138,7 @@ async def registrations(
     *,
     event: Event,
     status: BookingStatus | None,
+    payment_state: ManualPaymentState | None = None,
     slot_id: uuid.UUID | None,
     q: str | None,
     limit: int,
@@ -146,14 +147,22 @@ async def registrations(
     where: list[Any] = [Booking.event_id == event.id]
     if status is not None:
         where.append(Booking.status == status)
+    if payment_state is not None:
+        where.append(Booking.payment_state == payment_state)
     if slot_id is not None:
         where.append(Booking.slot_id == slot_id)
     if q:
-        like = f"%{_escape_like(q.strip())}%"
+        like = f"%{escape_like(q.strip())}%"
         named = select(BookingParticipant.booking_id).where(
             BookingParticipant.full_name.ilike(like, escape="\\")
         )
-        where.append(or_(Booking.reference.ilike(like, escape="\\"), Booking.id.in_(named)))
+        where.append(
+            or_(
+                Booking.reference.ilike(like, escape="\\"),
+                Booking.payment_reference_code.ilike(like, escape="\\"),
+                Booking.id.in_(named),
+            )
+        )
     total = await db.scalar(select(func.count()).select_from(Booking).where(*where))
     bookings = list(
         (
@@ -166,7 +175,7 @@ async def registrations(
             )
         ).all()
     )
-    return await _rows(db, bookings), int(total or 0)
+    return await rows_for(db, bookings), int(total or 0)
 
 
 async def tee_sheet(db: AsyncSession, *, event: Event) -> list[TeeSheetSlot]:
@@ -187,7 +196,7 @@ async def tee_sheet(db: AsyncSession, *, event: Event) -> list[TeeSheetSlot]:
         ).all()
     )
     by_slot: dict[uuid.UUID, list[RegistrationRow]] = defaultdict(list)
-    for row in await _rows(db, bookings):
+    for row in await rows_for(db, bookings):
         by_slot[row.slot.id].append(row)
     return [
         TeeSheetSlot(
@@ -237,7 +246,7 @@ async def export_csv(db: AsyncSession, *, actor: User, event: Event) -> str:
             )
         ).all()
     )
-    rows = await _rows(db, bookings)
+    rows = await rows_for(db, bookings)
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(

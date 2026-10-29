@@ -36,10 +36,9 @@ export default function AuthTemplate({ children }: { children: React.ReactNode }
             <Link
               href="/"
               aria-label="Alumni Challenge home"
-              className="mb-7 inline-flex items-center gap-2.5 rounded-full bg-ink py-2 pl-3 pr-5 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              className="mb-6 inline-flex min-h-11 items-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
-              <Logo size={26} tone="light" />
-              <span className="text-caption font-semibold uppercase tracking-[0.16em]">Alumni Challenge</span>
+              <Logo variant="full" size={64} alt="Alumni Challenge" />
             </Link>
             <div className="auth-stagger">{children}</div>
             <p className="mt-8 flex justify-center gap-4 border-t border-line pt-4 text-caption text-muted">

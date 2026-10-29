@@ -85,9 +85,204 @@ jobs:
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
           COOLIFY_STAGING_WEBHOOK: ${{ secrets.COOLIFY_STAGING_WEBHOOK }}
         run: |
+          set -euo pipefail
           if [ -z "$COOLIFY_TOKEN" ] || [ -z "$COOLIFY_STAGING_WEBHOOK" ]; then
             echo "Set the COOLIFY_TOKEN and COOLIFY_STAGING_WEBHOOK repository secrets, then re-run this job."
             exit 1
           fi
-          curl --fail-with-body --request GET "$COOLIFY_STAGING_WEBHOOK" \
-            --header "Authorization: Bearer $COOLIFY_TOKEN"
+
+          # The webhook is .../api/v1/deploy?uuid=<resource>. Deployments live beside that path.
+          api_base="${COOLIFY_STAGING_WEBHOOK%%\?*}"
+          api_base="${api_base%/deploy}"
+          resource_uuid="$(printf '%s' "$COOLIFY_STAGING_WEBHOOK" | sed -n 's/.*[?&]uuid=\([^&]*\).*/\1/p')"
+          if [ -z "$resource_uuid" ] || [ -z "$api_base" ]; then
+            echo "COOLIFY_STAGING_WEBHOOK must be the Coolify deploy URL, including the resource uuid."
+            exit 1
+          fi
+
+          triggered_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          body_file="$(mktemp)"
+          attempt=1
+          max_attempts=3
+          http_code="000"
+
+          while [ "$attempt" -le "$max_attempts" ]; do
+            echo "Deploy attempt ${attempt}/${max_attempts}."
+            set +e
+            http_code="$(curl --silent --show-error --output "$body_file" --write-out '%{http_code}' \
+              --max-time 120 \
+              --request POST "$COOLIFY_STAGING_WEBHOOK" \
+              --header "Authorization: Bearer $COOLIFY_TOKEN")"
+            curl_status=$?
+            set -e
+            if [ "$curl_status" -eq 28 ]; then
+              echo "The deploy request hit the 120s limit before Coolify answered."
+              http_code="504"
+            elif [ "$curl_status" -ne 0 ]; then
+              echo "The deploy request failed before Coolify answered (curl ${curl_status})."
+              exit 1
+            fi
+            echo "HTTP ${http_code}"
+            if [ -s "$body_file" ]; then
+              cat "$body_file"
+              echo
+            fi
+            case "$http_code" in
+              2*)
+                echo "Coolify accepted the deploy."
+                exit 0
+                ;;
+              502|503|504)
+                if [ "$attempt" -eq "$max_attempts" ]; then
+                  break
+                fi
+                echo "Gateway error ${http_code}. The trigger is safe to repeat; retrying."
+                sleep $((attempt * 10))
+                ;;
+              *)
+                echo "Coolify rejected the deploy."
+                exit 1
+                ;;
+            esac
+            attempt=$((attempt + 1))
+          done
+
+          echo "Coolify answered ${http_code}. Checking the deployments list for one created by this trigger."
+          API_BASE="$api_base" \
+          RESOURCE_UUID="$resource_uuid" \
+          TRIGGERED_AT="$triggered_at" \
+          COOLIFY_TOKEN="$COOLIFY_TOKEN" \
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.request
+          from datetime import datetime, timedelta, timezone
+
+          api_base = os.environ["API_BASE"].rstrip("/")
+          resource_uuid = os.environ["RESOURCE_UUID"]
+          token = os.environ["COOLIFY_TOKEN"]
+          triggered_at = datetime.fromisoformat(os.environ["TRIGGERED_AT"].replace("Z", "+00:00"))
+          # Coolify's clock can sit a little behind the runner, and the row is written
+          # when the request starts, before the proxy gives up.
+          cutoff = triggered_at - timedelta(minutes=2)
+
+
+          def parse_time(value):
+              if not isinstance(value, str) or not value.strip():
+                  return None
+              text = value.strip().replace("Z", "+00:00")
+              if " " in text and "T" not in text:
+                  text = text.replace(" ", "T", 1)
+              has_offset = len(text) >= 6 and text[-6] in "+-" and text[-3] == ":"
+              if not has_offset:
+                  text += "+00:00"
+              try:
+                  parsed = datetime.fromisoformat(text)
+              except ValueError:
+                  return None
+              if parsed.tzinfo is None:
+                  parsed = parsed.replace(tzinfo=timezone.utc)
+              return parsed
+
+
+          def fetch(path):
+              request = urllib.request.Request(
+                  api_base + path,
+                  headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      raw = response.read().decode()
+                      return response.status, json.loads(raw) if raw else None
+              except urllib.error.HTTPError as error:
+                  raw = error.read().decode(errors="replace")
+                  try:
+                      payload = json.loads(raw) if raw else None
+                  except json.JSONDecodeError:
+                      payload = raw
+                  return error.code, payload
+
+
+          def entries(payload):
+              if isinstance(payload, list):
+                  return [item for item in payload if isinstance(item, dict)]
+              if isinstance(payload, dict):
+                  for key in ("deployments", "data"):
+                      value = payload.get(key)
+                      if isinstance(value, list):
+                          return [item for item in value if isinstance(item, dict)]
+              return []
+
+
+          def recent(items):
+              found = []
+              for item in items:
+                  created = parse_time(item.get("created_at"))
+                  if created is not None and created >= cutoff:
+                      found.append(item)
+              return found
+
+
+          seen = []
+          running_code, running_payload = fetch("/deployments")
+          if running_code == 200:
+              seen.extend(recent(entries(running_payload)))
+          elif running_code in (401, 403):
+              print(f"Coolify refused the deployments list (HTTP {running_code}).")
+              sys.exit(1)
+          else:
+              print(f"Could not list running deployments (HTTP {running_code}).")
+
+          history_code, history_payload = fetch(
+              f"/deployments/applications/{resource_uuid}?take=10"
+          )
+          if history_code == 200:
+              seen.extend(recent(entries(history_payload)))
+          elif history_code == 404:
+              service_code, service_payload = fetch(f"/services/{resource_uuid}/applications")
+              if service_code == 200 and isinstance(service_payload, list):
+                  application_uuids = [
+                      item.get("uuid")
+                      for item in service_payload
+                      if isinstance(item, dict) and item.get("uuid")
+                  ]
+                  for app_uuid in application_uuids:
+                      code, payload = fetch(f"/deployments/applications/{app_uuid}?take=5")
+                      if code == 200:
+                          seen.extend(recent(entries(payload)))
+              elif service_code not in (404,):
+                  print(f"Could not list the service applications (HTTP {service_code}).")
+          elif history_code in (401, 403):
+              print(f"Coolify refused the deployment history (HTTP {history_code}).")
+              sys.exit(1)
+          else:
+              print(f"Could not list deployments for this resource (HTTP {history_code}).")
+
+          unique = []
+          known = set()
+          for item in seen:
+              identity = item.get("deployment_uuid") or item.get("uuid") or id(item)
+              if identity in known:
+                  continue
+              known.add(identity)
+              unique.append(item)
+
+          if not unique:
+              print(
+                  "No deployment was created after this trigger. "
+                  "The proxy timeout means Coolify did not accept the deploy."
+              )
+              sys.exit(1)
+
+          print(f"Found {len(unique)} deployment(s) created by this trigger:")
+          for item in unique:
+              print(
+                  " - {uuid} status={status} created_at={created}".format(
+                      uuid=item.get("deployment_uuid") or item.get("uuid") or "(no uuid)",
+                      status=item.get("status") or "(no status)",
+                      created=item.get("created_at") or "(no created_at)",
+                  )
+              )
+          PY

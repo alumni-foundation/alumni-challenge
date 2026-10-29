@@ -101,11 +101,18 @@ def booking_confirmed_email(
     reference: str,
     link: str,
     tickets: list[tuple[str, str]],
+    late_payment: bool = False,
 ) -> EmailContent:
     """`tickets` is (holder name, ticket link) for everyone in the booking."""
+    late = (
+        "Your payment reached us after your reservation had ended, but the places were still "
+        "free, so we have confirmed your booking.\n\n"
+        if late_payment
+        else ""
+    )
     lines = "".join(f"  {name}: {ticket_link}\n" for name, ticket_link in tickets)
     text = (
-        f"You are booked for {event_title} ({when}).\n\nYour reference is {reference}.\n"
+        f"You are booked for {event_title} ({when}).\n\n{late}Your reference is {reference}.\n"
         f"See your booking: {link}\n\nTickets (show the QR code at the door):\n{lines}"
         "\nEach link opens that person's ticket without signing in, so only share it with them.\n"
     )
@@ -145,6 +152,64 @@ def booking_expired_email(*, event_title: str, reference: str, link: str) -> Ema
     )
     return EmailContent(
         subject=f"Your hold expired: {event_title}", text=text, html=_plain_page(text)
+    )
+
+
+def payment_submitted_email(*, event_title: str, reference: str, link: str) -> EmailContent:
+    text = (
+        f"We have your M-Pesa code for booking {reference} ({event_title}).\n\n"
+        "The organizer will check it against the payment and confirm your booking. "
+        f"You will get your tickets as soon as they do.\n\nSee your booking: {link}\n"
+    )
+    return EmailContent(
+        subject=f"We have your payment code: {event_title}", text=text, html=_plain_page(text)
+    )
+
+
+def payment_rejected_email(
+    *, event_title: str, reference: str, reason: str, link: str
+) -> EmailContent:
+    text = (
+        f"The organizer could not match the M-Pesa code you sent for booking {reference} "
+        f"({event_title}) to a payment.\n\nTheir note: {reason}\n\n"
+        f"Please check the code in your M-Pesa message and send it again: {link}\n"
+        "If your places are still held you can fix this until the hold ends.\n"
+    )
+    return EmailContent(
+        subject=f"Payment code not matched: {event_title}", text=text, html=_plain_page(text)
+    )
+
+
+def payment_unallocated_email(*, event_title: str, reference: str, link: str) -> EmailContent:
+    text = (
+        f"Your payment for booking {reference} ({event_title}) arrived after your reservation "
+        "ended, and the places are no longer available.\n\n"
+        "The organizer has been told and will return your money. They do this by hand, so it "
+        f"can take until the end of the working day.\n\nSee your booking: {link}\n"
+    )
+    return EmailContent(
+        subject=f"Your payment needs a refund: {event_title}", text=text, html=_plain_page(text)
+    )
+
+
+def refund_owed_email(*, event_title: str, reference: str) -> EmailContent:
+    text = (
+        f"Your booking {reference} for {event_title} was cancelled by the organizer and your "
+        "payment will be returned. They do this by hand, so it can take until the end of the "
+        "working day.\n"
+    )
+    return EmailContent(
+        subject=f"Your refund is on its way: {event_title}", text=text, html=_plain_page(text)
+    )
+
+
+def refunded_email(*, event_title: str, reference: str) -> EmailContent:
+    text = (
+        f"The organizer has returned your payment for booking {reference} ({event_title}). "
+        "It may take a little while to show in your M-Pesa balance.\n"
+    )
+    return EmailContent(
+        subject=f"Your payment was returned: {event_title}", text=text, html=_plain_page(text)
     )
 
 

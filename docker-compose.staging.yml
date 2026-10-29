@@ -42,7 +42,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       FRONTEND_URL: ${FRONTEND_URL}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
       MAIL_BACKEND: ${MAIL_BACKEND:-logging}
       MAIL_FROM: "${MAIL_FROM:-Alumni Challenge <no-reply@localhost>}"
       RESEND_API_KEY: ${RESEND_API_KEY:-}
@@ -56,7 +56,7 @@ services:
     command:
       - sh
       - -c
-      - alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $$WEB_CONCURRENCY --no-access-log
+      - alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $$WEB_CONCURRENCY --timeout-keep-alive 75 --no-access-log
     ports:
       - "8000"
     depends_on:
@@ -65,7 +65,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready')"]
       interval: 30s
       timeout: 5s
       start_period: 40s

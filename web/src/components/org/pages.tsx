@@ -1,10 +1,12 @@
 "use client";
 
-import { ChevronRight, Globe, GraduationCap, Pencil, ScrollText, Users } from "lucide-react";
+import { CalendarPlus, ChevronRight, Globe, GraduationCap, Pencil, ScrollText, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { EmptyState, IconChip, PageHeader, Skeleton } from "@/components/ui";
+import { BarList } from "@/components/home/bars";
+import { EmptyState, Icon3D, LinkButton, PageHeader, Skeleton } from "@/components/ui";
+import { Dashboard } from "@/components/admin/dashboard/dashboard";
 import { OrgLogo } from "@/components/public/org";
 import { useOrgs, useRoles } from "@/lib/api/hooks";
 import type { Organization } from "@/lib/api/types";
@@ -36,23 +38,29 @@ function Overview({ org, kind }: { org: Organization; kind: OrgKind }) {
   links.push({ href: `${base}/activity`, title: "Activity", body: "What has changed, and who changed it.", icon: ScrollText });
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <OrgHeader org={org} />
-      {org.description && <p className="mb-6 whitespace-pre-line text-body">{org.description}</p>}
-      <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
-        {links.map(({ href, title, body, icon }) => (
-          <li key={href}>
-            <Link href={href} className="flex min-h-16 items-center gap-4 px-4 py-4 transition-colors hover:bg-sunken sm:px-5">
-              <IconChip icon={icon} />
-              <span className="min-w-0 flex-1">
-                <span className="block font-semibold">{title}</span>
-                <span className="mt-0.5 block text-small text-muted">{body}</span>
-              </span>
-              <ChevronRight className="size-5 shrink-0 text-faint" aria-hidden />
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <div className="mx-auto max-w-[1280px] space-y-8">
+      <Dashboard scope={{ kind, organizationId: org.id }} org={org} />
+      <section aria-label="Manage" className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lead font-semibold">Manage {org.name}</h2>
+          <LinkButton href={`/admin/events/new?org=${org.id}`} variant="dark" size="sm"><CalendarPlus className="size-4" aria-hidden /> Create event</LinkButton>
+        </div>
+        {org.description && <p className="whitespace-pre-line text-small text-muted">{org.description}</p>}
+        <BarList className="grid gap-3 space-y-0 md:grid-cols-2 xl:grid-cols-3">
+          {links.map(({ href, title, body, icon }) => (
+            <li key={href}>
+              <Link href={href} className="flex min-h-16 items-center gap-4 rounded-2xl border border-line bg-surface px-4 py-3 shadow-resting transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink motion-reduce:transition-none">
+                <Icon3D icon={icon} tone="ink" size="sm" />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{title}</span>
+                  <span className="mt-0.5 block text-small text-muted">{body}</span>
+                </span>
+                <ChevronRight className="size-5 shrink-0 text-faint" aria-hidden />
+              </Link>
+            </li>
+          ))}
+        </BarList>
+      </section>
       <Link href={`/${kind === "school" ? "schools" : "partners"}/${org.id}`} className="mt-4 inline-flex min-h-11 items-center text-small font-medium text-brand-ink hover:underline">
         See the public page
       </Link>
@@ -71,7 +79,7 @@ export function OrgSectionPage({ kind, id, section }: { kind: OrgKind; id: strin
         }
         const { title, subtitle } = TITLES[section];
         return (
-          <div className="mx-auto max-w-3xl">
+          <div className="max-w-3xl">
             <OrgHeader org={org} title={title} subtitle={org.name} back={{ href: `/${kind}/${org.id}`, label: "Overview" }} />
             <p className="-mt-3 mb-6 text-small text-muted">{subtitle}</p>
             {section === "edit" && <EditPanel org={org} />}
@@ -103,7 +111,7 @@ export function OrgPicker({ kind }: { kind: OrgKind }) {
     return <EmptyState title={`You don’t run any ${kind === "school" ? "schools" : "partners"}.`} />;
   }
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeader title={kind === "school" ? "Your schools" : "Your partners"} subtitle="Choose one to manage." />
       <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
         {mine.map((o) => (

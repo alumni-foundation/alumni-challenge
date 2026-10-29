@@ -15,6 +15,7 @@ from app.modules.events.models import (
     QuestionKind,
 )
 from app.modules.organizations.models import OrganizationType
+from app.modules.payments.schemas import PayeeInfo
 
 _KEY_RE = re.compile(r"^[a-z][a-z0-9_]{1,59}$")
 MAX_PRICE_MINOR = 100_000_000_00  # 100 million shillings, a sanity ceiling
@@ -68,6 +69,9 @@ class EventCreate(BaseModel):
     contact_phone: str | None = Field(default=None, max_length=40)
     refund_policy_text: str | None = Field(default=None, max_length=5000)
     reminder_hours_before: int = Field(default=24, ge=0, le=720)
+    payment_account_id: uuid.UUID | None = Field(
+        default=None, description="The paybill or till people pay to (a paid event needs one)."
+    )
     # Convenience: with no slots given, one unlabelled slot covering the whole event is made,
     # with this capacity (null = unlimited, allowed for free events only).
     capacity: int | None = Field(default=None, ge=0, le=100_000)
@@ -99,6 +103,7 @@ class EventUpdate(BaseModel):
     contact_phone: str | None = Field(default=None, max_length=40)
     refund_policy_text: str | None = Field(default=None, max_length=5000)
     reminder_hours_before: int | None = Field(default=None, ge=0, le=720)
+    payment_account_id: uuid.UUID | None = None
 
 
 class CancelEventRequest(BaseModel):
@@ -282,6 +287,8 @@ class EventDetail(EventSummary):
     show_attendee_list: bool
     reminder_hours_before: int
     hold_minutes: int
+    # Where to pay, for a paid event with a payee set. Public numbers; nothing secret.
+    payment: PayeeInfo | None = None
     slots: list[SlotOut]
     questions: list[QuestionOut]
     consents: list[ConsentOut]

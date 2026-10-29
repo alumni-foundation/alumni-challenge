@@ -85,7 +85,7 @@ characters and not a placeholder, `STORAGE_BACKEND=r2` with all four storage set
 | `DATABASE_URL` | **yes** | yes | none | `postgresql+asyncpg://user:password@host:5432/dbname`. The password is in it. |
 | `REDIS_URL` | **yes** | yes | none | `redis://host:6379/0`. If Redis has a password it is in the URL. |
 | `FRONTEND_URL` | no | yes | `http://localhost:3000` | The web app's address, no trailing slash. Email links are built from it: `<FRONTEND_URL>/verify-email?token=...` and `<FRONTEND_URL>/reset-password?token=...`. Must be `https://` in production. |
-| `CORS_ALLOWED_ORIGINS` | no | yes | `["http://localhost:3000"]` | JSON list of web app origins allowed to call the API, for example `["https://example.org"]`. |
+| `CORS_ALLOWED_ORIGINS` | no | no | `["*"]` | Empty or unset allows every origin. A JSON list limits it, for example `["https://example.org"]`. |
 | `STORAGE_BACKEND` | no | yes | `local` | `r2` in production. `local` (disk) is refused in production because container disks are wiped on redeploy. |
 | `STORAGE_ENDPOINT_URL` | no | with r2 | none | The R2 S3 endpoint. |
 | `STORAGE_ACCESS_KEY` | **yes** | with r2 | none | R2 access key id. |
@@ -103,10 +103,11 @@ characters and not a placeholder, `STORAGE_BACKEND=r2` with all four storage set
 | `SENTRY_DSN` | **yes** | recommended | none | Empty means Sentry is off. Treat the DSN as a secret. |
 | `SENTRY_TRACES_SAMPLE_RATE` | no | no | `0.1` | Share of requests traced for performance (0 to 1). |
 | `SENTRY_RELEASE` | no | recommended | none | The image version, so errors show which deploy caused them. |
-| `TRUSTED_CLIENT_IP_HEADER` | no | yes behind Cloudflare | `none` | Set `cf-connecting-ip` when the API is behind Cloudflare. Otherwise every visitor shares the proxy's address and rate limits lock everyone out together. Leave `none` if visitors reach the API directly (the header could be forged). |
+| `TRUSTED_CLIENT_IP_HEADER` | no | yes behind a proxy | `none` | Which request header carries the visitor's real address: `none`, `cf-connecting-ip` (API behind Cloudflare), `x-visitor-ip` (the web app sends it on every server-side call; API on the private network) or `x-forwarded-for`. Only the one named header is read; all others are ignored. Without it every visitor shares the proxy's address and rate limits lock everyone out together. **When this is set to anything but `none`, the API must not be publicly reachable** (no public address, or the origin locked to Cloudflare's ranges): anyone who can reach it directly can send that header and pick their own address, and so dodge every rate limit. Leave `none` if visitors reach the API directly. |
 | `DATABASE_POOL_SIZE` | no | no | `10` | Connections kept open per process. See sizing below. |
 | `DATABASE_MAX_OVERFLOW` | no | no | `5` | Extra connections allowed per process in a burst. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | no | no | `15` | Life of a login token. |
+| `PASSWORD_HASH_CONCURRENCY` | no | no | `2` | How many password hashes (sign-ups, sign-ins, password changes) may run at once, 1 to 16. Each takes about a quarter of a second and 64 MiB of memory, so this caps the memory they can use at roughly this number times 64 MiB. A sign-in over the limit waits its turn; it is not refused. **Sizing:** the number times 64 MiB must fit in the memory that is free after the app itself is running (on a 1 GB server, `2` uses about 130 MiB at the peak; measured: 21 sign-ins at once peaked at 169 MiB with `2` and 1,168 MiB with no cap), and it should not be more than the number of CPU cores, since extra hashes at once only compete for the same cores. Keep the default `2` unless you have measured a need for more. |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | no | no | `30` | How long a device stays signed in. |
 | `JWT_ALGORITHM` | no | no | `HS256` | Leave alone. |
 | `API_V1_PREFIX` | no | no | `/api/v1` | Leave alone: the web app expects it. |
@@ -137,8 +138,12 @@ schema. Take a database backup (section 8) before any deploy that adds a migrati
 **API (the image's default command, nothing to set):**
 
 ```
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY} --no-access-log
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY} --timeout-keep-alive 75 --no-access-log
 ```
+
+`--timeout-keep-alive 75` keeps idle connections open longer than any proxy or client waits, so a
+client never sends on a connection the server is closing (uvicorn's default of 5 s caused rare
+dropped requests under load).
 
 Health check URL for the platform: `GET /health/live` (is the process alive). To decide
 whether to send traffic, use `GET /health/ready` (database reachable).
@@ -258,12 +263,18 @@ they can read.
     account. Sign-in with it no longer works, and the same address can register again.
 16. **Password hashing:** once, after the first deploy (and after any base-image or library
     update), run `docker exec -i <api-container> python - 200 < scripts/check_password_hashing.py`.
-    It needs no database, takes under a minute, and must end with `OK` and exit 0. Any
+    It needs no database, takes a few minutes (about 0.25 s for each of 600 hashes and checks), and must end with `OK` and exit 0. Any
     "FAIL" means the host gives wrong Argon2 answers (a right password refused): do not go live;
-    run a memory test on the host and tell the developers. Background: on one development
-    machine the library's default four lanes gave a wrong answer about 2.5% of the time, so the
-    app hashes with one lane (`app/modules/identity/security.py`). Whether that machine or the
-    library was at fault is not confirmed.
+    run a memory test on the host and tell the developers. **Known problem, not fixed:** on one
+    development machine the same commit passed all 596 tests in one full local run and failed 45
+    in the next, with wrong password-check answers (a right password refused, or a fresh hash
+    that does not verify). That happened with the library's default four lanes and with one lane,
+    with hashing on the event loop and in the worker pool. GitHub CI and plain Python on that
+    machine's Windows host never showed it. The cause on that machine is **not confirmed** (its
+    hardware or Docker setup are suspects), and full local runs on it are not reliable evidence.
+    The app hashes with one lane (`app/modules/identity/security.py`) and in a small pool of
+    worker threads (`PASSWORD_HASH_CONCURRENCY`); neither is claimed to cure it. This script
+    is how to find out whether a given server has the problem.
 
 ## 10. What is not done
 
