@@ -29,8 +29,12 @@ def client_ip(request: Request) -> str:
     """
     The visitor's address. Behind a proxy the socket address is the proxy's, which would put
     every visitor in one rate-limit bucket and lock everybody out together, so a configured
-    header (TRUSTED_CLIENT_IP_HEADER) is read instead. It is only read when configured, because
-    anyone can send these headers to an API they can reach directly.
+    header (TRUSTED_CLIENT_IP_HEADER) is read instead, and ONLY that one: every other
+    forwarding header (X-Forwarded-For, CF-Connecting-IP, X-Visitor-IP, ...) is ignored, so a
+    caller cannot choose their own address by sending one. It is only read when configured,
+    because anyone can send these headers to an API they can reach directly: when it is set the
+    API must not be publicly reachable (the web app on the private network, or Cloudflare with
+    the origin locked to Cloudflare, is the only thing allowed to talk to it).
     """
     header = get_settings().trusted_client_ip_header
     if header != "none":

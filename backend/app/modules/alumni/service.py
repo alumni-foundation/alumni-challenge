@@ -261,6 +261,24 @@ async def _is_platform_admin(db: AsyncSession, *, user_id: uuid.UUID) -> bool:
     return found is not None
 
 
+async def _may_see_account_status(
+    db: AsyncSession, *, viewer_user_id: uuid.UUID, profile: AlumniProfile
+) -> bool:
+    """
+    Who is told whether the profile's owner is active, suspended or deleted: platform admins, and
+    a moderator while someone else's report on the profile is open or reviewing (the same live
+    window as their read access). Not the owner, not school admins, not anyone else. Decided on
+    every read, so it ends with the report.
+    """
+    if await _is_platform_admin(db, user_id=viewer_user_id):
+        return True
+    if viewer_user_id == profile.user_id:
+        return False
+    return await _moderator_can_view_reported_profile(
+        db, viewer_user_id=viewer_user_id, profile=profile
+    )
+
+
 async def get_profile_for_viewer(
     db: AsyncSession, *, profile_id: uuid.UUID, viewer_user_id: uuid.UUID | None
 ) -> AlumniProfile:
@@ -391,13 +409,20 @@ async def build_profile_response(
             )
         ).all()
     )
-    return build_profile_response_fields(
+    fields = build_profile_response_fields(
         profile,
         viewer_user_id=viewer_user_id,
         skills=skills,
         interests=interests,
         vouch_count=await _count_valid_vouches(db, profile=profile),
     )
+    if viewer_user_id is not None and await _may_see_account_status(
+        db, viewer_user_id=viewer_user_id, profile=profile
+    ):
+        fields["account_status"] = await db.scalar(
+            select(User.status).where(User.id == profile.user_id)
+        )
+    return fields
 
 
 async def set_skills(db: AsyncSession, *, user_id: uuid.UUID, names: list[str]) -> AlumniProfile:

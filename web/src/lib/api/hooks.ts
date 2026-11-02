@@ -5,8 +5,14 @@ import { useMemo } from "react";
 import { api, ApiError, apiPage } from "./client";
 import type {
   AuditLogEntry,
+  Booking,
+  BookingStatus,
   Connection,
   EmailDomain,
+  EventCreate,
+  EventDetail,
+  EventSummary,
+  EventUpdate,
   MemberListItem,
   Membership,
   Organization,
@@ -20,7 +26,10 @@ import type {
   Role,
   RosterItem,
   Session,
+  SlotUpdate,
+  Ticket,
   User,
+  UserListItem,
 } from "./types";
 
 export const PAGE_SIZE = 20;
@@ -78,8 +87,8 @@ export const useDirectorySearch = (filters: DirectoryFilters, page: number) =>
 export const useBlocked = () =>
   useQuery({ queryKey: ["blocked"], queryFn: () => api<Connection[]>("connections/blocked") });
 
-export const useProfile = (id: string) =>
-  useQuery({ queryKey: ["profile", id], queryFn: () => api<Profile>(`alumni/${id}`), retry: false });
+export const useProfile = (id: string, enabled = true) =>
+  useQuery({ queryKey: ["profile", id], queryFn: () => api<Profile>(`alumni/${id}`), retry: false, enabled });
 
 export const useConnections = () =>
   useQuery({ queryKey: ["connections"], queryFn: () => api<Connection[]>("connections") });
@@ -171,10 +180,42 @@ export const useAddEmailDomain = (orgId: string) =>
     [["domains", orgId], ["audit"]],
   );
 
+export const useRemoveEmailDomain = (orgId: string) =>
+  useWrite(
+    (domainId: string) => api<null>(`organizations/${orgId}/email-domains/${domainId}`, { method: "DELETE" }),
+    [["domains", orgId], ["audit"]],
+  );
+
+/**
+ * True when a call failed because the server has no such endpoint yet (405, or the framework's own bare 404 that has no
+ * application error code), as opposed to "that thing does not exist". Used to switch a button off with an honest tooltip.
+ */
+export const isMissingEndpoint = (e: unknown) =>
+  e instanceof ApiError && (e.status === 405 || (e.status === 404 && e.code === "error"));
+
+export const USERS_PAGE_SIZE = 25;
+export type UserStatusFilter = "" | "active" | "suspended";
+
+/** GET /users (platform admins): search by name or email, filter by status. The total comes from X-Total-Count when sent. */
+export const useUsers = (q: string, status: UserStatusFilter, page: number, enabled = true) =>
+  useQuery({
+    enabled,
+    queryKey: ["users", q, status, page],
+    queryFn: () => {
+      const qs = new URLSearchParams({ limit: String(USERS_PAGE_SIZE), offset: String(page * USERS_PAGE_SIZE) });
+      if (q.trim()) qs.set("q", q.trim());
+      if (status) qs.set("status", status);
+      return apiPage<UserListItem>(`users?${qs.toString()}`);
+    },
+    placeholderData: (prev) => prev,
+    retry: false,
+  });
+
 export const REPORTS_PAGE_SIZE = 25;
 
-export const useReports = (status: ReportStatus, page: number) =>
+export const useReports = (status: ReportStatus, page: number, enabled = true) =>
   useQuery({
+    enabled,
     queryKey: ["reports", status, page],
     queryFn: () =>
       api<Report[]>(`reports?status=${status}&limit=${REPORTS_PAGE_SIZE}&offset=${page * REPORTS_PAGE_SIZE}`),
@@ -211,3 +252,80 @@ export const useRoster = (orgId: string, filter: RosterFilter, page: number) =>
     placeholderData: (prev) => prev,
     retry: false,
   });
+
+/** The next published events the person may see, soonest first (GET /events lists upcoming ones). */
+export const useUpcomingEvents = (limit = 4) =>
+  useQuery({
+    queryKey: ["events", "upcoming", limit],
+    queryFn: () => api<EventSummary[]>(`events?limit=${limit}`),
+    staleTime: 60_000,
+    retry: false,
+  });
+
+/** One event. The page draws it on the server first (`initialData`); a signed-in person also gets their own booking on it. */
+export const useEvent = (id: string, opts: { initialData?: EventDetail; enabled: boolean }) =>
+  useQuery({
+    queryKey: ["event", id],
+    queryFn: () => api<EventDetail>(`events/${id}`),
+    initialData: opts.initialData,
+    enabled: opts.enabled,
+    staleTime: 10_000,
+    retry: false,
+  });
+
+export const BOOKINGS_PAGE_SIZE = 20;
+
+export const useBookings = (status: BookingStatus | "", page: number) =>
+  useQuery({
+    queryKey: ["bookings", status, page],
+    queryFn: () => {
+      const qs = new URLSearchParams({ limit: String(BOOKINGS_PAGE_SIZE), offset: String(page * BOOKINGS_PAGE_SIZE) });
+      if (status) qs.set("status", status);
+      return apiPage<Booking>(`bookings?${qs}`);
+    },
+    placeholderData: (prev) => prev,
+  });
+
+export const useBooking = (id: string) =>
+  useQuery({ queryKey: ["booking", id], queryFn: () => api<Booking>(`bookings/${id}`), retry: false });
+
+/** The tickets of one booking. A booking only has tickets once it is confirmed. */
+export const useBookingTickets = (id: string, enabled: boolean) =>
+  useQuery({ queryKey: ["booking", id, "tickets"], queryFn: () => api<Ticket[]>(`bookings/${id}/tickets`), enabled, retry: false });
+
+/** My tickets for events that have not ended. */
+export const useMyTickets = () => useQuery({ queryKey: ["tickets", "mine"], queryFn: () => api<Ticket[]>("tickets/mine") });
+
+export const MANAGED_EVENTS_PAGE_SIZE = 20;
+
+/** The events this person runs, drafts and cancelled ones included (GET /events?manage=true). */
+export const useManagedEvents = (page: number, enabled = true) =>
+  useQuery({
+    enabled,
+    queryKey: ["events", "manage", page],
+    queryFn: () => apiPage<EventSummary>(`events?manage=true&limit=${MANAGED_EVENTS_PAGE_SIZE}&offset=${page * MANAGED_EVENTS_PAGE_SIZE}`),
+    placeholderData: (prev) => prev,
+    retry: false,
+  });
+
+/** One event for its editor, with whatever state it is in now. No cache: an editor must not start from old data. */
+export const useEventToEdit = (id: string) =>
+  useQuery({ queryKey: ["event", id, "edit"], queryFn: () => api<EventDetail>(`events/${id}`), retry: false, gcTime: 0, staleTime: 0 });
+
+/**
+ * The calls the event editor makes. They are plain functions, not mutations: the editor runs several in a row (save,
+ * then the slot, then publish) and shows the server's own words when one fails.
+ */
+export const eventCalls = {
+  create: (body: EventCreate) => api<EventDetail>("events", { method: "POST", body }),
+  update: (id: string, body: EventUpdate) => api<EventDetail>(`events/${id}`, { method: "PATCH", body }),
+  updateSlot: (id: string, slotId: string, body: SlotUpdate) => api<unknown>(`events/${id}/slots/${slotId}`, { method: "PATCH", body }),
+  get: (id: string) => api<EventDetail>(`events/${id}`),
+  publish: (id: string) => api<EventDetail>(`events/${id}/publish`, { method: "POST" }),
+  close: (id: string) => api<EventDetail>(`events/${id}/close`, { method: "POST" }),
+  reopen: (id: string) => api<EventDetail>(`events/${id}/reopen`, { method: "POST" }),
+  cancel: (id: string, reason: string) => api<EventDetail>(`events/${id}/cancel`, { method: "POST", body: { reason } }),
+  remove: (id: string) => api<null>(`events/${id}`, { method: "DELETE" }),
+  setPoster: (id: string, fileId: string) => api<EventDetail>(`events/${id}/poster`, { method: "PUT", body: { file_id: fileId } }),
+  removePoster: (id: string) => api<EventDetail>(`events/${id}/poster`, { method: "DELETE" }),
+};

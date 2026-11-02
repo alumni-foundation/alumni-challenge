@@ -29,11 +29,11 @@ export function EditPanel({ org }: { org: Organization }) {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card large>
         <h2 className="mb-4 text-heading">Logo</h2>
         <LogoEditor org={org} />
       </Card>
-      <Card>
+      <Card large>
         <h2 className="text-heading">Details</h2>
         <form onSubmit={submit} className="mt-4 space-y-4" noValidate>
           <Field label="Name" htmlFor="d-name" error={nameError ?? server.name}>
@@ -44,7 +44,7 @@ export function EditPanel({ org }: { org: Organization }) {
           </Field>
           <p className="text-small text-muted">Web address name: <span className="font-medium text-ink">{org.slug}</span> (can’t be changed)</p>
           {update.isError && Object.keys(server).length === 0 && <Alert>{update.error.message}</Alert>}
-          <Button type="submit" loading={update.isPending} disabled={!dirty}>Save changes</Button>
+          <Button variant="dark" type="submit" loading={update.isPending} disabled={!dirty}>Save changes</Button>
         </form>
       </Card>
     </div>

@@ -18,6 +18,7 @@ from app.modules.bookings.schemas import BookingCreate, ParticipantInput
 from app.modules.domain_events.models import DomainEvent
 from app.modules.events.models import EventSlot
 from app.modules.identity.models import User
+from tests.payee import payee_id
 from tests.test_alumni_privacy import PASSWORD, Actor, _make_actor
 from tests.test_events_core import API, _create, _publish, _run_school, iso
 
@@ -30,6 +31,8 @@ async def _event(
     school, admin = await _run_school(client, db, Role.SCHOOL_ADMIN)
     over.setdefault("capacity", 10)
     over.setdefault("max_party_size", 4)
+    if over.get("price_minor", 0) > 0:
+        over.setdefault("payment_account_id", await payee_id(db, school.id))
     ev = await _create(client, admin, school, **over)
     r = await _publish(client, admin, ev["id"])
     assert r.status_code == 200, r.text

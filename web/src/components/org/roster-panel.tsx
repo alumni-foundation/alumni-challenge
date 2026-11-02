@@ -3,7 +3,8 @@
 import { MailCheck, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { Avatar, Badge, Button, Card, EmptyState, ErrorState, Field, Input, Skeleton, Tabs, useToast, VerifiedMark } from "@/components/ui";
+import { RowList, Row } from "@/components/staff/rows";
+import { Avatar, Badge, Button, EmptyState, ErrorState, Field, Input, Skeleton, Tabs, useToast, VerifiedMark } from "@/components/ui";
 import { api } from "@/lib/api/client";
 import { friendlyError } from "@/lib/api/messages";
 import { ROSTER_PAGE_SIZE, useRoster, useWrite, type RosterFilter } from "@/lib/api/hooks";
@@ -52,6 +53,7 @@ export function RosterPanel({ org }: { org: Organization }) {
   return (
     <div className="space-y-4">
       <Tabs<Tab>
+        pills
         label="Alumni"
         value={tab}
         onChange={(t) => { setTab(t); setPage(0); }}
@@ -80,12 +82,11 @@ export function RosterPanel({ org }: { org: Organization }) {
             <p className="text-small text-muted">
               {total !== null ? `${page * ROSTER_PAGE_SIZE + 1}–${page * ROSTER_PAGE_SIZE + items.length} of ${total.toLocaleString("en-KE")}` : `${items.length} shown`}
             </p>
-            <Card className="py-0">
-              <ul className="divide-y divide-line">
+            <RowList label="Alumni">
                 {items.map((p) => {
                   const verified = p.verification_status === "verified";
                   return (
-                    <li key={p.profile_id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
+                    <Row key={p.profile_id} stack>
                       <div className="flex min-w-0 flex-1 items-center gap-3">
                         <Avatar name={p.full_name} id={p.user_id} size={44} />
                         <div className="min-w-0">
@@ -105,15 +106,14 @@ export function RosterPanel({ org }: { org: Organization }) {
                         </div>
                       </div>
                       {!verified && (
-                        <Button size="sm" loading={verifying === p.profile_id} disabled={verifying !== null} onClick={() => void verifyOne(p)}>
+                        <Button variant="dark" size="sm" loading={verifying === p.profile_id} disabled={verifying !== null} onClick={() => void verifyOne(p)}>
                           <ShieldCheck className="size-4" aria-hidden /> Verify
                         </Button>
                       )}
-                    </li>
+                    </Row>
                   );
                 })}
-              </ul>
-            </Card>
+            </RowList>
             <nav aria-label="Pages" className="flex items-center justify-between gap-3">
               <Button variant="secondary" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>Previous</Button>
               <span className="text-small text-muted">Page {page + 1}</span>

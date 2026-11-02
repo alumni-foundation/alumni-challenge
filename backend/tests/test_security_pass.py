@@ -73,13 +73,13 @@ async def test_an_unknown_email_costs_the_same_password_work_as_a_known_one(
     client: AsyncClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     calls: list[str] = []
-    real = identity_service.verify_password
+    real = identity_service.verify_password_async
 
-    def spy(plain: str, hashed: str) -> bool:
+    async def spy(plain: str, hashed: str) -> bool:
         calls.append(hashed)
-        return real(plain, hashed)
+        return await real(plain, hashed)
 
-    monkeypatch.setattr(identity_service, "verify_password", spy)
+    monkeypatch.setattr(identity_service, "verify_password_async", spy)
     r = await client.post(
         f"{API}/auth/login",
         json={"email": f"nobody-{uuid.uuid4().hex[:8]}@example.com", "password": "Whatever-123"},

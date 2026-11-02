@@ -175,6 +175,13 @@ class Event(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     contact_email: Mapped[str | None] = mapped_column(String(320), nullable=True)
     contact_phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
     refund_policy_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Where the money goes. Null for a free event. Cannot change once anyone has booked.
+    payment_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        _fk("payment_accounts.id", "fk_events_payment_account_id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
     reminder_hours_before: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=24)
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),

@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   Alert, Avatar, Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Field, Input, Select, Skeleton, useToast,
 } from "@/components/ui";
+import { Row, RowList } from "@/components/staff/rows";
 import { api } from "@/lib/api/client";
 import { friendlyError } from "@/lib/api/messages";
 import { TEAM_PAGE_SIZE, useMe, useOrgMembers, useRoles, useWrite } from "@/lib/api/hooks";
@@ -52,9 +53,9 @@ function Lookup({ org, allowed }: { org: Organization; allowed: Role[] }) {
   const chosen = offered.includes(role) ? role : offered[0];
 
   return (
-    <Card className="space-y-4">
+    <Card large className="space-y-4">
       <div>
-        <h2 className="text-heading">Find someone by email</h2>
+        <h2 className="text-lead font-semibold">Find someone by email</h2>
         <p className="mt-1 text-small text-muted">To give someone a role, look them up by email. You can only find people who already belong to {org.name}.</p>
       </div>
       <form onSubmit={find} className="flex flex-col gap-3 sm:flex-row sm:items-start" noValidate>
@@ -63,7 +64,7 @@ function Lookup({ org, allowed }: { org: Organization; allowed: Role[] }) {
             <Input id="lookup-email" type="email" autoComplete="off" inputMode="email" value={email} onChange={(e) => { setEmail(e.target.value); setChecked(null); setMatch(null); }} />
           </Field>
         </div>
-        <Button type="submit" loading={busy} disabled={!email.trim()} className="sm:mt-[26px]"><Search className="size-4" aria-hidden /> Look up</Button>
+        <Button variant="dark" type="submit" loading={busy} disabled={!email.trim()} className="sm:mt-[26px]"><Search className="size-4" aria-hidden /> Look up</Button>
       </form>
 
       {checked !== null && match === null && (
@@ -92,7 +93,7 @@ function Lookup({ org, allowed }: { org: Organization; allowed: Role[] }) {
                   </Select>
                 </Field>
               </div>
-              <Button
+              <Button variant="dark"
                 loading={grant.isPending}
                 onClick={async () => {
                   try {
@@ -143,8 +144,8 @@ export function TeamPanel({ org }: { org: Organization }) {
     <div className="space-y-6">
       {allowed.length > 0 && <Lookup org={org} allowed={allowed} />}
 
-      <Card className="space-y-3">
-        <h2 className="text-heading">People with a role{total !== null ? ` (${total})` : ""}</h2>
+      <section aria-label="People with a role" className="space-y-3">
+        <h2 className="text-lead font-semibold">People with a role{total !== null ? ` (${total})` : ""}</h2>
         {members.isError ? (
           <ErrorState message={members.error.message} onRetry={() => void members.refetch()} />
         ) : members.isLoading ? (
@@ -152,9 +153,9 @@ export function TeamPanel({ org }: { org: Organization }) {
         ) : items.length === 0 ? (
           <EmptyState title="No one has a role here yet" />
         ) : (
-          <ul className="divide-y divide-line">
+          <RowList label="People with a role">
             {items.map((m) => (
-              <li key={m.membership_id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center">
+              <Row key={m.membership_id} stack>
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                   <Avatar name={m.full_name ?? m.email} id={m.user_id} size={44} />
                   <div className="min-w-0">
@@ -172,9 +173,9 @@ export function TeamPanel({ org }: { org: Organization }) {
                     <UserMinus className="size-4" aria-hidden /> Take role away
                   </Button>
                 )}
-              </li>
+              </Row>
             ))}
-          </ul>
+          </RowList>
         )}
         {(page > 0 || hasNext) && (
           <nav aria-label="Pages" className="flex items-center justify-between gap-3 pt-2">
@@ -183,7 +184,7 @@ export function TeamPanel({ org }: { org: Organization }) {
             <Button variant="secondary" onClick={() => setPage((p) => p + 1)} disabled={!hasNext}>Next</Button>
           </nav>
         )}
-      </Card>
+      </section>
 
       <ConfirmDialog
         open={removing !== null}

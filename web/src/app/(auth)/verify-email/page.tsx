@@ -62,7 +62,7 @@ function VerifyEmail() {
   return (
     <div className="space-y-5">
       <div className="text-center">
-        <XCircle className="mx-auto size-12 text-brand-ink" aria-hidden />
+        <XCircle className="mx-auto size-12 text-danger-ink" aria-hidden />
         <h1 className="mt-3 text-title">We couldn’t verify that link</h1>
       </div>
       <Alert>{state.message}</Alert>

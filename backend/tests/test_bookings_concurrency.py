@@ -87,6 +87,22 @@ class World:
             await db.commit()
             self.org_id = org.id
 
+    async def payee(self) -> dict[str, Any]:
+        assert self.admin is not None
+        r = await self.client.post(
+            f"{API}/payment-accounts",
+            json={
+                "organization_id": str(self.org_id),
+                "label": f"{self.tag} paybill",
+                "mpesa_kind": "paybill",
+                "shortcode_or_till": "123456",
+            },
+            headers=self.admin.headers,
+        )
+        assert r.status_code == 201, r.text
+        data: dict[str, Any] = r.json()
+        return data
+
     async def event(self, **over: Any) -> dict[str, Any]:
         assert self.admin is not None
         from datetime import UTC, datetime, timedelta
@@ -102,6 +118,8 @@ class World:
             "max_party_size": 4,
         }
         body.update(over)
+        if body.get("price_minor", 0) > 0 and "payment_account_id" not in body:
+            body["payment_account_id"] = (await self.payee())["id"]
         r = await self.client.post(f"{API}/events", json=body, headers=self.admin.headers)
         assert r.status_code == 201, r.text
         pub = await self.client.post(
@@ -169,6 +187,13 @@ async def _purge(db: AsyncSession, tag_like: str) -> None:
     await db.execute(
         text(
             "DELETE FROM events WHERE organization_id IN"
+            " (SELECT id FROM organizations WHERE slug LIKE :like)"
+        ),
+        params,
+    )
+    await db.execute(
+        text(
+            "DELETE FROM payment_accounts WHERE organization_id IN"
             " (SELECT id FROM organizations WHERE slug LIKE :like)"
         ),
         params,
@@ -558,3 +583,80 @@ async def _scan_ten(world: World, event: dict[str, Any], code: str) -> list[Resp
         )
     )
     return list(results)
+
+
+# ----------------------------------------- 5. the organizer's confirm against new bookings
+
+
+async def test_a_late_payment_confirmed_while_new_people_book_never_oversells_or_loses_the_payment(
+    world: World,
+) -> None:
+    """
+    A person's hold has run out and they have sent their M-Pesa code. The organizer confirms it at
+    the very instant four new people try to book the same two places. However the requests
+    interleave: the places never exceed capacity, the counters equal the truth, and the late
+    payer is either confirmed (all their places) or owed a refund, never both and never half.
+    """
+    assert world.admin is not None
+    outcomes: set[str] = set()
+    for round_no in range(ROUNDS):
+        event = await world.event(capacity=2, price_minor=100_000)
+        late, *rivals = await world.people(5)
+        r = await world.book(late, event, size=2)
+        assert r.status_code == 201, r.text
+        booking_id = r.json()["id"]
+        async with world.factory() as db:
+            await db.execute(
+                text(
+                    "UPDATE bookings SET hold_expires_at = now() - interval '1 minute'"
+                    " WHERE id = :i"
+                ),
+                {"i": booking_id},
+            )
+            await db.commit()
+        sent = await world.client.post(
+            f"{API}/bookings/{booking_id}/payment-reference",
+            json={"code": uuid.uuid4().hex[:10].upper()},
+            headers=late.headers,
+        )
+        assert sent.status_code == 200, sent.text
+
+        go = asyncio.Event()
+
+        async def gated(call: Awaitable[Response], go: asyncio.Event = go) -> Response:
+            await go.wait()
+            return await call
+
+        tasks = [
+            asyncio.ensure_future(
+                gated(
+                    world.client.post(
+                        f"{API}/bookings/{booking_id}/confirm-manual", headers=world.admin.headers
+                    )
+                )
+            ),
+            *(asyncio.ensure_future(gated(world.book(p, event))) for p in rivals),
+        ]
+        await asyncio.sleep(0)
+        go.set()
+        confirm, *booked = await asyncio.gather(*tasks)
+
+        assert confirm.status_code == 200, (round_no, confirm.text)
+        assert {b.status_code for b in booked} <= {201, 409}, [b.text for b in booked]
+        counters, recounted, capacity = await world.truth(event["slots"][0]["id"])
+        assert counters == recounted, (round_no, counters, recounted)
+        assert sum(counters) == 2 == capacity, (round_no, counters)  # demand exceeds supply
+        body = confirm.json()
+        winners = sum(1 for b in booked if b.status_code == 201)
+        if body["payment"]["state"] == "confirmed":
+            assert body["status"] == "confirmed" and winners == 0, (
+                round_no,
+                body["status"],
+                winners,
+            )
+            outcomes.add("late payer confirmed")
+        else:
+            assert body["payment"]["state"] == "needs_refund", (round_no, body["payment"])
+            assert body["status"] == "expired" and winners == 2, (round_no, body["status"], winners)
+            outcomes.add("late payer owed a refund")
+    assert outcomes  # at least one real outcome was reached in every round

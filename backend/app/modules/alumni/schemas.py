@@ -4,6 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.modules.alumni.models import ProfileVisibility, VerificationStatus
+from app.modules.identity.models import UserStatus
 
 
 class AlumniProfileCreate(BaseModel):
@@ -60,6 +61,10 @@ class AlumniProfileResponse(BaseModel):
     interests: list[str] = []
     # Number of verified same-school alumni who vouched. Hidden from anonymous viewers.
     vouch_count: int | None = None
+    # The owner's account status (active, suspended, deleted). The key is ABSENT unless the
+    # viewer is a platform admin, or a moderator while someone else's report on this profile is
+    # open or reviewing. Nobody else gets it, the owner included. For the admin "Suspended" banner.
+    account_status: UserStatus | None = None
 
 
 class AlumniProfileSummary(BaseModel):

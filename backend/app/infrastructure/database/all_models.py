@@ -47,3 +47,4 @@ from app.modules.identity.models import Session, User  # noqa: F401
 from app.modules.memberships.models import Membership  # noqa: F401
 from app.modules.moderation.models import Report  # noqa: F401
 from app.modules.organizations.models import Organization  # noqa: F401
+from app.modules.payments.models import PaymentAccount  # noqa: F401

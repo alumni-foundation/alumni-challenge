@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rate_limit import rate_limit
 from app.infrastructure.database.session import get_db_session
-from app.modules.bookings import organizer, service, tickets
-from app.modules.bookings.models import BookingStatus
+from app.modules.bookings import manual_payment, organizer, service, tickets
+from app.modules.bookings.models import BookingStatus, ManualPaymentState
 from app.modules.bookings.schemas import (
     CheckInRequest,
     CheckInResult,
@@ -118,6 +118,7 @@ async def registrations(
     db: AsyncSession = Depends(get_db_session),
     user: User = Depends(get_current_user),
     booking_status: BookingStatus | None = Query(default=None, alias="status"),
+    payment_state: ManualPaymentState | None = None,
     slot_id: uuid.UUID | None = None,
     q: str | None = Query(default=None, max_length=100),
     limit: int = Query(default=50, ge=1, le=200),
@@ -126,11 +127,40 @@ async def registrations(
     """Everyone booked, with contact details and answers. For the people who run the event."""
     event = await access.get_event_for_manager(db, event_id=event_id, user=user)
     rows, total = await organizer.registrations(
-        db, event=event, status=booking_status, slot_id=slot_id, q=q, limit=limit, offset=offset
+        db,
+        event=event,
+        status=booking_status,
+        payment_state=payment_state,
+        slot_id=slot_id,
+        q=q,
+        limit=limit,
+        offset=offset,
     )
     response.headers["X-Total-Count"] = str(total)
     response.headers.update(NO_STORE)
     return rows
+
+
+@organizer_router.get("/{event_id}/payments", response_model=list[RegistrationRow])
+async def payments_needing_action(
+    event_id: uuid.UUID,
+    response: Response,
+    db: AsyncSession = Depends(get_db_session),
+    user: User = Depends(get_current_user),
+    state: ManualPaymentState | None = Query(
+        default=None, description="awaiting_confirmation or needs_refund; default both"
+    ),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+) -> list[RegistrationRow]:
+    """The organizer's money queue: codes waiting to be confirmed and payments owed back."""
+    event = await access.get_event_for_manager(db, event_id=event_id, user=user, admin_only=True)
+    bookings, total = await manual_payment.refund_queue(
+        db, event=event, state=state, limit=limit, offset=offset
+    )
+    response.headers["X-Total-Count"] = str(total)
+    response.headers.update(NO_STORE)
+    return await organizer.rows_for(db, bookings)
 
 
 @organizer_router.get("/{event_id}/registrations.csv")

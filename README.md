@@ -19,6 +19,16 @@ Redis, ARQ workers. See `PLAN.md` for the full build plan and phase gates.
    This starts Postgres (persistent named volume — survives restarts and
    rebuilds), Redis, the API with hot reload, and a worker placeholder.
 
+   **CPU on Windows/Mac:** the API's hot reload watches files on the bind-mounted folder, which
+   is slow there, so the API idles at roughly 5% of a core (it was about 18% when it watched the
+   whole project; it is 1% with reload off). It now watches only `backend/app`. The worker has no
+   file watcher and idles near 0%. `docker stats` can show a wildly high one-off number for a
+   container; trust a few seconds of its streamed output (`docker stats`, no `--no-stream`).
+   To pick up a change to `docker-compose.yml`, run `docker compose up -d api` (recreates only
+   the API). To turn reload off completely, run the API without it:
+   `docker compose run --rm --service-ports api uv run uvicorn app.main:app --host 0.0.0.0 --port 8000`.
+   Changes in `backend/migrations` or `backend/tests` do not restart the API.
+
 3. Check it's alive:
    ```bash
    curl http://localhost:8000/health/live

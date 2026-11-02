@@ -33,10 +33,7 @@ export function PublicFooter() {
     <footer className="mt-20 border-t border-line bg-sunken/60">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div className="max-w-xs">
-          <div className="flex items-center gap-2.5">
-            <Logo size={32} tone="dark" />
-            <span className="font-bold tracking-wide">ALUMNI CHALLENGE</span>
-          </div>
+          <Logo variant="full" size={48} alt="Alumni Challenge" />
           <p className="mt-3 text-small text-muted">Where alumni of Kenyan schools meet, connect and belong.</p>
         </div>
         {COLUMNS.map((c) => (

@@ -128,14 +128,15 @@ export function ConfirmDialog({ open, title, body, confirmLabel, danger = false,
 
 const REASON_MAX = 500;
 
-/** A required reason of 1 to 500 characters (reports, suspend, reactivate). */
-export function ReasonDialog({ open, title, body, label = "Reason", confirmLabel, danger = false, onSubmit, onClose }: {
+/** A required reason of `minLength` (default 1) to 500 characters (reports, suspend, reactivate, cancel an event). */
+export function ReasonDialog({ open, title, body, label = "Reason", confirmLabel, danger = false, minLength = 1, onSubmit, onClose }: {
   open: boolean;
   title: string;
   body?: React.ReactNode;
   label?: string;
   confirmLabel: string;
   danger?: boolean;
+  minLength?: number;
   onSubmit: (reason: string) => Promise<unknown>;
   onClose: () => void;
 }) {
@@ -152,7 +153,7 @@ export function ReasonDialog({ open, title, body, label = "Reason", confirmLabel
   }
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!trimmed) return;
+    if (trimmed.length < minLength) return;
     setBusy(true);
     setError(null);
     try {
@@ -174,7 +175,7 @@ export function ReasonDialog({ open, title, body, label = "Reason", confirmLabel
       footer={
         <>
           <Button variant="secondary" onClick={close} disabled={busy}>Cancel</Button>
-          <Button type="submit" form={`${id}-form`} variant={danger ? "danger" : "primary"} loading={busy} disabled={!trimmed}>
+          <Button type="submit" form={`${id}-form`} variant={danger ? "danger" : "primary"} loading={busy} disabled={trimmed.length < minLength}>
             {confirmLabel}
           </Button>
         </>
@@ -182,7 +183,7 @@ export function ReasonDialog({ open, title, body, label = "Reason", confirmLabel
     >
       <form id={`${id}-form`} onSubmit={submit} className="space-y-4">
         {body && <div className="text-small text-muted">{body}</div>}
-        <Field label={label} htmlFor={`${id}-reason`} hint={`${trimmed.length} of ${REASON_MAX} characters`}>
+        <Field label={label} htmlFor={`${id}-reason`} hint={minLength > 1 ? `At least ${minLength} characters. ${trimmed.length} of ${REASON_MAX}.` : `${trimmed.length} of ${REASON_MAX} characters`}>
           <Textarea
             id={`${id}-reason`}
             value={reason}

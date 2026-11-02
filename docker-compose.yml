@@ -63,6 +63,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: development
     restart: unless-stopped
     env_file:
       - ./backend/.env
@@ -91,12 +92,13 @@ services:
       redis:
         condition: service_healthy
     command: >
-      uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app
 
   worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: development
     restart: unless-stopped
     env_file:
       - ./backend/.env

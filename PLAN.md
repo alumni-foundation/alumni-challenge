@@ -132,6 +132,48 @@ Builder: solo. Status key: `[ ]` not done, `[x]` done.
 
 **Gate:** the concurrency test passes repeatedly. Sports and golf reuse this exact pattern.
 
+**Gate result (GitHub Actions run 40100899799, `.github/workflows/load-gate.yml`, 2 API workers, Postgres 17, Redis 7):**
+- Concurrency test with `CONCURRENCY_ROUNDS=20`: 10 passed, 0 failed, 89.5 s.
+- Load script, 10 runs in a row, about 3,300 requests each (3,000 people plus about 10% repeat sends with the same idempotency key), 200 in flight, 6 slots, 450 seats, 60% of people aiming at the 100-seat slot: **10 of 10 runs clean. No run where seats did not add up.** Every run ended with all 450 seats booked, no slot over capacity, every counter equal to a recount of the real bookings, accepted bookings equal to database rows, nobody holding two active bookings, no server error.
+- Every run, in full (a booking request is one person asking for 1 to 4 seats; each run is 3,000 people plus about 10% repeat sends with the same idempotency key; the server error count was 0 in every run):
+
+| Run | Requests sent | Accepted (201) | Rejected as expected (sold out / repeat in flight) | Overbooked slots | Counter mismatches | Seats booked / capacity | Requests/s | p95 ms | Client read errors |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 3311 | 257 | 3054 (3021 / 33) | 0 | 0 | 450 / 450 | 91 | 4397 | 0 |
+| 2 | 3305 | 245 | 3060 (3033 / 27) | 0 | 0 | 450 / 450 | 85 | 4941 | 0 |
+| 3 | 3300 | 243 | 3057 (3025 / 32) | 0 | 0 | 450 / 450 | 96 | 3223 | 0 |
+| 4 | 3258 | 251 | 3006 (2975 / 31) | 0 | 0 | 450 / 450 | 84 | 5086 | 1 |
+| 5 | 3301 | 272 | 3029 (2998 / 31) | 0 | 0 | 450 / 450 | 86 | 4647 | 0 |
+| 6 | 3309 | 263 | 3045 (3009 / 36) | 0 | 0 | 450 / 450 | 79 | 6380 | 1 |
+| 7 | 3331 | 265 | 3066 (3028 / 38) | 0 | 0 | 450 / 450 | 95 | 3492 | 0 |
+| 8 | 3314 | 256 | 3057 (3020 / 37) | 0 | 0 | 450 / 450 | 87 | 5001 | 1 |
+| 9 | 3290 | 244 | 3046 (3012 / 34) | 0 | 0 | 450 / 450 | 102 | 3176 | 0 |
+| 10 | 3304 | 257 | 3047 (3012 / 35) | 0 | 0 | 450 / 450 | 81 | 6073 | 0 |
+
+- Concurrency test, 20 rounds (`CONCURRENCY_ROUNDS=20`, `tests/test_bookings_concurrency.py`): 10 tests passed, 0 failed, 89.5 s. Overbooked: none. Counter mismatches: none.
+- Speed: 79 to 102 requests/s; p50 1.3 to 2.2 s, p95 3.2 to 6.4 s, p99 4.4 to 8.8 s, slowest single request 11.4 s (200 at once on a shared 2-core runner).
+- Not a pass/fail item but recorded: 3 of the 10 runs (4, 6, 8) had one client-side `ReadError` each (a connection dropped on the load script's side; that one request has no answer). The checks above still held in those runs.
+- Not yet covered: slot-level waitlist promotion and the nightly counter check (slice 5.6), and payments (slice 5.5 and Phase 6). Re-run this gate after each.
+
+### Re-run on `backend/batch-1` (slice 5.5 payments, hash pool, keep-alive fix), GitHub Actions run 40112476038
+
+Same settings (2 workers, 200 in flight, 6 slots, 450 seats). Concurrency test, 20 rounds: **11 passed** (the 10 above plus the new confirm-versus-new-bookings race test), 84.4 s. Ten load runs: **0 overbooked, 0 counter mismatches, 450 / 450 seats every run, no problems reported, no client read errors.** (The load script is free-event only, so it does not exercise the payment path; the race test does.)
+
+| Run | Requests sent | Accepted (201) | Sold out (409) | Repeat in flight (409) | Requests/s | p95 ms | p99 ms | Slowest ms |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 3311 | 254 | 3029 | 28 | 103 | 3572 | 5505 | 7703 |
+| 2 | 3305 | 238 | 3035 | 32 | 110 | 3096 | 4245 | 5239 |
+| 3 | 3300 | 242 | 3022 | 36 | 101 | 3557 | 4815 | 5909 |
+| 4 | 3258 | 248 | 2979 | 31 | 100 | 4124 | 5657 | 7968 |
+| 5 | 3301 | 268 | 3009 | 24 | 87 | 4558 | 5850 | 7666 |
+| 6 | 3309 | 267 | 3004 | 38 | 103 | 3734 | 5229 | 6603 |
+| 7 | 3331 | 256 | 3045 | 30 | 96 | 4123 | 5722 | 7185 |
+| 8 | 3314 | 256 | 3023 | 35 | 95 | 4331 | 5953 | 8952 |
+| 9 | 3290 | 233 | 3025 | 32 | 93 | 4794 | 6036 | 7705 |
+| 10 | 3304 | 261 | 3005 | 38 | 99 | 3809 | 5148 | 7300 |
+
+The three client `ReadError`s of the first gate were a keep-alive race: the load script's client and uvicorn both closed idle connections after 5 s, so now and then the client sent on a connection the server was closing. Reproduced with uvicorn at equal 2 s timeouts on both sides (1 dropped request in 800) and not with the client's timeout shorter (0 in 800). Fixed by `--timeout-keep-alive 75` on the server and a 2 s idle limit in the script. This re-run had none. One clean run is consistent with the fix, not proof.
+
 ---
 
 ## PHASE 6: Payments (provider-agnostic, no M-Pesa yet)

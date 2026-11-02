@@ -39,6 +39,10 @@ export interface paths {
          *     optional dependencies (email provider, SMS, object storage) —
          *     per the doc's failure-isolation principle, those going down should
          *     never pull a healthy API instance out of the load balancer.
+         *
+         *     Redis is reported but does not decide readiness: with Redis down, sign-in and other
+         *     rate-limited writes fail, but reading profiles and events still works, and restarting
+         *     or removing every API instance would not bring Redis back.
          */
         get: operations["readiness_health_ready_get"];
         put?: never;
@@ -667,6 +671,600 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Events
+         * @description Upcoming published events you are allowed to see, soonest first. Signed-out visitors see
+         *     public events only. The total is in the X-Total-Count header.
+         */
+        get: operations["list_events_api_v1_events_get"];
+        put?: never;
+        /**
+         * Create Event
+         * @description Creates a draft. With no `slots`, one slot covering the whole event is made.
+         */
+        post: operations["create_event_api_v1_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Event */
+        get: operations["get_event_api_v1_events__event_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Event
+         * @description Only a draft can be deleted.
+         */
+        delete: operations["delete_event_api_v1_events__event_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Event */
+        patch: operations["update_event_api_v1_events__event_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Event */
+        post: operations["publish_event_api_v1_events__event_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close Event
+         * @description Stop taking bookings. Existing bookings are untouched.
+         */
+        post: operations["close_event_api_v1_events__event_id__close_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reopen Event */
+        post: operations["reopen_event_api_v1_events__event_id__reopen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Event */
+        post: operations["complete_event_api_v1_events__event_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Event */
+        post: operations["cancel_event_api_v1_events__event_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/poster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Poster
+         * @description Use an uploaded picture (purpose `event_poster`, uploaded for this organizer).
+         */
+        put: operations["set_poster_api_v1_events__event_id__poster_put"];
+        post?: never;
+        /** Remove Poster */
+        delete: operations["remove_poster_api_v1_events__event_id__poster_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Slot */
+        post: operations["add_slot_api_v1_events__event_id__slots_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/slots/{slot_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Slot */
+        delete: operations["delete_slot_api_v1_events__event_id__slots__slot_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Slot */
+        patch: operations["update_slot_api_v1_events__event_id__slots__slot_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Question */
+        post: operations["add_question_api_v1_events__event_id__questions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/questions/{question_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Question */
+        delete: operations["delete_question_api_v1_events__event_id__questions__question_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Question */
+        patch: operations["update_question_api_v1_events__event_id__questions__question_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/consents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Consent */
+        post: operations["add_consent_api_v1_events__event_id__consents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/consents/{consent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Consent */
+        delete: operations["delete_consent_api_v1_events__event_id__consents__consent_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Consent */
+        patch: operations["update_consent_api_v1_events__event_id__consents__consent_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Booking
+         * @description Books places. Free events confirm straight away; paid events hold the places for
+         *     `hold_minutes` while payment is made. Send a fresh `Idempotency-Key` per attempt and
+         *     re-send the same one when retrying after a timeout: you will get the same booking back.
+         */
+        post: operations["create_booking_api_v1_events__event_id__bookings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Bookings */
+        get: operations["my_bookings_api_v1_bookings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bookings/{booking_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Booking */
+        get: operations["get_booking_api_v1_bookings__booking_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bookings/{booking_id}/participants/{position}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Participant */
+        patch: operations["update_participant_api_v1_bookings__booking_id__participants__position__patch"];
+        trace?: never;
+    };
+    "/api/v1/bookings/{booking_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Booking */
+        post: operations["cancel_booking_api_v1_bookings__booking_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bookings/{booking_id}/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Booking Tickets
+         * @description The tickets of a booking: for the booker and the event's organizers.
+         */
+        get: operations["booking_tickets_api_v1_bookings__booking_id__tickets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bookings/{booking_id}/tickets/{position}/reissue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reissue Ticket
+         * @description Kills the old QR of one person's ticket and returns a new one (if a code leaked).
+         */
+        post: operations["reissue_ticket_api_v1_bookings__booking_id__tickets__position__reissue_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tickets/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Tickets
+         * @description Tickets for events that have not ended: those in bookings I made and those I claimed.
+         */
+        get: operations["my_tickets_api_v1_tickets_mine_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tickets/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim Ticket
+         * @description Attach the ticket from your emailed link to your own account. Repeating it is harmless.
+         */
+        post: operations["claim_ticket_api_v1_tickets_claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tickets/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Ticket
+         * @description The ticket page behind a QR code or an emailed link. No sign-in: the code is the
+         *     credential, so a player without an account can use it. A wrong or revoked code is a 404.
+         *     Per IP, 600 requests per 15 minutes: generous enough for a whole venue on one wifi network.
+         */
+        get: operations["get_ticket_api_v1_tickets__code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Registrations
+         * @description Everyone booked, with contact details and answers. For the people who run the event.
+         */
+        get: operations["registrations_api_v1_events__event_id__registrations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/registrations.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Registrations Csv
+         * @description The roster as a spreadsheet, one row per person. Audited; 5 an hour.
+         */
+        get: operations["registrations_csv_api_v1_events__event_id__registrations_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/tee-sheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tee Sheet
+         * @description Active bookings and their people grouped by time slot.
+         */
+        get: operations["tee_sheet_api_v1_events__event_id__tee_sheet_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check In
+         * @description Scan a ticket at the door. Scanning twice is not an error: the second answer is
+         *     `already_checked_in` with the first time. 404: not a ticket we issued. 409 `wrong_event`
+         *     or `void` (the booking was cancelled) name what is wrong.
+         */
+        post: operations["check_in_api_v1_events__event_id__check_in_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Message
+         * @description Email everyone with a confirmed booking (or just one slot). You get a count back, never
+         *     their addresses. 5 an hour.
+         */
+        post: operations["send_message_api_v1_events__event_id__messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/event-series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Series
+         * @description The series of the organizations you run events for (to pick one when making a round).
+         */
+        get: operations["my_series_api_v1_event_series_get"];
+        put?: never;
+        /** Create Series */
+        post: operations["create_series_api_v1_event_series_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/event-series/{series_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Series */
+        get: operations["get_series_api_v1_event_series__series_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/files": {
         parameters: {
             query?: never;
@@ -1139,6 +1737,27 @@ export interface components {
             company?: string | null;
             profile_visibility?: components["schemas"]["ProfileVisibility"] | null;
         };
+        /** AnswerInput */
+        AnswerInput: {
+            /** Question Key */
+            question_key: string;
+            /**
+             * Position
+             * @default 1
+             */
+            position: number;
+            /** Value */
+            value: unknown;
+        };
+        /** AnswerOut */
+        AnswerOut: {
+            /** Question Key */
+            question_key: string;
+            /** Position */
+            position: number;
+            /** Value */
+            value: unknown;
+        };
         /** AuditLogEntryResponse */
         AuditLogEntryResponse: {
             /**
@@ -1180,6 +1799,162 @@ export interface components {
             /** File */
             file: string;
         };
+        /**
+         * BookingBrief
+         * @description The caller's own booking, shown on the event page.
+         */
+        BookingBrief: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Reference */
+            reference: string;
+            status: components["schemas"]["BookingStatus"];
+            /**
+             * Slot Id
+             * Format: uuid
+             */
+            slot_id: string;
+            /** Party Size */
+            party_size: number;
+            /** Hold Expires At */
+            hold_expires_at: string | null;
+        };
+        /** BookingConsentOut */
+        BookingConsentOut: {
+            /** Key */
+            key: string;
+            /** Version */
+            version: number;
+            /**
+             * Accepted At
+             * Format: date-time
+             */
+            accepted_at: string;
+        };
+        /** BookingCreate */
+        BookingCreate: {
+            /**
+             * Slot Id
+             * Format: uuid
+             */
+            slot_id: string;
+            /** Participants */
+            participants: components["schemas"]["ParticipantInput"][];
+            /** Answers */
+            answers?: components["schemas"]["AnswerInput"][];
+            /** Accepted Consents */
+            accepted_consents?: string[];
+            /**
+             * Others Consent Confirmed
+             * @default false
+             */
+            others_consent_confirmed: boolean;
+        };
+        /** BookingEventInfo */
+        BookingEventInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            category: components["schemas"]["EventCategory"];
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Venue Name */
+            venue_name: string | null;
+            /** Poster Url */
+            poster_url: string | null;
+        };
+        /** BookingOut */
+        BookingOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Reference */
+            reference: string;
+            status: components["schemas"]["BookingStatus"];
+            event: components["schemas"]["BookingEventInfo"];
+            slot: components["schemas"]["BookingSlotInfo"];
+            /** Party Size */
+            party_size: number;
+            /** Unit Price Minor */
+            unit_price_minor: number;
+            /** Amount Minor */
+            amount_minor: number;
+            /** Currency */
+            currency: string;
+            /** Hold Expires At */
+            hold_expires_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Confirmed At */
+            confirmed_at: string | null;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            /** Cancel Reason */
+            cancel_reason: string | null;
+            /** Can Cancel */
+            can_cancel: boolean;
+            /** Participants */
+            participants: components["schemas"]["ParticipantOut"][];
+            /** Answers */
+            answers: components["schemas"]["AnswerOut"][];
+            /** Consents */
+            consents: components["schemas"]["BookingConsentOut"][];
+        };
+        /** BookingSlotInfo */
+        BookingSlotInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+        };
+        /**
+         * BookingStatus
+         * @enum {string}
+         */
+        BookingStatus: "pending_payment" | "confirmed" | "waitlisted" | "expired" | "cancelled" | "refunded";
+        /** CancelBookingRequest */
+        CancelBookingRequest: {
+            /** Reason */
+            reason?: string | null;
+        };
+        /** CancelEventRequest */
+        CancelEventRequest: {
+            /** Reason */
+            reason: string;
+        };
         /** ChangePasswordRequest */
         ChangePasswordRequest: {
             /** Current Password */
@@ -1195,6 +1970,41 @@ export interface components {
             message: string;
             /** Sessions Revoked */
             sessions_revoked: number;
+        };
+        /** CheckInRequest */
+        CheckInRequest: {
+            /** Code */
+            code: string;
+        };
+        /** CheckInResult */
+        CheckInResult: {
+            /** Result */
+            result: string;
+            /** Holder Name */
+            holder_name: string;
+            /** Position */
+            position: number;
+            /** Booking Reference */
+            booking_reference: string;
+            slot: components["schemas"]["BookingSlotInfo"];
+            /** Party Size */
+            party_size: number;
+            /** Checked In At */
+            checked_in_at: string | null;
+            /** First Scan By You */
+            first_scan_by_you: boolean;
+        };
+        /** ChoiceOption */
+        ChoiceOption: {
+            /** Value */
+            value: string;
+            /** Label */
+            label: string;
+        };
+        /** ClaimTicketRequest */
+        ClaimTicketRequest: {
+            /** Code */
+            code: string;
         };
         /**
          * ConnectionListItem
@@ -1272,6 +2082,41 @@ export interface components {
          * @enum {string}
          */
         ConnectionStatus: "pending" | "accepted" | "declined" | "removed" | "blocked";
+        /** ConsentCreate */
+        ConsentCreate: {
+            /** Key */
+            key: string;
+            /** Text */
+            text: string;
+            /**
+             * Required
+             * @default true
+             */
+            required: boolean;
+        };
+        /** ConsentOut */
+        ConsentOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Text */
+            text: string;
+            /** Version */
+            version: number;
+            /** Required */
+            required: boolean;
+        };
+        /** ConsentUpdate */
+        ConsentUpdate: {
+            /** Text */
+            text?: string | null;
+            /** Required */
+            required?: boolean | null;
+        };
         /** DeleteAccountRequest */
         DeleteAccountRequest: {
             /** Password */
@@ -1297,6 +2142,263 @@ export interface components {
             /** Domain */
             domain: string;
         };
+        /**
+         * EventCategory
+         * @enum {string}
+         */
+        EventCategory: "homecoming" | "golf_tournament" | "sports" | "networking" | "forum" | "mentorship" | "leadership" | "philanthropy" | "other";
+        /** EventCreate */
+        EventCreate: {
+            /**
+             * Organization Id
+             * @description null means the platform itself runs the event
+             */
+            organization_id?: string | null;
+            /** Series Id */
+            series_id?: string | null;
+            /** Round Number */
+            round_number?: number | null;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            category: components["schemas"]["EventCategory"];
+            /** @default public */
+            visibility: components["schemas"]["EventVisibility"];
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Venue Name */
+            venue_name?: string | null;
+            /** Venue Address */
+            venue_address?: string | null;
+            /** Registration Opens At */
+            registration_opens_at?: string | null;
+            /** Registration Closes At */
+            registration_closes_at?: string | null;
+            /**
+             * Price Minor
+             * @default 0
+             */
+            price_minor: number;
+            /**
+             * Currency
+             * @default KES
+             * @constant
+             */
+            currency: "KES";
+            /**
+             * Max Party Size
+             * @default 1
+             */
+            max_party_size: number;
+            /**
+             * Hold Minutes
+             * @default 15
+             */
+            hold_minutes: number;
+            /**
+             * Waitlist Enabled
+             * @default false
+             */
+            waitlist_enabled: boolean;
+            /**
+             * Show Attendee List
+             * @default true
+             */
+            show_attendee_list: boolean;
+            /** Contact Email */
+            contact_email?: string | null;
+            /** Contact Phone */
+            contact_phone?: string | null;
+            /** Refund Policy Text */
+            refund_policy_text?: string | null;
+            /**
+             * Reminder Hours Before
+             * @default 24
+             */
+            reminder_hours_before: number;
+            /** Capacity */
+            capacity?: number | null;
+            /** Slots */
+            slots?: components["schemas"]["SlotInput"][];
+        };
+        /** EventDetail */
+        EventDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            category: components["schemas"]["EventCategory"];
+            status: components["schemas"]["EventStatus"];
+            visibility: components["schemas"]["EventVisibility"];
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Venue Name */
+            venue_name: string | null;
+            /** Poster Url */
+            poster_url: string | null;
+            organizer: components["schemas"]["OrganizerInfo"] | null;
+            /** Price Minor */
+            price_minor: number;
+            /** Currency */
+            currency: string;
+            /** Max Party Size */
+            max_party_size: number;
+            series: components["schemas"]["SeriesInfo"] | null;
+            /** Going Count */
+            going_count: number;
+            /** Spots Left */
+            spots_left: number | null;
+            /** Availability */
+            availability: string;
+            registration: components["schemas"]["RegistrationInfo"];
+            /** Description */
+            description: string | null;
+            /** Venue Address */
+            venue_address: string | null;
+            /** Contact Email */
+            contact_email: string | null;
+            /** Contact Phone */
+            contact_phone: string | null;
+            /** Refund Policy Text */
+            refund_policy_text: string | null;
+            /** Waitlist Enabled */
+            waitlist_enabled: boolean;
+            /** Show Attendee List */
+            show_attendee_list: boolean;
+            /** Reminder Hours Before */
+            reminder_hours_before: number;
+            /** Hold Minutes */
+            hold_minutes: number;
+            /** Slots */
+            slots: components["schemas"]["SlotOut"][];
+            /** Questions */
+            questions: components["schemas"]["QuestionOut"][];
+            /** Consents */
+            consents: components["schemas"]["ConsentOut"][];
+            /** Can Manage */
+            can_manage: boolean;
+            my_booking?: components["schemas"]["BookingBrief"] | null;
+        };
+        /**
+         * EventStatus
+         * @enum {string}
+         */
+        EventStatus: "draft" | "published" | "closed" | "cancelled" | "completed";
+        /** EventSummary */
+        EventSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            category: components["schemas"]["EventCategory"];
+            status: components["schemas"]["EventStatus"];
+            visibility: components["schemas"]["EventVisibility"];
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Venue Name */
+            venue_name: string | null;
+            /** Poster Url */
+            poster_url: string | null;
+            organizer: components["schemas"]["OrganizerInfo"] | null;
+            /** Price Minor */
+            price_minor: number;
+            /** Currency */
+            currency: string;
+            /** Max Party Size */
+            max_party_size: number;
+            series: components["schemas"]["SeriesInfo"] | null;
+            /** Going Count */
+            going_count: number;
+            /** Spots Left */
+            spots_left: number | null;
+            /** Availability */
+            availability: string;
+            registration: components["schemas"]["RegistrationInfo"];
+        };
+        /**
+         * EventUpdate
+         * @description Only fields that make sense to change. Organization, status and money-state never.
+         */
+        EventUpdate: {
+            /** Series Id */
+            series_id?: string | null;
+            /** Round Number */
+            round_number?: number | null;
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            category?: components["schemas"]["EventCategory"] | null;
+            visibility?: components["schemas"]["EventVisibility"] | null;
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /** Venue Name */
+            venue_name?: string | null;
+            /** Venue Address */
+            venue_address?: string | null;
+            /** Registration Opens At */
+            registration_opens_at?: string | null;
+            /** Registration Closes At */
+            registration_closes_at?: string | null;
+            /** Price Minor */
+            price_minor?: number | null;
+            /** Currency */
+            currency?: "KES" | null;
+            /** Max Party Size */
+            max_party_size?: number | null;
+            /** Hold Minutes */
+            hold_minutes?: number | null;
+            /** Waitlist Enabled */
+            waitlist_enabled?: boolean | null;
+            /** Show Attendee List */
+            show_attendee_list?: boolean | null;
+            /** Contact Email */
+            contact_email?: string | null;
+            /** Contact Phone */
+            contact_phone?: string | null;
+            /** Refund Policy Text */
+            refund_policy_text?: string | null;
+            /** Reminder Hours Before */
+            reminder_hours_before?: number | null;
+        };
+        /**
+         * EventVisibility
+         * @enum {string}
+         */
+        EventVisibility: "public" | "members_only";
         /**
          * FilePurpose
          * @description What an upload is for. Each purpose has its own rules in files/policies.py.
@@ -1409,6 +2511,30 @@ export interface components {
          * @enum {string}
          */
         MembershipStatus: "active" | "revoked";
+        /** MessageCreate */
+        MessageCreate: {
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
+            /** Slot Id */
+            slot_id?: string | null;
+        };
+        /** MessageOut */
+        MessageOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Recipient Count */
+            recipient_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** MessageResponse */
         MessageResponse: {
             /** Message */
@@ -1469,6 +2595,59 @@ export interface components {
             /** Description */
             description?: string | null;
         };
+        /** OrganizerInfo */
+        OrganizerInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            type: components["schemas"]["OrganizationType"];
+        };
+        /** ParticipantInput */
+        ParticipantInput: {
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /**
+             * Listed
+             * @default true
+             */
+            listed: boolean;
+        };
+        /** ParticipantOut */
+        ParticipantOut: {
+            /** Position */
+            position: number;
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email: string | null;
+            /** Phone */
+            phone: string | null;
+            /** Listed */
+            listed: boolean;
+            /** Claimed */
+            claimed: boolean;
+        };
+        /** ParticipantUpdate */
+        ParticipantUpdate: {
+            /** Full Name */
+            full_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Listed */
+            listed?: boolean | null;
+        };
         /** PasswordForgotRequest */
         PasswordForgotRequest: {
             /**
@@ -1493,6 +2672,75 @@ export interface components {
          * @enum {string}
          */
         ProfileVisibility: "public" | "members_only" | "connections_only" | "private";
+        /**
+         * QuestionAskedOf
+         * @enum {string}
+         */
+        QuestionAskedOf: "booker" | "each_participant";
+        /** QuestionCreate */
+        QuestionCreate: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            kind: components["schemas"]["QuestionKind"];
+            /** Options */
+            options?: components["schemas"]["ChoiceOption"][] | null;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /** @default booker */
+            asked_of: components["schemas"]["QuestionAskedOf"];
+            /**
+             * Position
+             * @default 0
+             */
+            position: number;
+        };
+        /**
+         * QuestionKind
+         * @enum {string}
+         */
+        QuestionKind: "text" | "long_text" | "number" | "boolean" | "choice" | "multi_choice" | "school";
+        /** QuestionOut */
+        QuestionOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            kind: components["schemas"]["QuestionKind"];
+            /** Options */
+            options: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Required */
+            required: boolean;
+            asked_of: components["schemas"]["QuestionAskedOf"];
+            /** Position */
+            position: number;
+        };
+        /**
+         * QuestionUpdate
+         * @description The key and kind never change; delete and recreate while nobody has answered.
+         */
+        QuestionUpdate: {
+            /** Label */
+            label?: string | null;
+            /** Options */
+            options?: components["schemas"]["ChoiceOption"][] | null;
+            /** Required */
+            required?: boolean | null;
+            asked_of?: components["schemas"]["QuestionAskedOf"] | null;
+            /** Position */
+            position?: number | null;
+        };
         /** RefreshRequest */
         RefreshRequest: {
             /** Refresh Token */
@@ -1512,6 +2760,48 @@ export interface components {
              * @description Must be true — self-attestation that the user is 18 or older. The platform does not accept registrations from minors.
              */
             confirm_18_or_older: boolean;
+        };
+        /**
+         * RegistrationInfo
+         * @description Whether booking is possible now. `state` is one of: draft, cancelled, ended, closed,
+         *     not_open_yet, open.
+         */
+        RegistrationInfo: {
+            /** State */
+            state: string;
+            /** Opens At */
+            opens_at: string | null;
+            /** Closes At */
+            closes_at: string | null;
+        };
+        /** RegistrationRow */
+        RegistrationRow: {
+            /**
+             * Booking Id
+             * Format: uuid
+             */
+            booking_id: string;
+            /** Reference */
+            reference: string;
+            status: components["schemas"]["BookingStatus"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            slot: components["schemas"]["BookingSlotInfo"];
+            /** Party Size */
+            party_size: number;
+            /** Amount Minor */
+            amount_minor: number;
+            /** Currency */
+            currency: string;
+            /** Booker Name */
+            booker_name: string;
+            /** Participants */
+            participants: components["schemas"]["RosterParticipant"][];
+            /** Answers */
+            answers: components["schemas"]["AnswerOut"][];
         };
         /** ReportCreate */
         ReportCreate: {
@@ -1608,6 +2898,94 @@ export interface components {
              */
             joined_at: string;
         };
+        /** RosterParticipant */
+        RosterParticipant: {
+            /** Position */
+            position: number;
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email: string | null;
+            /** Phone */
+            phone: string | null;
+            /** Listed */
+            listed: boolean;
+            /** Claimed */
+            claimed: boolean;
+            /** Ticket Status */
+            ticket_status: string | null;
+            /** Checked In At */
+            checked_in_at: string | null;
+        };
+        /** SeriesCreate */
+        SeriesCreate: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+        };
+        /** SeriesDetail */
+        SeriesDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Organization Id */
+            organization_id: string | null;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            /** Rounds */
+            rounds: components["schemas"]["SeriesRound"][];
+        };
+        /** SeriesInfo */
+        SeriesInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Round Number */
+            round_number: number;
+        };
+        /** SeriesOut */
+        SeriesOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Organization Id */
+            organization_id: string | null;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+        };
+        /** SeriesRound */
+        SeriesRound: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Round Number */
+            round_number: number;
+            /** Title */
+            title: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            status: components["schemas"]["EventStatus"];
+        };
         /** SessionResponse */
         SessionResponse: {
             /**
@@ -1646,6 +3024,14 @@ export interface components {
              */
             file_id: string;
         };
+        /** SetPosterRequest */
+        SetPosterRequest: {
+            /**
+             * File Id
+             * Format: uuid
+             */
+            file_id: string;
+        };
         /**
          * SetTagsRequest
          * @description Full replacement list of skills or interests: trimmed, lowercased, de-duplicated.
@@ -1654,10 +3040,136 @@ export interface components {
             /** Names */
             names: string[];
         };
+        /** SlotInput */
+        SlotInput: {
+            /** Label */
+            label?: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Capacity */
+            capacity?: number | null;
+            /**
+             * Position
+             * @default 0
+             */
+            position: number;
+        };
+        /** SlotOut */
+        SlotOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Label */
+            label: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Capacity */
+            capacity: number | null;
+            /** Seats Confirmed */
+            seats_confirmed: number;
+            /** Seats Held */
+            seats_held: number;
+            /** Position */
+            position: number;
+            /** Spots Left */
+            spots_left: number | null;
+            /** Availability */
+            availability: string;
+        };
+        /** SlotUpdate */
+        SlotUpdate: {
+            /** Label */
+            label?: string | null;
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /** Capacity */
+            capacity?: number | null;
+            /** Position */
+            position?: number | null;
+        };
         /** StatusChangeRequest */
         StatusChangeRequest: {
             /** Reason */
             reason: string;
+        };
+        /** TeeSheetSlot */
+        TeeSheetSlot: {
+            slot: components["schemas"]["BookingSlotInfo"];
+            /** Capacity */
+            capacity: number | null;
+            /** Seats Confirmed */
+            seats_confirmed: number;
+            /** Seats Held */
+            seats_held: number;
+            /** Bookings */
+            bookings: components["schemas"]["RegistrationRow"][];
+        };
+        /** TicketEventInfo */
+        TicketEventInfo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Venue Name */
+            venue_name: string | null;
+            /** Venue Address */
+            venue_address: string | null;
+        };
+        /**
+         * TicketOut
+         * @description A ticket as shown to its holder. `code` is what the QR encodes: draw the QR from it in
+         *     the app. `status` is valid, checked_in or void (void whenever the booking is not confirmed).
+         */
+        TicketOut: {
+            /** Code */
+            code: string;
+            /** Status */
+            status: string;
+            /** Holder Name */
+            holder_name: string;
+            /** Position */
+            position: number;
+            /** Booking Reference */
+            booking_reference: string;
+            event: components["schemas"]["TicketEventInfo"];
+            slot: components["schemas"]["BookingSlotInfo"];
+            /** Checked In At */
+            checked_in_at: string | null;
+            /** Claimed */
+            claimed: boolean;
         };
         /** TokenPair */
         TokenPair: {
@@ -2889,6 +4401,1276 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_events_api_v1_events_get: {
+        parameters: {
+            query?: {
+                category?: components["schemas"]["EventCategory"] | null;
+                organization_id?: string | null;
+                series_id?: string | null;
+                starts_after?: string | null;
+                starts_before?: string | null;
+                q?: string | null;
+                /** @description Events that have already ended */
+                past?: boolean;
+                /** @description The events you run, drafts and cancelled ones included. Needs sign-in. */
+                manage?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_event_api_v1_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_event_api_v1_events__event_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_event_api_v1_events__event_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_event_api_v1_events__event_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_event_api_v1_events__event_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_event_api_v1_events__event_id__close_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reopen_event_api_v1_events__event_id__reopen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_event_api_v1_events__event_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_event_api_v1_events__event_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelEventRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_poster_api_v1_events__event_id__poster_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPosterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_poster_api_v1_events__event_id__poster_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_slot_api_v1_events__event_id__slots_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_slot_api_v1_events__event_id__slots__slot_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+                slot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_slot_api_v1_events__event_id__slots__slot_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+                slot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_question_api_v1_events__event_id__questions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_question_api_v1_events__event_id__questions__question_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_question_api_v1_events__event_id__questions__question_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuestionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_consent_api_v1_events__event_id__consents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_consent_api_v1_events__event_id__consents__consent_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+                consent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_consent_api_v1_events__event_id__consents__consent_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+                consent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_booking_api_v1_events__event_id__bookings_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_bookings_api_v1_bookings_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["BookingStatus"] | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_booking_api_v1_bookings__booking_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_participant_api_v1_bookings__booking_id__participants__position__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+                position: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParticipantUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_booking_api_v1_bookings__booking_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelBookingRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    booking_tickets_api_v1_bookings__booking_id__tickets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reissue_ticket_api_v1_bookings__booking_id__tickets__position__reissue_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+                position: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_tickets_api_v1_tickets_mine_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketOut"][];
+                };
+            };
+        };
+    };
+    claim_ticket_api_v1_tickets_claim_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimTicketRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ticket_api_v1_tickets__code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    registrations_api_v1_events__event_id__registrations_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["BookingStatus"] | null;
+                slot_id?: string | null;
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationRow"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    registrations_csv_api_v1_events__event_id__registrations_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tee_sheet_api_v1_events__event_id__tee_sheet_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeeSheetSlot"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_in_api_v1_events__event_id__check_in_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_message_api_v1_events__event_id__messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_series_api_v1_event_series_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeriesOut"][];
+                };
+            };
+        };
+    };
+    create_series_api_v1_event_series_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeriesCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeriesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_series_api_v1_event_series__series_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                series_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeriesDetail"];
+                };
             };
             /** @description Validation Error */
             422: {

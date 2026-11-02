@@ -15,6 +15,7 @@ from app.modules.audit.models import AuditLogEntry
 from app.modules.events import service as events_service
 from app.modules.events.models import Event, EventSlot, EventStatus
 from app.modules.organizations.models import Organization, OrganizationType
+from tests.payee import payee_id
 from tests.test_alumni_privacy import Actor, _grant, _make_actor, _make_school
 from tests.test_file_upload import _encode, _photo, _upload
 
@@ -71,6 +72,8 @@ async def _published(
     client: AsyncClient, db: AsyncSession, **over: Any
 ) -> tuple[Organization, Actor, dict[str, Any]]:
     school, admin = await _run_school(client, db, Role.SCHOOL_ADMIN)
+    if over.get("price_minor", 0) > 0:
+        over.setdefault("payment_account_id", await payee_id(db, school.id))
     ev = await _create(client, admin, school, **over)
     r = await _publish(client, admin, ev["id"])
     assert r.status_code == 200, r.text
@@ -551,6 +554,7 @@ async def test_a_golf_style_event_has_four_slots_with_their_own_capacity(
         price_minor=350000,
         max_party_size=4,
         slots=slots,
+        payment_account_id=await payee_id(db_session, school.id),
     )
     assert [s["capacity"] for s in ev["slots"]] == [40, 40, 40, 40]
     assert ev["spots_left"] == 160

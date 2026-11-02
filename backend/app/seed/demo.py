@@ -11,7 +11,7 @@ Running it again changes nothing that already exists. Demo events live in demo_e
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -176,6 +176,14 @@ async def _ensure_profile(
     return profile
 
 
+def _signup_time(index: int) -> datetime:
+    """A sign-up time within the last 60 days, different for each demo member, never in the
+    future (at least an hour ago), so the dashboard's sign-up chart and "new members" look real."""
+    days = (index * 7) % 60
+    hours = 1 + (index * 5) % 23
+    return datetime.now(UTC) - timedelta(days=days, hours=hours)
+
+
 def _verification_for(index: int) -> tuple[VerificationStatus, VerificationMethod | None]:
     if index % 3 == 0:
         return VerificationStatus.VERIFIED, VerificationMethod.ADMIN
@@ -321,6 +329,8 @@ async def seed_demo(
             verification=_verification_for(i),
             index=i,
         )
+        signed_up = _signup_time(i)
+        user.created_at = profile.created_at = profile.updated_at = signed_up
         alumni.append((user, profile))
 
     # A little social graph: accepted, pending, declined and blocked connections.

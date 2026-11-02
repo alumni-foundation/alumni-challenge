@@ -5,8 +5,9 @@ from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from app.modules.bookings.models import BookingStatus
+from app.modules.bookings.models import BookingStatus, ManualPaymentState
 from app.modules.events.models import EventCategory
+from app.modules.payments.schemas import PayeeInfo
 
 _PHONE_RE = re.compile(r"^\+?[0-9]{7,15}$")
 
@@ -128,6 +129,24 @@ class BookingSlotInfo(BaseModel):
     ends_at: datetime
 
 
+class BookingPaymentOut(BaseModel):
+    """How to pay for this booking by hand, and where that payment stands."""
+
+    payee: PayeeInfo
+    # The booking reference, to type as the account number when paying a paybill. A till has no
+    # account number, so this is null there: the M-Pesa code is how the payment is matched.
+    account_reference: str | None
+    state: ManualPaymentState | None
+    code: str | None
+    submitted_at: datetime | None
+    decided_at: datetime | None
+    # Why the organizer could not match the payment (only while it is rejected).
+    rejection_reason: str | None
+    # True when an organizer marked it paid with no M-Pesa code.
+    marked_paid_by_hand: bool = False
+    can_submit_code: bool
+
+
 class BookingOut(BaseModel):
     id: uuid.UUID
     reference: str
@@ -147,6 +166,8 @@ class BookingOut(BaseModel):
     participants: list[ParticipantOut]
     answers: list[AnswerOut]
     consents: list[BookingConsentOut]
+    # Null for a free event, or a paid one with no payment account set.
+    payment: BookingPaymentOut | None = None
 
 
 class BookingBrief(BaseModel):
@@ -221,6 +242,19 @@ class RosterParticipant(BaseModel):
     checked_in_at: datetime | None
 
 
+class RegistrationPayment(BaseModel):
+    """The organizer's view of a hand-made payment: the code to look for in M-Pesa."""
+
+    state: ManualPaymentState | None
+    code: str | None
+    submitted_at: datetime | None
+    decided_at: datetime | None
+    rejection_reason: str | None
+    marked_paid_by_hand: bool = False
+    # The reason the organizer gave when marking it paid by hand, or the note on a refund.
+    note: str | None = None
+
+
 class RegistrationRow(BaseModel):
     booking_id: uuid.UUID
     reference: str
@@ -233,6 +267,41 @@ class RegistrationRow(BaseModel):
     booker_name: str
     participants: list[RosterParticipant]
     answers: list[AnswerOut]
+    payment: RegistrationPayment | None = None
+
+
+class PaymentReferenceRequest(BaseModel):
+    """The M-Pesa confirmation code from the payment message, for example `SGK7F5X2QW`."""
+
+    code: str = Field(max_length=40)
+
+    @field_validator("code")
+    @classmethod
+    def _code(cls, v: str) -> str:
+        code = v.strip().upper()
+        if not re.fullmatch(r"[A-Z0-9]{8,12}", code):
+            raise ValueError(
+                "The M-Pesa code is 8 to 12 letters and numbers, as in the payment message."
+            )
+        return code
+
+
+class RejectPaymentRequest(BaseModel):
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class MarkPaidRequest(BaseModel):
+    reason: str = Field(min_length=3, max_length=500, description="Why no M-Pesa code (audited).")
+
+
+class MarkRefundedRequest(BaseModel):
+    note: str | None = Field(default=None, max_length=500)
+
+
+class OrganizerCancelRequest(BaseModel):
+    reason: str = Field(min_length=3, max_length=500)
+    # True when the person had paid and the organizer will give the money back.
+    refund: bool = False
 
 
 class TeeSheetSlot(BaseModel):

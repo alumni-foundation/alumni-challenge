@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export type Icon3DTone = "ember" | "gold" | "moss" | "sky" | "ink";
+export type Icon3DTone = "ember" | "gold" | "moss" | "sky" | "ink" | "paper";
 export type Icon3DSize = "sm" | "md" | "lg";
 
 // Tile size in px and the icon's share of it. The look itself lives in globals.css (.icon3d).
@@ -16,6 +16,8 @@ type Props = {
   size?: Icon3DSize;
   /** Draws the pressed look without a click, for showing the state. */
   pressed?: boolean;
+  /** Draws the hover look without a pointer, for showing the state. */
+  hover?: boolean;
   className?: string;
 } & ({ onClick: () => void; label: string } | { onClick?: undefined; label?: undefined });
 
@@ -24,12 +26,13 @@ type Props = {
  * faint grain. Decorative by default (aria-hidden). Pass onClick and a label to make it a button
  * with a real pressed state.
  */
-export function Icon3D({ icon: Icon, tone = "ember", size = "md", pressed, className, onClick, label }: Props) {
+export function Icon3D({ icon: Icon, tone = "ember", size = "md", pressed, hover, className, onClick, label }: Props) {
   const s = SIZES[size];
   const common = {
     className: cn("icon3d", className),
     "data-tone": tone,
     "data-pressed": pressed ? "true" : undefined,
+    "data-hover": hover ? "true" : undefined,
     style: { width: s.box, height: s.box },
   };
   const glyph = <Icon width={s.icon} height={s.icon} strokeWidth={2} aria-hidden />;

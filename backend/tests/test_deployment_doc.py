@@ -74,6 +74,7 @@ def test_the_documented_defaults_match_the_code() -> None:
         "DATABASE_POOL_SIZE": "10",
         "DATABASE_MAX_OVERFLOW": "5",
         "ACCESS_TOKEN_EXPIRE_MINUTES": "15",
+        "PASSWORD_HASH_CONCURRENCY": "2",
         "REFRESH_TOKEN_EXPIRE_DAYS": "30",
         "SENTRY_TRACES_SAMPLE_RATE": "0.1",
         "SMTP_PORT": "1025",

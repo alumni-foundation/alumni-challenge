@@ -72,6 +72,7 @@ from app.modules.identity.router import router as identity_router  # noqa: E402
 
 app.include_router(identity_router, prefix=settings.api_v1_prefix)
 
+from app.modules.admin_overview.router import router as admin_overview_router  # noqa: E402
 from app.modules.alumni.router import router as alumni_router  # noqa: E402
 from app.modules.audit.router import router as audit_router  # noqa: E402
 from app.modules.bookings import day_router  # noqa: E402
@@ -87,6 +88,7 @@ from app.modules.identity.self_service import router as self_service_router  # n
 from app.modules.memberships.router import router as roles_router  # noqa: E402
 from app.modules.moderation.router import router as moderation_router  # noqa: E402
 from app.modules.organizations.router import router as organizations_router  # noqa: E402
+from app.modules.payments.router import router as payments_router  # noqa: E402
 
 # Importing this module is what runs its @on(...) decorators and
 # registers the handlers — needed here too (not just in worker.py)
@@ -107,3 +109,5 @@ app.include_router(files_router, prefix=settings.api_v1_prefix)
 app.include_router(moderation_router, prefix=settings.api_v1_prefix)
 app.include_router(roles_router, prefix=settings.api_v1_prefix)
 app.include_router(organizations_router, prefix=settings.api_v1_prefix)
+app.include_router(payments_router, prefix=settings.api_v1_prefix)
+app.include_router(admin_overview_router, prefix=settings.api_v1_prefix)

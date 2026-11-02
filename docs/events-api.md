@@ -115,3 +115,64 @@ gave also gets their own link, as a separate queued email (a failed send retries
 | `GET /events/{id}/tee-sheet` | Active bookings grouped by slot (capacity, taken, people, answers). |
 | `POST /events/{id}/check-in` `{code}` | Scan a ticket. `result` is `checked_in` or `already_checked_in` (not an error; same `checked_in_at`). `404` not one of ours; `409 wrong_event` / `void`. |
 | `POST /events/{id}/messages` `{subject, body, slot_id?}` | Emails everyone with a confirmed booking (or one slot). Returns `recipient_count`, never addresses. **5 an hour.** One-line subject. |
+
+## Slice 5.5: paying by hand (manual M-Pesa)
+
+For paid events paid straight to the organizer's paybill or till, before any payment provider is
+connected. The person pays in M-Pesa, pastes the confirmation code from the message into the
+booking, and an organization admin matches it to a payment and confirms.
+
+### Payee: where the money goes
+| Method and path | Who | Notes |
+|---|---|---|
+| `POST /payment-accounts` `{organization_id, label, mpesa_kind: paybill\|till, shortcode_or_till}` | admin of that organization (platform admins for `organization_id: null`) | Number is 4 to 10 digits. `403` for event managers and others. 30 writes an hour. |
+| `GET /payment-accounts` | signed in | Only accounts of organizations I administer (all of them for platform admins). |
+| `PATCH /payment-accounts/{id}` `{label?, shortcode_or_till?, active?}` | admin of that organization | `404` for anyone else. The number cannot change once someone booked an event paid to it (`409 payment_account_in_use`); switch the account off and make a new one. |
+
+Events take `payment_account_id` on create and update (same organization, switched on; `422
+invalid_payee` / `payee_inactive`). It cannot change once anyone has booked
+(`409 event_has_bookings`). The event detail then has `payment: {method, kind, number,
+payee_name, currency}`: show it on the event page. **A paid event cannot be published without
+an active payee (`422 payee_required`).** `hold_minutes` above 60 (up to 2880, 48
+hours) is allowed only when the event has a payee (`422 hold_too_long` otherwise).
+
+### On every booking: `payment`
+`null` for a free event or one with no payee. Otherwise:
+`{payee: {kind, number, payee_name, ...}, account_reference, state, code, submitted_at,
+decided_at, rejection_reason, marked_paid_by_hand, can_submit_code}`.
+* **Paybill:** tell the person to type `account_reference` (the booking reference) as the account
+  number. **Till:** there is no account number (`account_reference` is `null`); the code they send
+  is how the payment is matched.
+* `state` is `null` (no code yet), `awaiting_confirmation`, `confirmed`, `rejected`,
+  `needs_refund` or `refunded`. `rejection_reason` is set only while `rejected`.
+* `can_submit_code` tells the app whether to show the code box. A code can also be sent after the
+  hold ran out or the booking was cancelled (the person may have paid anyway).
+
+### The booker
+`POST /bookings/{id}/payment-reference` `{code}`: trims and upper-cases; 8 to 12 letters and
+numbers (`422` otherwise). Returns the booking. Sending the same code again is harmless. `409`:
+`payment_code_used` (a code can belong to one booking, ever, across events; the message never says
+whose), `payment_already_submitted` (a different code is already waiting), `payment_not_accepted`
+(booking confirmed, refunded, waitlisted or event over), `not_manual_payment`. Only the booker:
+everyone else, organizers included, gets `404`. Limits: 10 an hour per account, 5 an hour per
+booking, 30 an hour per address (`429`). The booking **stays held**; sending a code does not
+confirm anything.
+
+### The organizer (organization admins; event managers get `403`, strangers `404`)
+| Method and path | Notes |
+|---|---|
+| `POST /bookings/{id}/confirm-manual` | Payment received. Held places become confirmed, tickets are made and the booker emailed. Repeating changes and sends nothing. **If the hold had run out:** places still free means it is confirmed again ("late payment accepted"); places gone, or the booking was cancelled, means the booking stays as it is and `payment.state` becomes `needs_refund`. Read `status` and `payment.state` in the answer. |
+| `POST /bookings/{id}/mark-paid` `{reason}` | The money arrived with no M-Pesa code (cash, a transfer). **A written reason, 3 to 500 characters, is required** and goes in the audit row. Settles exactly like a confirmed code, late-payment rules included. Afterwards `payment.marked_paid_by_hand` is `true` and `payment.code` is `null`. Repeating it changes nothing. `409 not_a_paid_booking` for a free booking; `409 payment_already_settled` once the payment is owed back or refunded. |
+| `POST /bookings/{id}/reject-manual` `{reason}` | The code matches no payment. Booking and hold stay as they are, the code is released, the booker is emailed the reason and may send another. |
+| `POST /bookings/{id}/mark-refunded` `{note?}` | The organizer sent the money back. Only from `needs_refund`. A cancelled booking that had been confirmed becomes `refunded`. |
+| `POST /bookings/{id}/organizer-cancel` `{reason, refund}` | Cancels and frees the places. `refund: true` on a confirmed payment moves it to `needs_refund`. |
+| `GET /events/{id}/payments?state=awaiting_confirmation\|needs_refund` | The money queue (default both), oldest first, same rows as registrations. `X-Total-Count`. |
+| `GET /events/{id}/registrations?payment_state=` | Rows now carry `payment: {state, code, submitted_at, decided_at, rejection_reason, marked_paid_by_hand, note}`; `q` also matches the M-Pesa code. |
+
+Cancelling an event moves every confirmed payment to `needs_refund`. Every confirm, reject,
+refund and late-payment decision writes an audit row for the organization.
+
+### Emails to the booker (only the booker, never other players)
+Code received; booking confirmed with tickets (the existing email; it says so when the payment came after the hold ended but the places were still free); code not matched (with the
+organizer's reason); payment arrived too late and a refund is coming; cancelled with a refund
+coming; refund sent.

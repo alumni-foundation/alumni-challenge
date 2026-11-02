@@ -1,0 +1,112 @@
+name: Booking load gate
+
+# The Phase 5 gate for anything involving money: the concurrency test for 20 rounds, then the
+# 3,000-booking load script ten times in a row. Run by hand (Actions -> Booking load gate -> Run
+# workflow). The numbers are also written as notices on the run, so they can be read without
+# downloading logs.
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: "Load runs in a row"
+        default: "10"
+      bookings:
+        description: "Bookings per run"
+        default: "3000"
+      concurrency:
+        description: "Requests in flight at once"
+        default: "200"
+  push:
+    branches: [backend/load-run, backend/batch-1]
+    paths: [.github/workflows/load-gate.yml, scripts/load_bookings.py]
+
+jobs:
+  load-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: alumni
+          POSTGRES_PASSWORD: alumni_test_password
+          POSTGRES_DB: alumni_challenge_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U alumni -d alumni_challenge_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      ENVIRONMENT: development
+      SECRET_KEY: ci-test-secret-key
+      DATABASE_URL: postgresql+asyncpg://alumni:alumni_test_password@localhost:5432/alumni_challenge_test
+      # Index 15, not 0: the load script refuses the default index.
+      REDIS_URL: redis://localhost:6379/15
+      MAIL_BACKEND: logging
+      STORAGE_BACKEND: local
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - run: uv python install 3.12
+      - run: uv sync --all-extras
+      - run: uv run alembic upgrade head
+
+      - name: Concurrency test, 20 rounds
+        env:
+          CONCURRENCY_ROUNDS: "20"
+        run: |
+          set -o pipefail
+          uv run pytest tests/test_bookings_concurrency.py -v -p no:cacheprovider | tee "$RUNNER_TEMP/concurrency.txt"
+          summary=$(tail -1 "$RUNNER_TEMP/concurrency.txt")
+          echo "::notice title=Concurrency test, 20 rounds::$summary"
+
+      - name: Load script, runs in a row
+        env:
+          RUNS: ${{ github.event.inputs.runs || '10' }}
+          BOOKINGS: ${{ github.event.inputs.bookings || '3000' }}
+          CONCURRENCY: ${{ github.event.inputs.concurrency || '200' }}
+        run: |
+          uv run uvicorn app.main:app --host 127.0.0.1 --port 8001 --workers 2 --no-access-log > "$RUNNER_TEMP/uvicorn.log" 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fs http://127.0.0.1:8001/health/live >/dev/null && break
+            sleep 1
+          done
+          set +e
+          uv run python ../scripts/load_bookings.py --api http://127.0.0.1:8001 \
+            --runs "$RUNS" --bookings "$BOOKINGS" --concurrency "$CONCURRENCY" | tee "$RUNNER_TEMP/load.txt"
+          rc=${PIPESTATUS[0]}
+          grep '^{' "$RUNNER_TEMP/load.txt" | while IFS= read -r line; do
+            echo "::notice title=Load run::$line"
+          done
+          echo "::notice title=Load result::exit code $rc; $(tail -1 "$RUNNER_TEMP/load.txt"); server log: $(grep -c Traceback "$RUNNER_TEMP/uvicorn.log") tracebacks"
+          exit $rc
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-gate-output
+          path: |
+            ${{ runner.temp }}/concurrency.txt
+            ${{ runner.temp }}/load.txt
+            ${{ runner.temp }}/uvicorn.log

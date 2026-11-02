@@ -15,7 +15,7 @@ function Inner({ id, kind }: { id: string; kind: OrgKind }) {
   return (
     <OrgGate id={id} kind={kind}>
       {(org) => (
-        <div className="mx-auto max-w-3xl">
+        <div className="max-w-3xl">
           <Link href="/admin/organizations" className="mb-3 inline-flex min-h-11 items-center gap-1.5 text-small text-muted hover:text-ink">
             <ArrowLeft className="size-4" aria-hidden /> Schools and partners
           </Link>

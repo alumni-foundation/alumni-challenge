@@ -47,10 +47,10 @@ export default function PlatformRolesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-2xl">
       <PageHeader title="Platform roles" subtitle="Who can moderate and administer the whole platform." />
 
-      <Card className="space-y-5">
+      <Card large className="space-y-5">
         <Field label="Person" htmlFor="role-person">
           <MemberPicker id="role-person" value={person} onChange={(v) => { setPerson(v); setProblem(null); }} />
         </Field>
@@ -61,7 +61,7 @@ export default function PlatformRolesPage() {
         </Field>
         {problem && <Alert>{problem}</Alert>}
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button onClick={grant} loading={granting} disabled={!person}>
+          <Button variant="dark" onClick={grant} loading={granting} disabled={!person}>
             <ShieldCheck className="size-4" aria-hidden /> Give role
           </Button>
           <Button variant="danger" onClick={() => setRevoking(true)} disabled={!person}>
@@ -72,7 +72,7 @@ export default function PlatformRolesPage() {
 
       <div className="mt-4 space-y-2 text-small text-muted">
         <p>{isSuperAdmin(roles.data) ? "As a super admin you can give any platform role." : "As an admin you can give the moderator role."} Nobody can change their own roles, and the last super admin can never be removed.</p>
-        <p>Staff accounts usually have no public profile, so they won’t show up when you search by name. Paste their user ID instead.</p>
+        <p>Staff accounts usually have no public profile, so they won’t show up when you search by name. Paste their account ID instead.</p>
       </div>
 
       <ConfirmDialog
