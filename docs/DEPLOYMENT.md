@@ -24,18 +24,22 @@ One image runs all three roles. Only the command differs.
 
 ## 2. The image
 
-CI builds and publishes the production image to GitHub Container Registry on every push to
-`main` that passes the tests. You do not build it yourself. It is named after the repository,
-with `-api` on the end, and tagged with the git commit:
+On every push to `main` that passes the tests, CI publishes the API and web images to GitHub
+Container Registry and asks Coolify to deploy them. You do not build them yourself. The API
+image name ends in `-api` and the web image name ends in `-web`. Both are tagged `production`
+and with the full git commit:
 
 ```
+ghcr.io/<github-owner>/<repository>-api:production
 ghcr.io/<github-owner>/<repository>-api:<commit>
+ghcr.io/<github-owner>/<repository>-web:production
+ghcr.io/<github-owner>/<repository>-web:<commit>
 ```
 
-`<commit>` is either the full 40-character commit hash or its first 7 characters (for example
-`ghcr.io/example-org/alumni-challenge-api:3d6bc54`). There is **no `latest` tag**: always
-deploy a specific commit, so a running container can be traced to its code. Keep the last few
-tags in use so a rollback is one redeploy.
+`<commit>` is the full 40-character commit hash. There is **no `latest` tag**. Coolify runs the
+`production` tag from `docker-compose.production.yml`. A rollback is a redeploy of an older
+commit tag. The deploy call needs the `COOLIFY_TOKEN` and `COOLIFY_PRODUCTION_WEBHOOK`
+repository secrets. The webhook is the production resource's deploy URL, not the staging one.
 
 The package is private by default. To pull it, create a GitHub token (a "personal access
 token (classic)" with only `read:packages`) and enter your GitHub username and that token as the registry
