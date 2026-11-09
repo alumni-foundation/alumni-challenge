@@ -99,10 +99,61 @@ export const FUNNEL_LABELS: Record<string, string> = {
 };
 export const funnelLabel = (step: string) => FUNNEL_LABELS[step] ?? step.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 
-/** Bar heights as a share of the first step, so the bars shrink exactly as the real counts do. Empty funnel: all zero. */
-export function funnelShares(steps: OverviewFunnelStep[]): number[] {
-  const top = Math.max(0, ...steps.map((s) => s.count));
-  return steps.map((s) => (top === 0 || s.count === 0 ? 0 : Math.max(0.04, s.count / top)));
+/**
+ * Whole-number percent of `part` in `whole`, never dividing by zero (0 when there is no whole). A non-zero part never reads
+ * 0% and a part short of the whole never reads 100%, so "almost everyone" and "nobody" stay distinguishable.
+ */
+export function percentOf(part: number, whole: number): number {
+  if (whole <= 0 || part <= 0) return 0;
+  const r = Math.round((Math.min(part, whole) / whole) * 100);
+  return part < whole ? Math.min(99, Math.max(1, r)) : 100;
+}
+
+export type FunnelRow = {
+  step: string;
+  label: string;
+  count: number;
+  /** 0 to 1, the count against the first step (Signed up). Drives the bar width. */
+  share: number;
+  /** Whole percent of the first step. */
+  percentOfFirst: number;
+  /** Members who did not make it from the step before. 0 for the first step. */
+  lost: number;
+  /** Whole percent of the step before that carried on; null for the first step or when nobody reached the step before. */
+  continued: number | null;
+};
+
+/** One row per funnel step with everything the card shows. Bars are relative to Signed up, the first step. */
+export function funnelRows(steps: OverviewFunnelStep[]): FunnelRow[] {
+  const top = steps[0]?.count ?? 0;
+  return steps.map((s, i) => {
+    const prev = i > 0 ? steps[i - 1].count : null;
+    return {
+      step: s.step,
+      label: funnelLabel(s.step),
+      count: s.count,
+      share: top > 0 ? Math.min(1, Math.max(0, s.count / top)) : 0,
+      percentOfFirst: percentOf(s.count, top),
+      lost: prev === null ? 0 : Math.max(0, prev - s.count),
+      continued: prev === null || prev <= 0 ? null : percentOf(s.count, prev),
+    };
+  });
+}
+
+/** The step-to-step gap that lost the most members (the earlier one on a tie). Null when no one signed up or nobody dropped. */
+export function biggestDropOff(rows: FunnelRow[]): { from: FunnelRow; to: FunnelRow; lost: number } | null {
+  let best: { from: FunnelRow; to: FunnelRow; lost: number } | null = null;
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i].lost > 0 && (!best || rows[i].lost > best.lost)) best = { from: rows[i - 1], to: rows[i], lost: rows[i].lost };
+  }
+  return best;
+}
+
+/** "The biggest drop-off is between Profile complete and Verified (150 members)." or null when there is nothing to say. */
+export function dropOffSentence(rows: FunnelRow[]): string | null {
+  const d = biggestDropOff(rows);
+  if (!d) return null;
+  return `The biggest drop-off is between ${d.from.label} and ${d.to.label} (${d.lost.toLocaleString("en-KE")} ${d.lost === 1 ? "member" : "members"}).`;
 }
 
 /**

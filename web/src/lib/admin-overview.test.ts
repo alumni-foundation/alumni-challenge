@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attentionRows, bucketSignups, auditSentence, changeOf, chartableSignups, firstNameOf, funnelShares, greetingFor, overviewPath } from "./admin-overview";
+import { attentionRows, bucketSignups, auditSentence, changeOf, chartableSignups, dropOffSentence, firstNameOf, funnelRows, greetingFor, overviewPath, percentOf, type OverviewFunnelStep } from "./admin-overview";
 
 describe("greetingFor (Nairobi time, UTC+3)", () => {
   it("switches at 12:00 and 17:00 Nairobi", () => {
@@ -33,18 +33,64 @@ describe("changeOf", () => {
   });
 });
 
-describe("funnelShares", () => {
-  it("scales to the biggest step and keeps a sliver for a non-zero count", () => {
-    const s = funnelShares([
-      { step: "signed_up", count: 200, percent_of_previous: null },
-      { step: "verified", count: 50, percent_of_previous: 25 },
-      { step: "connected", count: 1, percent_of_previous: 2 },
-      { step: "booked_an_event", count: 0, percent_of_previous: 0 },
-    ]);
-    expect(s).toEqual([1, 0.25, 0.04, 0]);
+const steps = (...counts: number[]): OverviewFunnelStep[] =>
+  ["signed_up", "profile_complete", "verified", "connected", "booked_an_event"].slice(0, counts.length).map((step, i) => ({ step, count: counts[i], percent_of_previous: null }));
+
+describe("percentOf", () => {
+  it("never divides by zero", () => {
+    expect(percentOf(0, 0)).toBe(0);
+    expect(percentOf(5, 0)).toBe(0);
   });
-  it("is all zero for an empty funnel", () => {
-    expect(funnelShares([{ step: "signed_up", count: 0, percent_of_previous: null }])).toEqual([0]);
+  it("keeps 'a few' off 0% and 'almost all' off 100%", () => {
+    expect(percentOf(1, 1000)).toBe(1);
+    expect(percentOf(999, 1000)).toBe(99);
+    expect(percentOf(1000, 1000)).toBe(100);
+    expect(percentOf(0, 10)).toBe(0);
+  });
+  it("caps a part larger than its whole", () => {
+    expect(percentOf(12, 10)).toBe(100);
+  });
+});
+
+describe("funnelRows", () => {
+  it("measures bars and percents against Signed up, and conversion against the step before", () => {
+    const r = funnelRows(steps(412, 300, 150, 90, 30));
+    expect(r.map((x) => x.percentOfFirst)).toEqual([100, 73, 36, 22, 7]);
+    expect(r[1].share).toBeCloseTo(300 / 412);
+    expect(r.map((x) => x.lost)).toEqual([0, 112, 150, 60, 60]);
+    expect(r.map((x) => x.continued)).toEqual([null, 73, 50, 60, 33]);
+  });
+  it("gives a zero step a zero share but still a row and a percent", () => {
+    const r = funnelRows(steps(2, 0, 0, 0, 0));
+    expect(r[1]).toMatchObject({ count: 0, share: 0, percentOfFirst: 0, lost: 2, continued: 0 });
+    expect(r[2].continued).toBeNull();
+  });
+  it("copes with a Signed up of 0 (no NaN, no Infinity)", () => {
+    const r = funnelRows(steps(0, 0, 0, 0, 0));
+    for (const x of r) {
+      expect(x.share).toBe(0);
+      expect(x.percentOfFirst).toBe(0);
+      expect(x.lost).toBe(0);
+    }
+    expect(JSON.stringify(r)).not.toMatch(/NaN|null.*Infinity/);
+  });
+  it("is empty for no steps, and never reports a negative drop", () => {
+    expect(funnelRows([])).toEqual([]);
+    expect(funnelRows(steps(10, 12))[1]).toMatchObject({ lost: 0, continued: 100, share: 1 });
+  });
+});
+
+describe("dropOffSentence", () => {
+  it("names the gap that lost the most members", () => {
+    expect(dropOffSentence(funnelRows(steps(412, 300, 150, 90, 30)))).toBe("The biggest drop-off is between Profile complete and Verified (150 members).");
+  });
+  it("takes the earlier gap on a tie and says 'member' for one", () => {
+    expect(dropOffSentence(funnelRows(steps(10, 9, 8)))).toContain("between Signed up and Profile complete (1 member)");
+  });
+  it("says nothing when nobody signed up or nobody dropped", () => {
+    expect(dropOffSentence(funnelRows(steps(0, 0, 0)))).toBeNull();
+    expect(dropOffSentence(funnelRows(steps(5, 5, 5)))).toBeNull();
+    expect(dropOffSentence([])).toBeNull();
   });
 });
 
