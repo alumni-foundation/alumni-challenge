@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { api, ApiError, apiPage } from "./client";
 import type {
@@ -28,8 +28,12 @@ import type {
   Session,
   SlotUpdate,
   Ticket,
+  TeamWorkLogEntry,
   User,
   UserListItem,
+  WorkLogEntry,
+  WorkLogKind,
+  WorkLogPerson,
 } from "./types";
 
 export const PAGE_SIZE = 20;
@@ -329,3 +333,41 @@ export const eventCalls = {
   setPoster: (id: string, fileId: string) => api<EventDetail>(`events/${id}/poster`, { method: "PUT", body: { file_id: fileId } }),
   removePoster: (id: string) => api<EventDetail>(`events/${id}/poster`, { method: "DELETE" }),
 };
+
+/* ---- Staff work log ---------------------------------------------------------------------- */
+
+/** My own lines, newest day first. The server picks the days; `editable` says which are still open. */
+export const useMyWorkLog = () =>
+  useQuery({ queryKey: ["work-log", "me"], queryFn: () => api<WorkLogEntry[]>("work-log/me"), retry: false });
+
+export const useAddWorkLog = () =>
+  useWrite((v: { kind: WorkLogKind; text: string }) => api<WorkLogEntry>("work-log/me", { method: "POST", body: v }), [["work-log", "me"]]);
+export const useEditWorkLog = () =>
+  useWrite((v: { id: string; text: string }) => api<WorkLogEntry>(`work-log/me/${v.id}`, { method: "PATCH", body: { text: v.text } }), [["work-log", "me"]]);
+export const useCompleteWorkLog = () =>
+  useWrite((id: string) => api<WorkLogEntry>(`work-log/me/${id}/complete`, { method: "POST" }), [["work-log", "me"]]);
+export const useDeleteWorkLog = () =>
+  useWrite((id: string) => api<null>(`work-log/me/${id}`, { method: "DELETE" }), [["work-log", "me"]]);
+
+export const TEAM_LOG_PAGE_SIZE = 100;
+export type TeamLogFilters = { userId: string; from: string; to: string };
+
+/** Everyone's lines for a super admin, a page at a time. */
+export const useTeamWorkLog = (f: TeamLogFilters, enabled: boolean) =>
+  useInfiniteQuery({
+    queryKey: ["work-log", "team", f],
+    enabled,
+    retry: false,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => {
+      const qs = new URLSearchParams({ limit: String(TEAM_LOG_PAGE_SIZE), offset: String(pageParam) });
+      if (f.userId) qs.set("user_id", f.userId);
+      if (f.from) qs.set("from", f.from);
+      if (f.to) qs.set("to", f.to);
+      return api<TeamWorkLogEntry[]>(`work-log/team?${qs.toString()}`);
+    },
+    getNextPageParam: (last, all) => (last.length < TEAM_LOG_PAGE_SIZE ? undefined : all.length * TEAM_LOG_PAGE_SIZE),
+  });
+
+export const useWorkLogPeople = (enabled: boolean) =>
+  useQuery({ queryKey: ["work-log", "people"], enabled, retry: false, queryFn: () => api<WorkLogPerson[]>("work-log/team/people") });

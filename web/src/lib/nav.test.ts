@@ -29,8 +29,10 @@ describe("navGroupsFor", () => {
 
   it("shows a moderator the dashboard and reports under Moderation, without Platform pages", () => {
     const g = groups([m("moderator")]);
-    expect(g.map((x) => x.title)).toEqual(["Member", "Moderation"]);
-    expect(g[1].items.map((i) => i.href)).toEqual(["/admin", "/admin/reports"]);
+    expect(g.map((x) => x.title)).toEqual(["Member", "Platform", "Moderation"]);
+    expect(g[2].items.map((i) => i.href)).toEqual(["/admin", "/admin/reports"]);
+    // The only Platform link a moderator gets is their own work log.
+    expect(g[1].items.map((i) => i.href)).toEqual(["/admin/work-log"]);
     expect(hrefs([m("moderator")])).not.toContain("/admin/users");
   });
 
@@ -60,5 +62,38 @@ describe("navGroupsFor", () => {
     ];
     for (const ms of cases) expect(hrefs(ms).length).toBeGreaterThan(0);
     expect(hrefs([m("sports_manager", SCHOOL_A)])).toContain("/events");
+  });
+
+  describe("work log links", () => {
+    const WORK = ["/admin/work-log", "/admin/team-work-log"];
+    const workLinks = (ms: Membership[]) => hrefs(ms).filter((h) => WORK.includes(h));
+    const platformItems = (ms: Membership[]) => groups(ms).find((g) => g.key === "platform")?.items.map((i) => i.label) ?? [];
+
+    it("gives an admin 'My work log' in Platform, and no team view", () => {
+      expect(workLinks([m("admin")])).toEqual(["/admin/work-log"]);
+      expect(platformItems([m("admin")])).toContain("My work log");
+    });
+
+    it("gives a moderator 'My work log' in Platform", () => {
+      expect(workLinks([m("moderator")])).toEqual(["/admin/work-log"]);
+    });
+
+    it("gives a super admin 'Team work log' only: they read, they do not keep one", () => {
+      expect(workLinks([m("super_admin")])).toEqual(["/admin/team-work-log"]);
+      expect(platformItems([m("super_admin")])).toContain("Team work log");
+      expect(platformItems([m("super_admin")])).not.toContain("My work log");
+      // Holding admin as well does not give a super admin a log of their own.
+      expect(workLinks([m("super_admin"), m("admin")])).toEqual(["/admin/team-work-log"]);
+    });
+
+    it("shows neither link to anyone else", () => {
+      const others: Membership[][] = [
+        [], [m("alumni")], [m("school_admin", SCHOOL_A)], [m("partner_admin", PARTNER)],
+        [m("event_manager", SCHOOL_A)], [m("sports_manager", SCHOOL_A)],
+        // Admin at an organization is not the platform admin role.
+        [m("admin", SCHOOL_A)],
+      ];
+      for (const ms of others) expect(workLinks(ms)).toEqual([]);
+    });
   });
 });
