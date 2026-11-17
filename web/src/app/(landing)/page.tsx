@@ -1,6 +1,7 @@
 import { OrgGrid } from "@/components/public/org";
 import { Hero, MIN_STAT, PARTNER_STAT, SCHOOL_STAT, countLabel, type HeroStat } from "@/components/landing/hero";
 import { Points, SectionHead } from "@/components/landing/sections";
+import { LandingMore } from "@/components/site/landing-sections";
 import { hasSession } from "@/lib/server/auth";
 import { fetchOrgs } from "@/lib/server/public-api";
 
@@ -33,6 +34,7 @@ export default async function Home() {
           </SectionHead>
           <OrgGrid orgs={partners?.slice(0, 6) ?? null} base="/partners" noun="partners" reveal />
         </section>
+        <LandingMore />
       </div>
     </>
   );

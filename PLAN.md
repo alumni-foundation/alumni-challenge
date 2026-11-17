@@ -419,6 +419,19 @@ Done, with the evidence that proves it:
 - [ ] Platform-wide user lookup by email for admins (not built; it cannot hide whether an
   address exists, so it needs an owner decision)
 
+Added 17 Nov 2026 (owner request): staff work log, a simple daily to-do and done list for the
+company's own staff.
+
+- [x] Admins and moderators keep their own log (add a planned or done line, tick a planned line
+  off, edit or delete a line only on the day it was written). Super admins read everyone's,
+  read-only, and cannot write. Nobody else has access (403). Days are Nairobi calendar days set
+  by the server; the client never sends a date. After the day the line is locked (409,
+  `work_log_entry_locked`); a planned line can still be ticked off later. Another person's entry
+  is a 404, the same as one that does not exist.
+  (`backend/app/modules/work_log`, migration `88f2df2f6be6_work_log_entries`,
+  `tests/test_work_log.py`; web: `/admin/work-log`, `/admin/team-work-log`,
+  `src/lib/work-log.test.ts`, `src/lib/nav.test.ts`)
+
 ---
 
 ## DEFERRED BY DECISION (tracked, not forgotten)
@@ -807,3 +820,19 @@ Roles: `super_admin` and `admin` are platform-wide. `moderator` is platform-wide
 - [ ] Endpoint classification list for every planned v1 endpoint
 - [ ] Tool choices: job queue, email provider, SMS provider, push, object storage, error tracking, container registry
 - [ ] Kenya Data Protection Act checklist
+
+Public website from the old site's content (branch `feat/old-site-content`):
+
+- [x] Public pages built from the collected old-site content: `/about`, `/our-story`, `/team`, `/programs`, `/get-involved`,
+  `/blog`, `/blog/[slug]` (8 posts, statically generated), plus the Supporters logos on `/partners` and the address,
+  hours and "Request a call back" on `/contact`. Content is read at build time from `web/content/old-site/`; the only
+  wording changes are the agreed ones, kept in one tested file (`web/src/lib/site-content/edits.ts`): "Alumni Challenge"
+  spelling, one set of opening hours, no "Years of Service" counter, no founding-year sentence (2020/2021/2022 disagreed),
+  dead links fixed, no social icons, newsletter line links to /contact.
+- [x] Landing page: the brown hero is untouched; below it "Who we are", featured programs, the get-involved band and the
+  latest 3 posts. Top menu on every public page (Who we are drop-down; menu button below 1280px), new footer with the
+  "System by Vancelle Baraza" badge.
+- [x] Images: `scripts/old-site/prepare_site_images.py` copies, resizes (max 2000px) and compresses them to
+  `web/public/images/site/`; the logo "SS" is left out because its name was not confirmed.
+- [x] Evidence: `web/scripts/check-public-routes.mjs` crawls the public pages against a running site (26 pages, all 200,
+  no broken mailto); `site-content.test.ts` and `routes.test.ts` cover the wording rules and the public route list.

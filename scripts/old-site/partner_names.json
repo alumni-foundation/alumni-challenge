@@ -1,0 +1,112 @@
+{
+ "crownpaint": {
+  "name": "Crown Paints Kenya PLC",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "deepheat": {
+  "name": "Deep Heat (Mentholatum)",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "edenbridge": {
+  "name": "Edenbridge Capital",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "fresha": {
+  "name": "Fresha Dairy Brands",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "grandpoint": {
+  "name": "GrandPoint",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "haco": {
+  "name": "HACO",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "hhk": {
+  "name": "Habitat for Humanity Kenya",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "kasneb": {
+  "name": "Kasneb",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "kq": {
+  "name": "Kenya Airways",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "maridadi": {
+  "name": "Maridady Motors",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "mothokinju": {
+  "name": "Muthokinju Paints & Cement",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "optiven": {
+  "name": "Optiven",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "paykit": {
+  "name": "PayKit",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "purepurple": {
+  "name": "Pure Purple",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "shotel": {
+  "name": "Superior Hotels Kenya",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "socialmeds": {
+  "name": "Socialmeds Digital",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "steri": {
+  "name": "Steri Tours",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "unicaf": {
+  "name": "Unicaf",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "vet": {
+  "name": "Vetlab Sports Club",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "waridi": {
+  "name": "Waridi Eyewear",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "yen": {
+  "name": "Yen Golf",
+  "confirmed": true,
+  "source": "read from the wording in the logo image itself"
+ },
+ "ss": {
+  "name": "SS",
+  "confirmed": false,
+  "source": "file name only; the logo is a red letter S with no words"
+ }
+}

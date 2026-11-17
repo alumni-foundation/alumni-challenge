@@ -260,6 +260,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Users
+         * @description Every account except deleted ones, newest first, for platform admins. The total is in the
+         *     X-Total-Count header.
+         */
+        get: operations["list_users_api_v1_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/{user_id}/suspend": {
         parameters: {
             query?: never;
@@ -1022,6 +1043,132 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bookings/{booking_id}/payment-reference": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Payment Reference
+         * @description The booker pastes the M-Pesa code from their payment message. The organizer then confirms
+         *     it. A code can belong to one booking only (409 `payment_code_used` otherwise). Sending the
+         *     same code twice is harmless. Limited per account, per booking and per address.
+         */
+        post: operations["send_payment_reference_api_v1_bookings__booking_id__payment_reference_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bookings/{booking_id}/confirm-manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Manual Payment
+         * @description An organization admin confirms the payment was received. Confirming again changes nothing.
+         *     If the hold had run out and the places are gone, the booking stays expired and the payment
+         *     moves to `needs_refund` instead: read `payment.state` in the answer.
+         */
+        post: operations["confirm_manual_payment_api_v1_bookings__booking_id__confirm_manual_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bookings/{booking_id}/mark-paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Booking Paid
+         * @description An organization admin says the money arrived without an M-Pesa code (cash, a transfer, a code
+         *     never sent). A written reason is required and audited. Settles like a confirmed code, late
+         *     payment rules included. Doing it again changes nothing.
+         */
+        post: operations["mark_booking_paid_api_v1_bookings__booking_id__mark_paid_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bookings/{booking_id}/reject-manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Manual Payment
+         * @description The code did not match a payment. The booker is emailed and may send another code.
+         */
+        post: operations["reject_manual_payment_api_v1_bookings__booking_id__reject_manual_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bookings/{booking_id}/mark-refunded": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Payment Refunded
+         * @description The organizer sent the money back by hand. Only for payments in `needs_refund`.
+         */
+        post: operations["mark_payment_refunded_api_v1_bookings__booking_id__mark_refunded_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bookings/{booking_id}/organizer-cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Organizer Cancel Booking
+         * @description Cancels a booking (organization admins). `refund: true` queues a paid one for refund.
+         */
+        post: operations["organizer_cancel_booking_api_v1_bookings__booking_id__organizer_cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bookings/{booking_id}/tickets": {
         parameters: {
             query?: never;
@@ -1136,6 +1283,26 @@ export interface paths {
          * @description Everyone booked, with contact details and answers. For the people who run the event.
          */
         get: operations["registrations_api_v1_events__event_id__registrations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{event_id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Payments Needing Action
+         * @description The organizer's money queue: codes waiting to be confirmed and payments owed back.
+         */
+        get: operations["payments_needing_action_api_v1_events__event_id__payments_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1487,6 +1654,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/{organization_id}/email-domains/{domain_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Email Domain
+         * @description Stop using this domain for automatic verification. Alumni who were already verified
+         *     through it stay verified. 404 if the domain belongs to a different organization.
+         */
+        delete: operations["remove_email_domain_api_v1_organizations__organization_id__email_domains__domain_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations/{organization_id}/user-lookup": {
         parameters: {
             query?: never;
@@ -1599,6 +1787,162 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payment-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Payment Accounts */
+        get: operations["my_payment_accounts_api_v1_payment_accounts_get"];
+        put?: never;
+        /**
+         * Create Payment Account
+         * @description The paybill or till an event is paid to. Organization admins, for their own organization.
+         */
+        post: operations["create_payment_account_api_v1_payment_accounts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment-accounts/{account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Payment Account */
+        patch: operations["update_payment_account_api_v1_payment_accounts__account_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Overview
+         * @description Platform admins: everything, or one organization with `organization_id`. School admins,
+         *     partner admins and event managers: their own organizations only (any other id is 404, whether
+         *     or not it exists). Moderators: the report counts only. Anyone else: 403.
+         */
+        get: operations["overview_api_v1_admin_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-log/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Entries
+         * @description Newest day first, and within a day in the order added. Without dates: the last 60 days.
+         */
+        get: operations["my_entries_api_v1_work_log_me_get"];
+        put?: never;
+        /** Add Entry */
+        post: operations["add_entry_api_v1_work_log_me_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-log/me/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Entry */
+        delete: operations["delete_entry_api_v1_work_log_me__entry_id__delete"];
+        options?: never;
+        head?: never;
+        /** Edit Entry */
+        patch: operations["edit_entry_api_v1_work_log_me__entry_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/work-log/me/{entry_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Entry */
+        post: operations["complete_entry_api_v1_work_log_me__entry_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-log/team": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Team Entries
+         * @description Everyone's entries, read-only, newest first. Super admins only.
+         */
+        get: operations["team_entries_api_v1_work_log_team_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/work-log/team/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Team People
+         * @description Admins and moderators, for the person filter. Super admins only.
+         */
+        get: operations["team_people_api_v1_work_log_team_people_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1689,6 +2033,7 @@ export interface components {
             interests: string[];
             /** Vouch Count */
             vouch_count?: number | null;
+            account_status?: components["schemas"]["UserStatus"] | null;
         };
         /**
          * AlumniProfileSummary
@@ -1757,6 +2102,50 @@ export interface components {
             position: number;
             /** Value */
             value: unknown;
+        };
+        /**
+         * Attention
+         * @description Reports are platform-wide, so they are null in any one organization's view.
+         */
+        Attention: {
+            /** Reports Open */
+            reports_open: number | null;
+            /** Reports Reviewing */
+            reports_reviewing: number | null;
+            /** Verification Requests Waiting */
+            verification_requests_waiting: number | null;
+            /** Payments Waiting Confirmation */
+            payments_waiting_confirmation: number | null;
+            /** Refunds Due */
+            refunds_due: number | null;
+            /** Events In Draft */
+            events_in_draft: number | null;
+        };
+        /**
+         * AuditItem
+         * @description What happened and to what, never the details (they can hold names and emails).
+         */
+        AuditItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Action */
+            action: string;
+            /** Target Type */
+            target_type: string;
+            /** Target Id */
+            target_id: string | null;
+            /** Actor User Id */
+            actor_user_id: string | null;
+            /** Organization Id */
+            organization_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** AuditLogEntryResponse */
         AuditLogEntryResponse: {
@@ -1919,6 +2308,32 @@ export interface components {
             answers: components["schemas"]["AnswerOut"][];
             /** Consents */
             consents: components["schemas"]["BookingConsentOut"][];
+            payment?: components["schemas"]["BookingPaymentOut"] | null;
+        };
+        /**
+         * BookingPaymentOut
+         * @description How to pay for this booking by hand, and where that payment stands.
+         */
+        BookingPaymentOut: {
+            payee: components["schemas"]["PayeeInfo"];
+            /** Account Reference */
+            account_reference: string | null;
+            state: components["schemas"]["ManualPaymentState"] | null;
+            /** Code */
+            code: string | null;
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Decided At */
+            decided_at: string | null;
+            /** Rejection Reason */
+            rejection_reason: string | null;
+            /**
+             * Marked Paid By Hand
+             * @default false
+             */
+            marked_paid_by_hand: boolean;
+            /** Can Submit Code */
+            can_submit_code: boolean;
         };
         /** BookingSlotInfo */
         BookingSlotInfo: {
@@ -2143,6 +2558,45 @@ export interface components {
             domain: string;
         };
         /**
+         * EntryCreate
+         * @description No date here on purpose: the server decides the day. Anything extra is a 422.
+         */
+        EntryCreate: {
+            kind: components["schemas"]["WorkLogKind"];
+            /** Text */
+            text: string;
+        };
+        /** EntryResponse */
+        EntryResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["WorkLogKind"];
+            /** Text */
+            text: string;
+            /**
+             * Entry Date
+             * Format: date
+             */
+            entry_date: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Completed At */
+            completed_at: string | null;
+            /** Editable */
+            editable: boolean;
+        };
+        /** EntryUpdate */
+        EntryUpdate: {
+            /** Text */
+            text: string;
+        };
+        /**
          * EventCategory
          * @enum {string}
          */
@@ -2225,6 +2679,11 @@ export interface components {
              * @default 24
              */
             reminder_hours_before: number;
+            /**
+             * Payment Account Id
+             * @description The paybill or till people pay to (a paid event needs one).
+             */
+            payment_account_id?: string | null;
             /** Capacity */
             capacity?: number | null;
             /** Slots */
@@ -2289,6 +2748,7 @@ export interface components {
             reminder_hours_before: number;
             /** Hold Minutes */
             hold_minutes: number;
+            payment?: components["schemas"]["PayeeInfo"] | null;
             /** Slots */
             slots: components["schemas"]["SlotOut"][];
             /** Questions */
@@ -2393,6 +2853,8 @@ export interface components {
             refund_policy_text?: string | null;
             /** Reminder Hours Before */
             reminder_hours_before?: number | null;
+            /** Payment Account Id */
+            payment_account_id?: string | null;
         };
         /**
          * EventVisibility
@@ -2441,6 +2903,15 @@ export interface components {
             /** Url */
             url: string;
         };
+        /** FunnelStep */
+        FunnelStep: {
+            /** Step */
+            step: string;
+            /** Count */
+            count: number;
+            /** Percent Of Previous */
+            percent_of_previous: number | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -2455,6 +2926,25 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /**
+         * ManualPaymentState
+         * @description Where a hand-made M-Pesa payment stands. Null on a booking nobody pays for by hand.
+         * @enum {string}
+         */
+        ManualPaymentState: "awaiting_confirmation" | "confirmed" | "rejected" | "needs_refund" | "refunded";
+        /** MarkPaidRequest */
+        MarkPaidRequest: {
+            /**
+             * Reason
+             * @description Why no M-Pesa code (audited).
+             */
+            reason: string;
+        };
+        /** MarkRefundedRequest */
+        MarkRefundedRequest: {
+            /** Note */
+            note?: string | null;
         };
         /** MemberListItem */
         MemberListItem: {
@@ -2540,6 +3030,11 @@ export interface components {
             /** Message */
             message: string;
         };
+        /**
+         * MpesaKind
+         * @enum {string}
+         */
+        MpesaKind: "paybill" | "till";
         /** OrganizationCreate */
         OrganizationCreate: {
             type: components["schemas"]["OrganizationType"];
@@ -2595,6 +3090,16 @@ export interface components {
             /** Description */
             description?: string | null;
         };
+        /** OrganizerCancelRequest */
+        OrganizerCancelRequest: {
+            /** Reason */
+            reason: string;
+            /**
+             * Refund
+             * @default false
+             */
+            refund: boolean;
+        };
         /** OrganizerInfo */
         OrganizerInfo: {
             /**
@@ -2607,6 +3112,26 @@ export interface components {
             /** Slug */
             slug: string;
             type: components["schemas"]["OrganizationType"];
+        };
+        /**
+         * Overview
+         * @description Aggregated counts only. A section a caller may not see is null.
+         */
+        Overview: {
+            /** Period */
+            period: string;
+            /** Organization Id */
+            organization_id: string | null;
+            totals: components["schemas"]["Totals"] | null;
+            /** Funnel */
+            funnel: components["schemas"]["FunnelStep"][] | null;
+            attention: components["schemas"]["Attention"];
+            /** Upcoming Events */
+            upcoming_events: components["schemas"]["UpcomingEvent"][] | null;
+            /** Signups Per Day */
+            signups_per_day: components["schemas"]["SignupDay"][] | null;
+            /** Recent Audit */
+            recent_audit: components["schemas"]["AuditItem"][] | null;
         };
         /** ParticipantInput */
         ParticipantInput: {
@@ -2662,6 +3187,88 @@ export interface components {
             token: string;
             /** New Password */
             new_password: string;
+        };
+        /**
+         * PayeeInfo
+         * @description What a booker sees on the event: where to pay. Public numbers, nothing secret.
+         */
+        PayeeInfo: {
+            method: components["schemas"]["PaymentProvider"];
+            kind: components["schemas"]["MpesaKind"];
+            /** Number */
+            number: string;
+            /**
+             * Payee Name
+             * @description The label the organizer gave this account.
+             */
+            payee_name: string;
+            /** Currency */
+            currency: string;
+        };
+        /** PaymentAccountCreate */
+        PaymentAccountCreate: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Label */
+            label: string;
+            mpesa_kind: components["schemas"]["MpesaKind"];
+            /** Shortcode Or Till */
+            shortcode_or_till: string;
+        };
+        /** PaymentAccountOut */
+        PaymentAccountOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Organization Id */
+            organization_id: string | null;
+            /** Label */
+            label: string;
+            provider: components["schemas"]["PaymentProvider"];
+            mpesa_kind: components["schemas"]["MpesaKind"];
+            /** Shortcode Or Till */
+            shortcode_or_till: string;
+            /** Currency */
+            currency: string;
+            /** Active */
+            active: boolean;
+        };
+        /** PaymentAccountUpdate */
+        PaymentAccountUpdate: {
+            /** Label */
+            label?: string | null;
+            /** Shortcode Or Till */
+            shortcode_or_till?: string | null;
+            /** Active */
+            active?: boolean | null;
+        };
+        /**
+         * PaymentProvider
+         * @description How money reaches the organizer. Only the manual one exists so far (slice 5.5).
+         * @enum {string}
+         */
+        PaymentProvider: "manual_mpesa";
+        /**
+         * PaymentReferenceRequest
+         * @description The M-Pesa confirmation code from the payment message, for example `SGK7F5X2QW`.
+         */
+        PaymentReferenceRequest: {
+            /** Code */
+            code: string;
+        };
+        /** PersonResponse */
+        PersonResponse: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
         };
         /** PlatformRoleRequest */
         PlatformRoleRequest: {
@@ -2774,6 +3381,28 @@ export interface components {
             /** Closes At */
             closes_at: string | null;
         };
+        /**
+         * RegistrationPayment
+         * @description The organizer's view of a hand-made payment: the code to look for in M-Pesa.
+         */
+        RegistrationPayment: {
+            state: components["schemas"]["ManualPaymentState"] | null;
+            /** Code */
+            code: string | null;
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Decided At */
+            decided_at: string | null;
+            /** Rejection Reason */
+            rejection_reason: string | null;
+            /**
+             * Marked Paid By Hand
+             * @default false
+             */
+            marked_paid_by_hand: boolean;
+            /** Note */
+            note?: string | null;
+        };
         /** RegistrationRow */
         RegistrationRow: {
             /**
@@ -2802,6 +3431,12 @@ export interface components {
             participants: components["schemas"]["RosterParticipant"][];
             /** Answers */
             answers: components["schemas"]["AnswerOut"][];
+            payment?: components["schemas"]["RegistrationPayment"] | null;
+        };
+        /** RejectPaymentRequest */
+        RejectPaymentRequest: {
+            /** Reason */
+            reason: string;
         };
         /** ReportCreate */
         ReportCreate: {
@@ -3040,6 +3675,16 @@ export interface components {
             /** Names */
             names: string[];
         };
+        /** SignupDay */
+        SignupDay: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Count */
+            count: number;
+        };
         /** SlotInput */
         SlotInput: {
             /** Label */
@@ -3112,6 +3757,38 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** TeamEntryResponse */
+        TeamEntryResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Author User Id
+             * Format: uuid
+             */
+            author_user_id: string;
+            /** Author Name */
+            author_name: string;
+            /** Author Email */
+            author_email: string;
+            kind: components["schemas"]["WorkLogKind"];
+            /** Text */
+            text: string;
+            /**
+             * Entry Date
+             * Format: date
+             */
+            entry_date: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Completed At */
+            completed_at: string | null;
+        };
         /** TeeSheetSlot */
         TeeSheetSlot: {
             slot: components["schemas"]["BookingSlotInfo"];
@@ -3182,6 +3859,64 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /**
+         * Total
+         * @description `previous` is the same measure one period earlier; `change_percent` is null when that
+         *     was zero (there is nothing to compare with).
+         */
+        Total: {
+            /** Value */
+            value: number;
+            /** Previous */
+            previous: number;
+            /** Change Percent */
+            change_percent: number | null;
+        };
+        /** Totals */
+        Totals: {
+            members: components["schemas"]["Total"];
+            new_members: components["schemas"]["Total"];
+            verified_members: components["schemas"]["Total"];
+        };
+        /** UpcomingEvent */
+        UpcomingEvent: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Confirmed Seats */
+            confirmed_seats: number;
+            /** Capacity */
+            capacity: number | null;
+        };
+        /** UserListItem */
+        UserListItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string | null;
+            status: components["schemas"]["UserStatus"];
+            /** Roles */
+            roles: components["schemas"]["Role"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** UserLookupMatch */
         UserLookupMatch: {
@@ -3265,6 +4000,11 @@ export interface components {
             /** Verified */
             verified: boolean;
         };
+        /**
+         * WorkLogKind
+         * @enum {string}
+         */
+        WorkLogKind: "planned" | "done";
     };
     responses: never;
     parameters: never;
@@ -3643,6 +4383,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users_api_v1_users_get: {
+        parameters: {
+            query?: {
+                /** @description Part of a name or email */
+                q?: string | null;
+                status?: ("active" | "suspended") | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserListItem"][];
                 };
             };
             /** @description Validation Error */
@@ -5283,6 +6058,212 @@ export interface operations {
             };
         };
     };
+    send_payment_reference_api_v1_bookings__booking_id__payment_reference_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentReferenceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_manual_payment_api_v1_bookings__booking_id__confirm_manual_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_booking_paid_api_v1_bookings__booking_id__mark_paid_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkPaidRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_manual_payment_api_v1_bookings__booking_id__reject_manual_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_payment_refunded_api_v1_bookings__booking_id__mark_refunded_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MarkRefundedRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    organizer_cancel_booking_api_v1_bookings__booking_id__organizer_cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                booking_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizerCancelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     booking_tickets_api_v1_bookings__booking_id__tickets_get: {
         parameters: {
             query?: never;
@@ -5434,8 +6415,45 @@ export interface operations {
         parameters: {
             query?: {
                 status?: components["schemas"]["BookingStatus"] | null;
+                payment_state?: components["schemas"]["ManualPaymentState"] | null;
                 slot_id?: string | null;
                 q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationRow"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    payments_needing_action_api_v1_events__event_id__payments_get: {
+        parameters: {
+            query?: {
+                /** @description awaiting_confirmation or needs_refund; default both */
+                state?: components["schemas"]["ManualPaymentState"] | null;
                 limit?: number;
                 offset?: number;
             };
@@ -6208,6 +7226,36 @@ export interface operations {
             };
         };
     };
+    remove_email_domain_api_v1_organizations__organization_id__email_domains__domain_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+                domain_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     look_up_member_api_v1_organizations__organization_id__user_lookup_post: {
         parameters: {
             query?: never;
@@ -6408,6 +7456,341 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_payment_accounts_api_v1_payment_accounts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentAccountOut"][];
+                };
+            };
+        };
+    };
+    create_payment_account_api_v1_payment_accounts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentAccountCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentAccountOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_payment_account_api_v1_payment_accounts__account_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentAccountUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentAccountOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    overview_api_v1_admin_overview_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+                period?: "30d" | "90d" | "365d";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Overview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_entries_api_v1_work_log_me_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_entry_api_v1_work_log_me_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_entry_api_v1_work_log_me__entry_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_entry_api_v1_work_log_me__entry_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntryUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_entry_api_v1_work_log_me__entry_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    team_entries_api_v1_work_log_team_get: {
+        parameters: {
+            query?: {
+                user_id?: string | null;
+                from?: string | null;
+                to?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamEntryResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    team_people_api_v1_work_log_team_people_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"][];
                 };
             };
         };
