@@ -22,6 +22,11 @@ export type ReportStatus = S["ReportStatus"];
 
 export type AuditLogEntry = S["AuditLogEntryResponse"];
 
+export type WorkLogEntry = S["EntryResponse"];
+export type TeamWorkLogEntry = S["TeamEntryResponse"];
+export type WorkLogPerson = S["PersonResponse"];
+export type WorkLogKind = S["WorkLogKind"];
+
 /**
  * TODO: regenerate with `npm run api:types` once GET /users and DELETE /organizations/{id}/email-domains/{domain_id}
  * are in schema.d.ts, then replace this hand-written type with an alias. It follows the backend agent's description:

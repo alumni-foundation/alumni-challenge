@@ -419,6 +419,19 @@ Done, with the evidence that proves it:
 - [ ] Platform-wide user lookup by email for admins (not built; it cannot hide whether an
   address exists, so it needs an owner decision)
 
+Added 17 Nov 2026 (owner request): staff work log, a simple daily to-do and done list for the
+company's own staff.
+
+- [x] Admins and moderators keep their own log (add a planned or done line, tick a planned line
+  off, edit or delete a line only on the day it was written). Super admins read everyone's,
+  read-only, and cannot write. Nobody else has access (403). Days are Nairobi calendar days set
+  by the server; the client never sends a date. After the day the line is locked (409,
+  `work_log_entry_locked`); a planned line can still be ticked off later. Another person's entry
+  is a 404, the same as one that does not exist.
+  (`backend/app/modules/work_log`, migration `88f2df2f6be6_work_log_entries`,
+  `tests/test_work_log.py`; web: `/admin/work-log`, `/admin/team-work-log`,
+  `src/lib/work-log.test.ts`, `src/lib/nav.test.ts`)
+
 ---
 
 ## DEFERRED BY DECISION (tracked, not forgotten)
