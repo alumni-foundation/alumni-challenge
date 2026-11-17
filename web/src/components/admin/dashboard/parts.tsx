@@ -2,6 +2,7 @@
 
 import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarDays, ChevronRight, ScrollText, ShieldAlert, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { EmptyState, Icon3D, Skeleton } from "@/components/ui";
 import {
   attentionRows,
@@ -9,8 +10,10 @@ import {
   bucketSignups,
   changeOf,
   chartableSignups,
-  funnelLabel,
-  funnelShares,
+  dropOffSentence,
+  funnelRows,
+  biggestDropOff,
+  type FunnelRow,
   PERIODS,
   type DashboardScope,
   type Overview,
@@ -51,9 +54,10 @@ export function kpisFrom(o: Overview): Kpi[] {
       label: "Verified members",
       value: o.totals.verified_members.value,
       change: changeOf(o.totals.verified_members, words),
-      // The backend cannot know when someone was verified, so the earlier count is a minimum (docs/admin-api.md) and the
-      // real change may be smaller than shown. The tile says so.
-      note: "Earlier count is a minimum",
+      // The backend cannot know when someone was verified, so the earlier count is a lower bound (docs/admin-api.md): it only
+      // counts people verified now whose profile has not been edited since the period began. The earlier number can be too low,
+      // so the growth shown can be bigger than the real growth. The tile says so in plain words.
+      note: "Earlier count may be too low",
     });
   }
   if (o.attention.reports_open !== null) out.push({ key: "reports_open", label: "Open reports", value: o.attention.reports_open, change: null, href: "/admin/reports" });
@@ -89,7 +93,7 @@ export function KpiTiles({ kpis, goldKey, loading }: { kpis: Kpi[]; goldKey: Kpi
               {k.change ? <Delta change={k.change} /> : null}
             </div>
             {k.note && k.change && (
-              <p className="mt-2 text-caption text-muted" title="We don’t record when someone was verified, so the count for the period before is a minimum. The real change may be smaller than shown.">
+              <p className="mt-2 text-caption text-muted" title="We don’t record when someone was verified, so the count for the period before may be too low. That means the growth shown may be bigger than the real growth.">
                 {k.note}
               </p>
             )}
@@ -112,8 +116,6 @@ export function KpiTiles({ kpis, goldKey, loading }: { kpis: Kpi[]; goldKey: Kpi
 
 /* ---- Member journey ------------------------------------------------------------------------------------------------ */
 
-const hatch = "repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ink) 28%, transparent) 5px 6px)";
-
 export function PeriodToggle({ value, onChange }: { value: OverviewPeriod; onChange: (p: OverviewPeriod) => void }) {
   return (
     <div role="group" aria-label="Time period" className="inline-flex rounded-full bg-sunken p-1">
@@ -135,46 +137,130 @@ export function PeriodToggle({ value, onChange }: { value: OverviewPeriod; onCha
   );
 }
 
-export function JourneyCard({ overview, period, onPeriod, fetching }: { overview: Overview; period: OverviewPeriod; onPeriod: (p: OverviewPeriod) => void; fetching: boolean }) {
-  const steps = overview.funnel ?? [];
-  const shares = funnelShares(steps);
+/** Same column layout for rows, loading rows and the connector under them, so nothing shifts when the data arrives. */
+const rowGrid = "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 sm:grid-cols-[9.5rem_minmax(0,1fr)_8.5rem]";
+const rowIndent = "sm:pl-[10.5rem]";
+const GROW_MS = 320;
+
+/**
+ * Bars grow from the left on the first paint and glide to a new width when the numbers change. Each bar keeps its key (the
+ * step), so a refetch updates the width in place instead of remounting. Width is animated, not transform, because the rounded
+ * end would stretch under scaleX; five bars are cheap. Reduced motion skips the transition (the width just applies).
+ */
+function useGrown() {
+  const [grown, setGrown] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setGrown(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  return grown;
+}
+
+function FunnelBar({ row, index, last, grown }: { row: FunnelRow; index: number; last: boolean; grown: boolean }) {
+  const empty = row.count === 0;
+  return (
+    <div className="h-4 rounded-full bg-sunken" aria-hidden>
+      <div
+        className={cn(
+          "h-full min-w-1 rounded-full motion-safe:transition-[width] motion-safe:ease-(--ease-calm)",
+          empty ? "bg-line-strong" : last ? "bg-gold-fill" : "bg-brand",
+        )}
+        style={{
+          width: grown ? `${Math.round(row.share * 1000) / 10}%` : "0%",
+          transitionDuration: `${GROW_MS}ms`,
+          // Stagger only the first reveal: once grown, a changed width should start at once.
+          transitionDelay: grown ? `${index * 50}ms` : "0ms",
+        }}
+      />
+    </div>
+  );
+}
+
+function Connector({ row, biggest }: { row: FunnelRow; biggest: boolean }) {
+  if (row.continued === null) return <div className="h-2" aria-hidden />;
+  return (
+    <div className={cn("py-1.5", rowIndent)} aria-hidden>
+      <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-caption tabular-nums", biggest ? "bg-gold-soft font-medium text-ink" : "bg-sunken text-muted")}>
+        <ArrowDownRight className="size-3.5" aria-hidden />
+        {row.continued}% continued
+        {row.lost > 0 && <span>· −{row.lost.toLocaleString("en-KE")} {row.lost === 1 ? "member" : "members"}</span>}
+      </span>
+    </div>
+  );
+}
+
+export function JourneyCard({ overview, fetching }: { overview: Overview; fetching: boolean }) {
+  const rows = funnelRows(overview.funnel ?? []);
+  const biggest = biggestDropOff(rows);
+  const sentence = dropOffSentence(rows);
+  const grown = useGrown();
   return (
     <section aria-labelledby="journey-title" className={card}>
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 id="journey-title" className="text-lead font-semibold leading-7">Member journey</h2>
-          <p className="text-small text-muted">Everyone, as of today. The period changes the number tiles and the sign-ups chart.</p>
-        </div>
-        <PeriodToggle value={period} onChange={onPeriod} />
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h2 id="journey-title" className="text-lead font-semibold leading-7">Member journey</h2>
+        <span className="rounded-full bg-sunken px-2.5 py-0.5 text-caption font-medium text-muted">Everyone, as of today</span>
       </div>
-      <ol className={cn("grid grid-cols-2 gap-3 transition-opacity md:grid-cols-3 xl:grid-cols-5", fetching && "opacity-60")} aria-busy={fetching}>
-        {steps.map((s, i) => {
-          const last = i === steps.length - 1;
-          return (
-            <li key={s.step} className="flex flex-col rounded-[1.5rem] bg-sunken p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className={cn("rounded-full px-2.5 py-0.5 text-caption font-medium", last ? "bg-ink text-white" : "bg-surface text-ink")}>{funnelLabel(s.step)}</span>
-                {s.percent_of_previous !== null && (
-                  <span className="text-caption tabular-nums text-muted">
-                    {Math.round(s.percent_of_previous)}%<span className="sr-only"> of the step before</span>
-                  </span>
-                )}
-              </div>
-              <div className="relative mt-3 flex h-24 items-end" aria-hidden>
-                <div
-                  className={cn("w-full rounded-xl border transition-[height] duration-500 ease-out motion-reduce:transition-none", last ? "border-gold bg-gold-soft" : "border-ink/40")}
-                  style={{ height: `${Math.round(shares[i] * 100)}%`, backgroundImage: last ? undefined : hatch }}
-                />
-              </div>
-              <p className="mt-3 flex items-baseline gap-1.5">
-                <span className="font-serif text-display font-semibold leading-none tabular-nums lining-nums">{s.count.toLocaleString("en-KE")}</span>
-                <span className="text-small text-muted">{s.count === 1 ? "member" : "members"}</span>
+
+      {/* The picture is decoration for sighted people; this table is what a screen reader gets. */}
+      <div className="sr-only">
+      <table>
+        <caption>Member journey, everyone as of today</caption>
+        <thead>
+          <tr><th scope="col">Step</th><th scope="col">Members</th><th scope="col">Percent of signed up</th><th scope="col">Continued from the step before</th></tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.step}>
+              <th scope="row">{r.label}</th>
+              <td>{r.count}</td>
+              <td>{r.percentOfFirst}%</td>
+              <td>{r.continued === null ? "Not applicable" : `${r.continued}%, ${r.lost} fewer`}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      </div>
+
+      <div className={cn("transition-opacity motion-reduce:transition-none", fetching && "opacity-60")} aria-busy={fetching}>
+        {rows.map((r, i) => (
+          <div key={r.step}>
+            {i > 0 && <Connector row={r} biggest={biggest?.to.step === r.step} />}
+            <div className={rowGrid} aria-hidden>
+              <span className="min-w-0 text-small font-medium sm:col-start-1 sm:row-start-1">{r.label}</span>
+              <p className="flex items-baseline justify-end gap-1.5 text-right tabular-nums sm:col-start-3 sm:row-start-1">
+                <span className="text-lead font-semibold leading-7">{r.count.toLocaleString("en-KE")}</span>
+                <span className="text-small text-muted">{r.percentOfFirst}%</span>
               </p>
-            </li>
-          );
-        })}
-      </ol>
+              <div className="col-span-2 row-start-2 sm:col-span-1 sm:col-start-2 sm:row-start-1">
+                <FunnelBar row={r} index={i} last={i === rows.length - 1} grown={grown} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {sentence && <p className="mt-4 text-small">{sentence}</p>}
     </section>
+  );
+}
+
+/** Loading: the same rows at the same height, so the card does not jump when the numbers arrive. */
+export function JourneySkeleton() {
+  return (
+    <div className={card} aria-hidden>
+      <Skeleton className="h-7 w-64 max-w-full" />
+      <div className="mt-4">
+        {Array.from({ length: 5 }, (_, i) => (
+          <div key={i}>
+            {i > 0 && <div className="h-[2.125rem]" />}
+            <div className={rowGrid}>
+              <Skeleton className="h-5 w-24 sm:col-start-1 sm:row-start-1" />
+              <Skeleton className="h-7 w-16 justify-self-end sm:col-start-3 sm:row-start-1" />
+              <Skeleton className="col-span-2 row-start-2 h-4 rounded-full sm:col-span-1 sm:col-start-2 sm:row-start-1" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -306,12 +392,13 @@ export function SignupsCard({ days, period }: { days: NonNullable<Overview["sign
 export function DashboardSkeleton() {
   return (
     <div role="status" aria-label="Loading the dashboard" className="space-y-4">
+      <Skeleton className="h-11 rounded-full sm:h-9" />
       <ul className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
         {Array.from({ length: 5 }, (_, i) => (
           <li key={i}><Skeleton className="h-[7.25rem] rounded-[1.5rem]" /></li>
         ))}
       </ul>
-      <Skeleton className="h-72 rounded-[1.75rem]" />
+      <JourneySkeleton />
       <div className="grid gap-4 lg:grid-cols-3">
         {Array.from({ length: 3 }, (_, i) => (
           <Skeleton key={i} className="h-72 rounded-[1.75rem]" />
@@ -335,8 +422,12 @@ export function DashboardBody({ overview: o, scope, period, onPeriod, fetching, 
 }) {
   return (
     <>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p className="text-small text-muted">The time period changes the number tiles and the sign-ups chart.</p>
+        <PeriodToggle value={period} onChange={onPeriod} />
+      </div>
       <KpiTiles kpis={kpisFrom(o)} goldKey={goldKeyFor(scope.kind)} loading={fetching} />
-      {o.funnel && <JourneyCard overview={o} period={period} onPeriod={onPeriod} fetching={fetching} />}
+      {o.funnel && <JourneyCard overview={o} fetching={fetching} />}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <AttentionCard overview={o} scope={scope} />
         {o.upcoming_events && <UpcomingCard events={o.upcoming_events} />}

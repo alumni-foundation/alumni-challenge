@@ -10,11 +10,16 @@ const PUBLIC_EXACT = new Set([
   "/privacy",
   "/community-rules",
   "/contact",
+  "/about",
+  "/our-story",
+  "/team",
+  "/programs",
+  "/get-involved",
   "/403",
   "/404",
   "/suspended",
 ]);
-const PUBLIC_PREFIXES = ["/schools", "/partners", "/events"];
+const PUBLIC_PREFIXES = ["/schools", "/partners", "/events", "/blog"];
 
 /** A ticket page is the link in the email and behind the QR, so it opens without a sign-in. (The list at /tickets does not.) */
 const TICKET_PAGE = /^\/tickets\/[0-9a-f]{64}$/;

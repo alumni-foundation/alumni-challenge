@@ -1,9 +1,9 @@
 import {
   Building2, CalendarDays, FileText, Globe, GraduationCap, Home, LayoutDashboard, Pencil, ScrollText,
-  Settings, ShieldCheck, User, UserPlus, Users, UserCog,
+  ClipboardList, ClipboardCheck, Settings, ShieldCheck, User, UserPlus, Users, UserCog,
 } from "lucide-react";
 import type { Membership } from "./api/types";
-import { isPlatformAdmin, orgIdsWithRole } from "./roles";
+import { canKeepWorkLog, canReadTeamWorkLog, isPlatformAdmin, orgIdsWithRole } from "./roles";
 
 export type NavItem = {
   label: string;
@@ -37,6 +37,9 @@ const PLATFORM_NAV: NavItem[] = [
   { label: "Activity log", href: "/admin/activity", icon: ScrollText },
 ];
 
+const MY_WORK_LOG: NavItem = { label: "My work log", href: "/admin/work-log", icon: ClipboardList };
+const TEAM_WORK_LOG: NavItem = { label: "Team work log", href: "/admin/team-work-log", icon: ClipboardCheck };
+
 const REPORTS: NavItem = { label: "Reports", href: "/admin/reports", icon: FileText };
 
 /** Items for one school or partner. The same person can also manage its events, which adds a dashboard link. */
@@ -65,7 +68,9 @@ export function navGroupsFor(m: Membership[] = [], orgName: (id: string) => stri
   const groups: NavGroup[] = [{ key: "member", title: "Member", items: MEMBER_NAV }];
   const platform = isPlatformAdmin(m);
   const moderator = m.some((x) => x.role === "moderator");
-  if (platform) groups.push({ key: "platform", title: "Platform", items: PLATFORM_NAV });
+  // The work log is the one Platform link a moderator gets, so they get the group too, with just that.
+  const workLog = canReadTeamWorkLog(m) ? [TEAM_WORK_LOG] : canKeepWorkLog(m) ? [MY_WORK_LOG] : [];
+  if (platform || workLog.length) groups.push({ key: "platform", title: "Platform", items: platform ? [...PLATFORM_NAV, ...workLog] : workLog });
   if (platform || moderator) {
     // A moderator who is not an admin has no Platform group, so the dashboard moves here.
     groups.push({ key: "moderation", title: "Moderation", items: platform ? [REPORTS] : [PLATFORM_NAV[0], REPORTS] });

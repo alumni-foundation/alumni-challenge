@@ -7,6 +7,16 @@ export const isSuperAdmin = (m: Membership[] = []) =>
   m.some((x) => x.organization_id === null && x.role === "super_admin");
 
 /**
+ * Who keeps a work log: platform admins and moderators. A super admin only reads the team's, so holding that role
+ * wins even for someone who also holds admin. Mirrors the server, which decides.
+ */
+export const canKeepWorkLog = (m: Membership[] = []) =>
+  !isSuperAdmin(m) && m.some((x) => x.organization_id === null && (x.role === "admin" || x.role === "moderator"));
+
+/** Super admins read everyone's work log, read-only. */
+export const canReadTeamWorkLog = isSuperAdmin;
+
+/**
  * The platform roles this person may give. Mirrors the server: a super admin can give any of
  * them, an admin can give moderator only. The server still decides (it also checks rank).
  */

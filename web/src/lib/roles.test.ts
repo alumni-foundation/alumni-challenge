@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Membership, Role } from "@/lib/api/types";
-import { grantablePlatformRoles, isSuperAdmin, landingFor, orgIdsWithRole } from "./roles";
+import { canKeepWorkLog, canReadTeamWorkLog, grantablePlatformRoles, isSuperAdmin, landingFor, orgIdsWithRole } from "./roles";
 
 const SCHOOL_A = "11111111-1111-4111-8111-111111111111";
 const SCHOOL_B = "22222222-2222-4222-8222-222222222222";
@@ -76,5 +76,18 @@ describe("grantablePlatformRoles", () => {
     expect(grantablePlatformRoles([m("moderator")])).toEqual([]);
     expect(grantablePlatformRoles([m("school_admin", SCHOOL_A)])).toEqual([]);
     expect(grantablePlatformRoles([])).toEqual([]);
+  });
+});
+
+describe("work log permissions", () => {
+  const mk = (role: Role, organization_id: string | null = null): Membership => ({ id: "m", user_id: "u", organization_id, role });
+  it("lets admins and moderators write, never a super admin, and only a super admin read the team", () => {
+    expect(canKeepWorkLog([mk("admin")])).toBe(true);
+    expect(canKeepWorkLog([mk("moderator")])).toBe(true);
+    expect(canKeepWorkLog([mk("super_admin")])).toBe(false);
+    expect(canKeepWorkLog([mk("super_admin"), mk("admin")])).toBe(false);
+    expect(canKeepWorkLog([mk("school_admin", "s"), mk("alumni")])).toBe(false);
+    expect(canReadTeamWorkLog([mk("super_admin")])).toBe(true);
+    expect(canReadTeamWorkLog([mk("admin"), mk("moderator")])).toBe(false);
   });
 });
