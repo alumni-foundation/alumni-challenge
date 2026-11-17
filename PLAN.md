@@ -820,3 +820,19 @@ Roles: `super_admin` and `admin` are platform-wide. `moderator` is platform-wide
 - [ ] Endpoint classification list for every planned v1 endpoint
 - [ ] Tool choices: job queue, email provider, SMS provider, push, object storage, error tracking, container registry
 - [ ] Kenya Data Protection Act checklist
+
+Public website from the old site's content (branch `feat/old-site-content`):
+
+- [x] Public pages built from the collected old-site content: `/about`, `/our-story`, `/team`, `/programs`, `/get-involved`,
+  `/blog`, `/blog/[slug]` (8 posts, statically generated), plus the Supporters logos on `/partners` and the address,
+  hours and "Request a call back" on `/contact`. Content is read at build time from `web/content/old-site/`; the only
+  wording changes are the agreed ones, kept in one tested file (`web/src/lib/site-content/edits.ts`): "Alumni Challenge"
+  spelling, one set of opening hours, no "Years of Service" counter, no founding-year sentence (2020/2021/2022 disagreed),
+  dead links fixed, no social icons, newsletter line links to /contact.
+- [x] Landing page: the brown hero is untouched; below it "Who we are", featured programs, the get-involved band and the
+  latest 3 posts. Top menu on every public page (Who we are drop-down; menu button below 1280px), new footer with the
+  "System by Vancelle Baraza" badge.
+- [x] Images: `scripts/old-site/prepare_site_images.py` copies, resizes (max 2000px) and compresses them to
+  `web/public/images/site/`; the logo "SS" is left out because its name was not confirmed.
+- [x] Evidence: `web/scripts/check-public-routes.mjs` crawls the public pages against a running site (26 pages, all 200,
+  no broken mailto); `site-content.test.ts` and `routes.test.ts` cover the wording rules and the public route list.

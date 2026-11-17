@@ -38,3 +38,6 @@ Alumni Challenge Project Brief for Claude Code (Backend)*.md
 
 # Locally stored uploads (development)
 backend/var/
+
+# Old-site image bundle for the owner (the loose images are committed; the zip is not)
+web/content/old-site/old-site-images.zip

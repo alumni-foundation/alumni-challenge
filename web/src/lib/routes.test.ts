@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { isMessagesArea, isPublicPath, isSignedOutOnly, isStaffArea, worksWithoutProfile } from "./routes";
 
 describe("isPublicPath", () => {
-  it.each(["/", "/schools", "/schools/abc", "/partners", "/partners/abc", "/terms", "/privacy", "/community-rules", "/contact", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/403", "/404", "/suspended", "/events", "/events/abc"])(
+  it.each(["/", "/schools", "/schools/abc", "/partners", "/partners/abc", "/terms", "/privacy", "/community-rules", "/contact", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/403", "/404", "/suspended", "/events", "/events/abc", "/about", "/our-story", "/team", "/programs", "/get-involved", "/blog", "/blog/some-post"])(
     "lets anyone open %s",
     (p) => expect(isPublicPath(p)).toBe(true),
   );
 
-  it.each(["/home", "/directory", "/alumni/abc", "/connections", "/profile", "/settings", "/onboarding", "/admin", "/admin/reports", "/school/abc", "/partner/abc", "/organizer/abc", "/start", "/bookings", "/bookings/abc", "/tickets", "/messages", "/admin/users"])(
+  it.each(["/home", "/directory", "/alumni/abc", "/connections", "/profile", "/settings", "/onboarding", "/admin", "/admin/reports", "/school/abc", "/partner/abc", "/organizer/abc", "/start", "/bookings", "/bookings/abc", "/tickets", "/messages", "/admin/users", "/teams", "/blogging", "/admin/team"])(
     "asks for a sign-in before %s",
     (p) => expect(isPublicPath(p)).toBe(false),
   );
