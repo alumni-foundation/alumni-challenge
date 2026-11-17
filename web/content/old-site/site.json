@@ -1,0 +1,691 @@
+{
+  "site_name": "Alumni Challenge",
+  "source": "https://alumnichallenge.foundation/",
+  "collected_on": "2026-11-17",
+  "logo_file": "alumni-logo.png",
+  "menu": {
+    "note": "Order as on the old site. 'Who We Are' has no page of its own (its link is '#'); it only opens the sub-menu.",
+    "items": [
+      {
+        "label": "Home",
+        "href": "https://alumnichallenge.foundation/"
+      },
+      {
+        "label": "Who We Are",
+        "href": null,
+        "children": [
+          {
+            "label": "About Us",
+            "href": "https://alumnichallenge.foundation/about-us/"
+          },
+          {
+            "label": "Our Story",
+            "href": "https://alumnichallenge.foundation/about-us-2/"
+          },
+          {
+            "label": "The Team",
+            "href": "https://alumnichallenge.foundation/the-team/"
+          }
+        ]
+      },
+      {
+        "label": "Programs",
+        "href": "https://alumnichallenge.foundation/programs/"
+      },
+      {
+        "label": "Partners",
+        "href": "https://alumnichallenge.foundation/partners/"
+      },
+      {
+        "label": "Get Involved",
+        "href": "https://alumnichallenge.foundation/get-involved/"
+      },
+      {
+        "label": "Blog",
+        "href": "https://alumnichallenge.foundation/blog/"
+      },
+      {
+        "label": "Contact",
+        "href": "https://alumnichallenge.foundation/contact/"
+      }
+    ],
+    "header_extras": [
+      {
+        "label": "0104 063 038",
+        "raw_href": "tel:0104 063 038"
+      },
+      {
+        "label": "Donate",
+        "raw_href": "#"
+      }
+    ]
+  },
+  "footer": {
+    "address_lines": [
+      "Milestone Business Center",
+      "Kiambu Road"
+    ],
+    "opening_hours": [
+      {
+        "days": "Mon – Fri",
+        "hours": "08:00 AM – 05:00 PM",
+        "as_written": "Mon – Fri | 08:00 AM – 05:00 PM"
+      },
+      {
+        "days": "Sat",
+        "hours": "09:00 AM – 12:00 PM",
+        "as_written": "Sat | 09:00 AM – 12:00 PM"
+      }
+    ],
+    "phone": "0104 063 038",
+    "phone_href": "tel:0104063038",
+    "email": "admin@alumnichallenge.foundation",
+    "email_href_as_written": "mailto:#",
+    "newsletter_heading": "Newsletter",
+    "newsletter_text": "Join our newsletter for latest Updates",
+    "newsletter_form": "none found in the page HTML (text only)",
+    "copyright": "Alumni Challenge @2025. All Rights Reserved",
+    "all_lines_as_written": [
+      "Our Address",
+      "Milestone Business Center",
+      "Kiambu Road",
+      "Opening Hours",
+      "Mon – Fri | 08:00 AM – 05:00 PM",
+      "Sat | 09:00 AM – 12:00 PM",
+      "0104 063 038",
+      "admin@alumnichallenge.foundation",
+      "Newsletter",
+      "Join our newsletter for latest Updates",
+      "Alumni Challenge @2025. All Rights Reserved"
+    ]
+  },
+  "contact_page": {
+    "address": "Milestone Business Center -Kiambu Road",
+    "phone": "0104 063 038",
+    "email": "admin@alumnichallenge.foundation",
+    "social_links": [
+      {
+        "label": "Twitter",
+        "href": "https://twitter.com/",
+        "raw_href": "https://twitter.com/",
+        "toggle": false,
+        "dead": false
+      },
+      {
+        "label": "Facebook-square",
+        "href": "https://facebook.com/",
+        "raw_href": "https://facebook.com/",
+        "toggle": false,
+        "dead": false
+      },
+      {
+        "label": "Youtube",
+        "href": "https://www.youtube.com/",
+        "raw_href": "https://www.youtube.com/",
+        "toggle": false,
+        "dead": false
+      },
+      {
+        "label": "Linkedin",
+        "href": "https://www.linkedin.com/",
+        "raw_href": "https://www.linkedin.com/",
+        "toggle": false,
+        "dead": false
+      }
+    ],
+    "form": {
+      "type": "form",
+      "action": "https://alumnichallenge.foundation/contact/#wpcf7-f304-p301-o1",
+      "fields": [
+        {
+          "name": "your-name",
+          "type": "text",
+          "placeholder": "Name",
+          "value": null
+        },
+        {
+          "name": "your-email",
+          "type": "email",
+          "placeholder": "Email",
+          "value": null
+        },
+        {
+          "name": "your-subject",
+          "type": "text",
+          "placeholder": "Subject",
+          "value": null
+        },
+        {
+          "name": "your-comment",
+          "type": "textarea",
+          "placeholder": "Write your message...",
+          "value": null
+        },
+        {
+          "name": null,
+          "type": "submit",
+          "placeholder": null,
+          "value": "Send Message"
+        }
+      ]
+    }
+  },
+  "hours_mentioned_elsewhere": [
+    {
+      "page": "home (call-to-action band)",
+      "as_written": "Send us a message, or phone 0104 063 038 between 09:00 and 18:00 Mon-Sat."
+    }
+  ],
+  "shared_sections": {
+    "note": "These blocks repeat at the bottom of the home, Partners and Get Involved pages. They are kept in home.md and left out of the other pages.",
+    "call_to_action_band_and_latest_posts": [
+      {
+        "type": "heading",
+        "level": 1,
+        "text": "01"
+      },
+      {
+        "type": "paragraph",
+        "text": "Donate Now",
+        "link": "https://alumnichallenge.foundation/contact/"
+      },
+      {
+        "type": "heading",
+        "level": 1,
+        "text": "02"
+      },
+      {
+        "type": "paragraph",
+        "text": "Volunteer",
+        "link": "https://alumnichallenge.foundation/contact/"
+      },
+      {
+        "type": "heading",
+        "level": 1,
+        "text": "03"
+      },
+      {
+        "type": "paragraph",
+        "text": "Newsletters",
+        "link": "https://alumnichallenge.foundation/contact/"
+      },
+      {
+        "type": "heading",
+        "level": 1,
+        "text": "04"
+      },
+      {
+        "type": "paragraph",
+        "text": "Get Involved",
+        "link": "https://alumnichallenge.foundation/contact/"
+      },
+      {
+        "type": "paragraph",
+        "text": "Join the Alumni Movement Send us a message, or phone 0104 063 038 between 09:00 and 18:00 Mon-Sat."
+      },
+      {
+        "type": "paragraph",
+        "text": "[Request a Call Back](https://alumnichallenge.foundation/contact/)"
+      },
+      {
+        "type": "heading",
+        "level": 4,
+        "text": "We’re Specialized In"
+      },
+      {
+        "type": "heading",
+        "level": 3,
+        "text": "Featured Programs and Events"
+      },
+      {
+        "type": "paragraph",
+        "text": "[Latest Blog](https://alumnichallenge.foundation/blog/)"
+      },
+      {
+        "type": "paragraph",
+        "text": "[Uncategorized](https://alumnichallenge.foundation/category/uncategorized/)"
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "[From St. Mary’s Alumnus To Archbishop: A Story Of Inspiration And Impact](https://alumnichallenge.foundation/2023/08/02/from-st-marys-alumnus-to-archbishop-a-story-of-inspiration-and-impact/)"
+      },
+      {
+        "type": "paragraph",
+        "text": "[Uncategorized](https://alumnichallenge.foundation/category/uncategorized/)"
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "[Creating Lasting Change: How Alumni Involvement Can Help Break The Cycle Of Poverty](https://alumnichallenge.foundation/2023/08/02/creating-lasting-change-how-alumni-involvement-can-help-break-the-cycle-of-poverty/)"
+      },
+      {
+        "type": "paragraph",
+        "text": "[Uncategorized](https://alumnichallenge.foundation/category/uncategorized/)"
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "[Bridging Borders With Golf: International Champion Propels Local School To Victory](https://alumnichallenge.foundation/2023/08/02/bridging-borders-with-golf-international-champion-propels-local-school-to-victory/)"
+      }
+    ]
+  },
+  "buttons_and_links": [
+    {
+      "page": "home",
+      "label": "Read More",
+      "target": "https://alumnichallenge.foundation/programs/",
+      "original_href": "https://alumnichallenge.foundation/programs/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "home",
+      "label": "Read More",
+      "target": null,
+      "original_href": "#",
+      "goes_nowhere": true,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "home",
+      "label": "Founded in 2022 Promoting A Transformative Alumni Culture",
+      "target": null,
+      "original_href": "#",
+      "goes_nowhere": true,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "home",
+      "label": "01 Donate Now",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "home",
+      "label": "02 Volunteer",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "home",
+      "label": "03 Newsletters",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "home",
+      "label": "04 Get Involved",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "home",
+      "label": "Request a Call Back",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "home",
+      "label": "Latest Blog",
+      "target": "https://alumnichallenge.foundation/blog/",
+      "original_href": "https://alumnichallenge.foundation/blog/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "home",
+      "label": "Uncategorized",
+      "target": "https://alumnichallenge.foundation/category/uncategorized/",
+      "original_href": "https://alumnichallenge.foundation/category/uncategorized/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "home",
+      "label": "From St. Mary’s Alumnus To Archbishop: A Story Of Inspiration And Impact",
+      "target": "https://alumnichallenge.foundation/2023/08/02/from-st-marys-alumnus-to-archbishop-a-story-of-inspiration-and-impact/",
+      "original_href": "https://alumnichallenge.foundation/2023/08/02/from-st-marys-alumnus-to-archbishop-a-story-of-inspiration-and-impact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "home",
+      "label": "Creating Lasting Change: How Alumni Involvement Can Help Break The Cycle Of Poverty",
+      "target": "https://alumnichallenge.foundation/2023/08/02/creating-lasting-change-how-alumni-involvement-can-help-break-the-cycle-of-poverty/",
+      "original_href": "https://alumnichallenge.foundation/2023/08/02/creating-lasting-change-how-alumni-involvement-can-help-break-the-cycle-of-poverty/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "home",
+      "label": "Bridging Borders With Golf: International Champion Propels Local School To Victory",
+      "target": "https://alumnichallenge.foundation/2023/08/02/bridging-borders-with-golf-international-champion-propels-local-school-to-victory/",
+      "original_href": "https://alumnichallenge.foundation/2023/08/02/bridging-borders-with-golf-international-champion-propels-local-school-to-victory/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "about-us",
+      "label": "Bursary funds",
+      "target": null,
+      "original_href": "#",
+      "goes_nowhere": true,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "about-us",
+      "label": "Lifelong learning opportunities for students",
+      "target": null,
+      "original_href": "#",
+      "goes_nowhere": true,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "about-us",
+      "label": "Teacher welfare/reward programs",
+      "target": null,
+      "original_href": "#",
+      "goes_nowhere": true,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "about-us",
+      "label": "Social research & advocacy",
+      "target": null,
+      "original_href": "#",
+      "goes_nowhere": true,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "about-us",
+      "label": "Institutional development",
+      "target": null,
+      "original_href": "#",
+      "goes_nowhere": true,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "about-us-2",
+      "label": "Student Empowerment",
+      "target": null,
+      "original_href": "#",
+      "goes_nowhere": true,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "the-team",
+      "label": "Grace Mwende",
+      "target": "https://alumnichallenge.foundation/team/grace-mwende/",
+      "original_href": "https://alumnichallenge.foundation/team/grace-mwende/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "the-team",
+      "label": "Jeremiah Mwangangi",
+      "target": "https://alumnichallenge.foundation/team/jeremiah-mwangangi/",
+      "original_href": "https://alumnichallenge.foundation/team/jeremiah-mwangangi/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "the-team",
+      "label": "Beatrice Karomo",
+      "target": "https://alumnichallenge.foundation/team/beatrice-karomo/",
+      "original_href": "https://alumnichallenge.foundation/team/beatrice-karomo/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "programs",
+      "label": "What is The Alumni Golf Challenge?",
+      "target": null,
+      "original_href": "",
+      "goes_nowhere": false,
+      "is_open_close_heading": true
+    },
+    {
+      "page": "programs",
+      "label": "Eligibility criteria",
+      "target": null,
+      "original_href": "",
+      "goes_nowhere": false,
+      "is_open_close_heading": true
+    },
+    {
+      "page": "programs",
+      "label": "How to apply",
+      "target": null,
+      "original_href": "",
+      "goes_nowhere": false,
+      "is_open_close_heading": true
+    },
+    {
+      "page": "programs",
+      "label": "What is The Alumni Empowerment Program",
+      "target": null,
+      "original_href": "",
+      "goes_nowhere": false,
+      "is_open_close_heading": true
+    },
+    {
+      "page": "partners",
+      "label": "01 Donate Now",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "partners",
+      "label": "02 Volunteer",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "partners",
+      "label": "03 Newsletters",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "partners",
+      "label": "04 Get Involved",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "partners",
+      "label": "Request a Call Back",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "partners",
+      "label": "Latest Blog",
+      "target": "https://alumnichallenge.foundation/blog/",
+      "original_href": "https://alumnichallenge.foundation/blog/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "partners",
+      "label": "Uncategorized",
+      "target": "https://alumnichallenge.foundation/category/uncategorized/",
+      "original_href": "https://alumnichallenge.foundation/category/uncategorized/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "partners",
+      "label": "From St. Mary’s Alumnus To Archbishop: A Story Of Inspiration And Impact",
+      "target": "https://alumnichallenge.foundation/2023/08/02/from-st-marys-alumnus-to-archbishop-a-story-of-inspiration-and-impact/",
+      "original_href": "https://alumnichallenge.foundation/2023/08/02/from-st-marys-alumnus-to-archbishop-a-story-of-inspiration-and-impact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "partners",
+      "label": "Creating Lasting Change: How Alumni Involvement Can Help Break The Cycle Of Poverty",
+      "target": "https://alumnichallenge.foundation/2023/08/02/creating-lasting-change-how-alumni-involvement-can-help-break-the-cycle-of-poverty/",
+      "original_href": "https://alumnichallenge.foundation/2023/08/02/creating-lasting-change-how-alumni-involvement-can-help-break-the-cycle-of-poverty/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "partners",
+      "label": "Bridging Borders With Golf: International Champion Propels Local School To Victory",
+      "target": "https://alumnichallenge.foundation/2023/08/02/bridging-borders-with-golf-international-champion-propels-local-school-to-victory/",
+      "original_href": "https://alumnichallenge.foundation/2023/08/02/bridging-borders-with-golf-international-champion-propels-local-school-to-victory/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "get-involved",
+      "label": "01 Donate Now",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "get-involved",
+      "label": "02 Volunteer",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "get-involved",
+      "label": "03 Newsletters",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "get-involved",
+      "label": "04 Get Involved",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "get-involved",
+      "label": "Request a Call Back",
+      "target": "https://alumnichallenge.foundation/contact/",
+      "original_href": "https://alumnichallenge.foundation/contact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "get-involved",
+      "label": "Latest Blog",
+      "target": "https://alumnichallenge.foundation/blog/",
+      "original_href": "https://alumnichallenge.foundation/blog/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "get-involved",
+      "label": "Uncategorized",
+      "target": "https://alumnichallenge.foundation/category/uncategorized/",
+      "original_href": "https://alumnichallenge.foundation/category/uncategorized/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "get-involved",
+      "label": "From St. Mary’s Alumnus To Archbishop: A Story Of Inspiration And Impact",
+      "target": "https://alumnichallenge.foundation/2023/08/02/from-st-marys-alumnus-to-archbishop-a-story-of-inspiration-and-impact/",
+      "original_href": "https://alumnichallenge.foundation/2023/08/02/from-st-marys-alumnus-to-archbishop-a-story-of-inspiration-and-impact/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "get-involved",
+      "label": "Creating Lasting Change: How Alumni Involvement Can Help Break The Cycle Of Poverty",
+      "target": "https://alumnichallenge.foundation/2023/08/02/creating-lasting-change-how-alumni-involvement-can-help-break-the-cycle-of-poverty/",
+      "original_href": "https://alumnichallenge.foundation/2023/08/02/creating-lasting-change-how-alumni-involvement-can-help-break-the-cycle-of-poverty/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "get-involved",
+      "label": "Bridging Borders With Golf: International Champion Propels Local School To Victory",
+      "target": "https://alumnichallenge.foundation/2023/08/02/bridging-borders-with-golf-international-champion-propels-local-school-to-victory/",
+      "original_href": "https://alumnichallenge.foundation/2023/08/02/bridging-borders-with-golf-international-champion-propels-local-school-to-victory/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "contact",
+      "label": "0104 063 038",
+      "target": "tel:0104063038",
+      "original_href": "tel:0104063038",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "contact",
+      "label": "admin@alumnichallenge.foundation",
+      "target": "mailto:admin@alumnichallenge.foundation",
+      "original_href": "mailto:admin@alumnichallenge.foundation",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "contact",
+      "label": "Twitter",
+      "target": "https://twitter.com/",
+      "original_href": "https://twitter.com/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "contact",
+      "label": "Facebook-square",
+      "target": "https://facebook.com/",
+      "original_href": "https://facebook.com/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "contact",
+      "label": "Youtube",
+      "target": "https://www.youtube.com/",
+      "original_href": "https://www.youtube.com/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    },
+    {
+      "page": "contact",
+      "label": "Linkedin",
+      "target": "https://www.linkedin.com/",
+      "original_href": "https://www.linkedin.com/",
+      "goes_nowhere": false,
+      "is_open_close_heading": false
+    }
+  ]
+}

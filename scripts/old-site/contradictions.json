@@ -1,0 +1,10 @@
+[
+ "**Opening hours.** The footer on every page says Mon – Fri | 08:00 AM – 05:00 PM and Sat | 09:00 AM – 12:00 PM. The call-to-action band on the home page says \"phone 0104 063 038 between 09:00 and 18:00 Mon-Sat\".",
+ "**When it was founded.** Home page: \"Founded in 2022\". About Us: \"Founded in October 2021\". The Team (Mark): \"he turned his vision into reality in 2022\". Our Story: \"It started with a news article in 2020\".",
+ "**Years of Service.** The About Us counter counts up to 2, which does not fit \"Founded in October 2021\" together with a footer that says 2025 (the other counters are 8000 persons reached, 11 events and programmes, 27 alumni partners; the Partners page shows 22 logos).",
+ "**The name.** Almost everywhere it is \"Alumni Challenge\", but `pages/contact.md` (\"the Alumnus Challenge event\"), `pages/programs.md`, and two blog posts say \"Alumnus Challenge\", and those two posts give the social handle as @alumnuschallenge while other posts and the email domain use alumnichallenge.",
+ "**Fourth Golf Challenge winner.** The Programs testimonials call Archbishop Martin Kivuva \"Winner of the 4th Edition of Alumni Golf challenge\", while the blog post about him says the 4th Edition winner was Joseph Kioko, an alumnus of St. Mary's Junior Seminary in Kwale. Worth checking before it is reused.",
+ "**Phone number format.** Written as 0104 063 038 on pages and footer, but 0104063038 in the blog posts, and the header link is `tel:0104 063 038` (with spaces) while the footer and Contact page use `tel:0104063038`. Same number, different spellings.",
+ "**Address.** The footer shows two lines (Milestone Business Center / Kiambu Road); the Contact page shows one line (\"Milestone Business Center -Kiambu Road\"). Same place, written differently; no street number or town on either.",
+ "**Dates on the posts.** All eight posts carry the date August 2, 2023 even though they describe events from different months (for example the 5th Alumni Homecoming on 23 June 2023, and an event planned for 4th–6th August 2023), so the posts were probably all published in one batch."
+]
